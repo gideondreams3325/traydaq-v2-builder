@@ -106,6 +106,16 @@ jobs:
           test -s supabase/migrations/202610120016_publication.sql
           grep -q 'Publish to For You' src/components/ReviewerWorkspace.tsx
 
+      - name: Verify dedicated Security Team hub
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'Open Security Hub' src/App.tsx
+          grep -q 'case "security"' src/App.tsx
+          grep -q 'td-security-dashboard' src/components/ReviewerWorkspace.tsx
+          grep -q 'td-security-launcher' src/styles.css
+
       - name: Verify generated app
         working-directory: private-src
         shell: bash

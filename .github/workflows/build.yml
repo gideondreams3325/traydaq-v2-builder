@@ -119,6 +119,9 @@ jobs:
       - name: Set up Android SDK
         if: ${{ env.BUILD_TARGET == 'android-preview' }}
         uses: android-actions/setup-android@v3
+        with:
+          # The old "tools" SDK package was retired. Installing it fails.
+          packages: platform-tools
 
       - name: Add temporary Capacitor Android shell
         if: ${{ env.BUILD_TARGET == 'android-preview' }}

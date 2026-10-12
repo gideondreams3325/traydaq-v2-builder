@@ -146,6 +146,7 @@ jobs:
           # Activity lives in the private canonical V2 source repository.
           mkdir -p android/app/src/main/java/com/traydaq/app
           cp android-preview/MainActivity.java android/app/src/main/java/com/traydaq/app/MainActivity.java
+          grep -q 'findViewById(android.R.id.content)' android/app/src/main/java/com/traydaq/app/MainActivity.java
 
       - name: Restore optional persistent debug signing certificate
         if: ${{ env.BUILD_TARGET == 'android-preview' }}

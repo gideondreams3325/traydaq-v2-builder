@@ -1,0 +1,166 @@
+name: TRAYDAQ V2 Public Builder
+
+# Manually run builds from a separate public repository. Never build untrusted
+# pull requests with a token that can read the private source.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Build target"
+        required: true
+        type: choice
+        default: web-check
+        options:
+          - web-check
+          - android-preview
+      source_ref:
+        description: "Approved private source branch"
+        required: true
+        type: choice
+        default: feat/v2-live-data-foundation
+        options:
+          - feat/v2-live-data-foundation
+          - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: traydaq-v2-manual-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Private source - ${{ inputs.target }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    steps:
+      - name: Require the private-source read token
+        shell: bash
+        env:
+          SOURCE_TOKEN_CONFIGURED: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: |
+          if [ "$SOURCE_TOKEN_CONFIGURED" != "true" ]; then
+            echo "::error::Add TRAYDAQ_V2_SOURCE_READ_TOKEN as a repository Actions secret with read-only Contents access exclusively to the private traydaq-v2 repository."
+            exit 1
+          fi
+
+      - name: Check out private TRAYDAQ V2 source (never publish)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ inputs.source_ref }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Show build metadata (not private source)
+        working-directory: private-src
+        shell: bash
+        run: |
+          echo "Source ref: ${{ inputs.source_ref }}"
+          echo "Source SHA: $(git rev-parse HEAD)"
+          echo "Build target: ${{ inputs.target }}"
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install private-source dependencies
+        working-directory: private-src
+        run: npm install --no-audit --no-fund
+
+      - name: Run TRAYDAQ source tests
+        working-directory: private-src
+        run: npm test
+
+      - name: Build TRAYDAQ React web bundle
+        working-directory: private-src
+        run: npm run build
+
+      - name: Verify generated app
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s dist/index.html
+          test -d dist/assets
+          echo "Web bundle generated. No private source or web bundle is uploaded by the public builder."
+
+      # The Android wrapper is created in the ephemeral build workspace.
+      # It must not be confused with a tested, release-ready native application.
+      - name: Check Android preview signing secret
+        if: ${{ inputs.target == 'android-preview' }}
+        shell: bash
+        env:
+          KEYSTORE_CONFIGURED: ${{ secrets.TRAYDAQ_V2_DEBUG_KEYSTORE_B64 != '' }}
+        run: |
+          if [ "$KEYSTORE_CONFIGURED" != "true" ]; then
+            echo "::error::Configure TRAYDAQ_V2_DEBUG_KEYSTORE_B64 with the persistent Android debug keystore before preview APK builds. We refuse to generate a new signing identity each run."
+            exit 1
+          fi
+
+      - name: Install Java 21
+        if: ${{ inputs.target == 'android-preview' }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Android SDK
+        if: ${{ inputs.target == 'android-preview' }}
+        uses: android-actions/setup-android@v3
+
+      - name: Add temporary Capacitor Android shell
+        if: ${{ inputs.target == 'android-preview' }}
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save --no-audit --no-fund \
+            @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
+          cat > capacitor.config.ts <<'CAP_CONFIG'
+          import type { CapacitorConfig } from '@capacitor/cli';
+          const config: CapacitorConfig = {
+            appId: 'com.traydaq.app',
+            appName: 'TRAYDAQ V2',
+            webDir: 'dist'
+          };
+          export default config;
+          CAP_CONFIG
+          npx cap add android
+          npx cap sync android
+
+      - name: Restore persistent debug signing certificate
+        if: ${{ inputs.target == 'android-preview' }}
+        shell: bash
+        env:
+          SIGNING_KEYSTORE_B64: ${{ secrets.TRAYDAQ_V2_DEBUG_KEYSTORE_B64 }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.android"
+          printf '%s' "$SIGNING_KEYSTORE_B64" | base64 --decode > "$HOME/.android/debug.keystore"
+          chmod 600 "$HOME/.android/debug.keystore"
+          keytool -list -keystore "$HOME/.android/debug.keystore" \
+            -storepass android -alias androiddebugkey >/dev/null
+
+      - name: Build Android preview APK
+        if: ${{ inputs.target == 'android-preview' }}
+        working-directory: private-src/android
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+          ./gradlew --no-daemon assembleDebug
+          test -s app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload APK only (never private source)
+        if: ${{ inputs.target == 'android-preview' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: TRAYDAQ-V2-debug-preview
+          path: private-src/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14

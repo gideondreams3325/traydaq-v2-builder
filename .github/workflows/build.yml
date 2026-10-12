@@ -3,6 +3,12 @@ name: TRAYDAQ V2 Public Builder
 # Manually run builds from a separate public repository. Never build untrusted
 # pull requests with a token that can read the private source.
 on:
+  # Trigger one controlled preview build when this workflow changes on main.
+  # Never run pull-request code with access to the private source token.
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/build.yml"
   workflow_dispatch:
     inputs:
       target:
@@ -26,13 +32,15 @@ permissions:
   contents: read
 
 concurrency:
-  group: traydaq-v2-manual-build
+  group: traydaq-v2-builder-serial
   cancel-in-progress: false
 
 jobs:
   build:
-    name: Private source - ${{ inputs.target }}
+    name: Private source - ${{ github.event_name == 'push' && 'android-preview' || inputs.target }}
     runs-on: ubuntu-latest
+    env:
+      BUILD_TARGET: ${{ github.event_name == 'push' && 'android-preview' || inputs.target }}
     timeout-minutes: 65
     steps:
       - name: Require the private-source read token
@@ -49,7 +57,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: ${{ inputs.source_ref }}
+          ref: ${{ inputs.source_ref || 'feat/v2-live-data-foundation' }}
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -59,9 +67,9 @@ jobs:
         working-directory: private-src
         shell: bash
         run: |
-          echo "Source ref: ${{ inputs.source_ref }}"
+          echo "Source ref: ${{ inputs.source_ref || 'feat/v2-live-data-foundation' }}"
           echo "Source SHA: $(git rev-parse HEAD)"
-          echo "Build target: ${{ inputs.target }}"
+          echo "Build target: $BUILD_TARGET"
 
       - name: Set up Node.js 22
         uses: actions/setup-node@v4
@@ -91,30 +99,29 @@ jobs:
 
       # The Android wrapper is created in the ephemeral build workspace.
       # It must not be confused with a tested, release-ready native application.
-      - name: Check Android preview signing secret
-        if: ${{ inputs.target == 'android-preview' }}
+      - name: Explain Android preview signing
+        if: ${{ env.BUILD_TARGET == 'android-preview' }}
         shell: bash
         env:
           KEYSTORE_CONFIGURED: ${{ secrets.TRAYDAQ_V2_DEBUG_KEYSTORE_B64 != '' }}
         run: |
           if [ "$KEYSTORE_CONFIGURED" != "true" ]; then
-            echo "::error::Configure TRAYDAQ_V2_DEBUG_KEYSTORE_B64 with the persistent Android debug keystore before preview APK builds. We refuse to generate a new signing identity each run."
-            exit 1
+            echo "::warning::TEST APK ONLY: Android will create an ephemeral debug signing key. A future APK signed by a different key may require uninstalling the previous one. Firebase native Google sign-in is not verified."
           fi
 
       - name: Install Java 21
-        if: ${{ inputs.target == 'android-preview' }}
+        if: ${{ env.BUILD_TARGET == 'android-preview' }}
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "21"
 
       - name: Set up Android SDK
-        if: ${{ inputs.target == 'android-preview' }}
+        if: ${{ env.BUILD_TARGET == 'android-preview' }}
         uses: android-actions/setup-android@v3
 
       - name: Add temporary Capacitor Android shell
-        if: ${{ inputs.target == 'android-preview' }}
+        if: ${{ env.BUILD_TARGET == 'android-preview' }}
         working-directory: private-src
         shell: bash
         run: |
@@ -133,21 +140,25 @@ jobs:
           npx cap add android
           npx cap sync android
 
-      - name: Restore persistent debug signing certificate
-        if: ${{ inputs.target == 'android-preview' }}
+      - name: Restore optional persistent debug signing certificate
+        if: ${{ env.BUILD_TARGET == 'android-preview' }}
         shell: bash
         env:
           SIGNING_KEYSTORE_B64: ${{ secrets.TRAYDAQ_V2_DEBUG_KEYSTORE_B64 }}
         run: |
           set -euo pipefail
-          mkdir -p "$HOME/.android"
-          printf '%s' "$SIGNING_KEYSTORE_B64" | base64 --decode > "$HOME/.android/debug.keystore"
-          chmod 600 "$HOME/.android/debug.keystore"
-          keytool -list -keystore "$HOME/.android/debug.keystore" \
-            -storepass android -alias androiddebugkey >/dev/null
+          if [ -n "$SIGNING_KEYSTORE_B64" ]; then
+            mkdir -p "$HOME/.android"
+            printf '%s' "$SIGNING_KEYSTORE_B64" | base64 --decode > "$HOME/.android/debug.keystore"
+            chmod 600 "$HOME/.android/debug.keystore"
+            keytool -list -keystore "$HOME/.android/debug.keystore" \
+              -storepass android -alias androiddebugkey >/dev/null
+          else
+            echo "Using Android's temporary default debug certificate for this TEST APK."
+          fi
 
       - name: Build Android preview APK
-        if: ${{ inputs.target == 'android-preview' }}
+        if: ${{ env.BUILD_TARGET == 'android-preview' }}
         working-directory: private-src/android
         shell: bash
         run: |
@@ -157,7 +168,7 @@ jobs:
           test -s app/build/outputs/apk/debug/app-debug.apk
 
       - name: Upload APK only (never private source)
-        if: ${{ inputs.target == 'android-preview' }}
+        if: ${{ env.BUILD_TARGET == 'android-preview' }}
         uses: actions/upload-artifact@v4
         with:
           name: TRAYDAQ-V2-debug-preview

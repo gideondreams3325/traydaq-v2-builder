@@ -88,6 +88,15 @@ jobs:
         working-directory: private-src
         run: npm run build
 
+      - name: Verify Creator Studio reviewer workflow
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'case "studio"' src/App.tsx
+          grep -q 'onDecision' src/components/ReviewerWorkspace.tsx
+          grep -q 'MyPictureSubmissions' src/App.tsx
+
       - name: Verify generated app
         working-directory: private-src
         shell: bash

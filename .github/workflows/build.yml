@@ -100,6 +100,7 @@ jobs:
           test -s supabase/migrations/20261013_resend_identity_verification.sql
           test -s supabase/migrations/20261013_resend_verification_hardening.sql
           test -s tests/verification.test.mjs
+          test -s tests/identity-verification.test.mjs
           echo "Current V2 web, Resend identity verification, private evidence and security tests verified."
 
       - name: Set up Java 21

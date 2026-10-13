@@ -1,7 +1,7 @@
 name: TRAYDAQ V2 Native Android APK Builder
 
 # Public runner builds private React Native source, not the old web/Capacitor main.
-# Verified native source ref (finished design with native chat): 9f9fd6d2f9ff8e01ee03716abe8d3dbe5fabdc53
+# Verified native source ref (complete V2 native design including auth): 2beec09b5c6ec2276ea6c24c61a48a1f1d32bb66
 # Never print or upload private source; only publish the signed testing APK.
 on:
   push:

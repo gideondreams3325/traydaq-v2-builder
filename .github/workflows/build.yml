@@ -94,7 +94,13 @@ jobs:
           test -s src/social/NotificationsPage.tsx
           test -s supabase/functions/submit-album-picture/index.ts
           test -s supabase/functions/publish-picture/index.ts
-          echo "New private V2 build and source structure verified."
+          test -s src/verification/VerificationPage.tsx
+          test -s src/verification/VerificationReviewEvidence.tsx
+          test -s supabase/functions/verification-email-otp/index.ts
+          test -s supabase/migrations/20261013_resend_identity_verification.sql
+          test -s supabase/migrations/20261013_resend_verification_hardening.sql
+          test -s tests/verification.test.mjs
+          echo "Current V2 web, Resend identity verification, private evidence and security tests verified."
 
       - name: Set up Java 21
         if: ${{ env.BUILD_TARGET == 'android-preview' }}

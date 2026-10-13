@@ -30,6 +30,7 @@ jobs:
         working-directory: private-src/mobile
     steps:
       - name: Verify private V2 repository read access
+        working-directory: .
         shell: bash
         env:
           SOURCE_TOKEN_CONFIGURED: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
@@ -114,7 +115,7 @@ jobs:
           test -s "$APK"
           unzip -t "$APK" >/dev/null
           unzip -Z1 "$APK" | grep -E '^assets/(index.android.bundle|.*\.hbc)$'
-          apksigner verify "$APK"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$APK"
           sha256sum "$APK"
           mkdir -p build-output
           cp "$APK" build-output/TRAYDAQ-V2-native-test.apk

@@ -1,0 +1,28 @@
+name: Verify ImageMagick WASM
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/wasm-integrity.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify pinned public NPM ImageMagick WASM asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 2 --connect-timeout 10 --max-time 65 \
+            "https://cdn.jsdelivr.net/npm/@imagemagick/magick-wasm@0.0.44/dist/magick.wasm" \
+            --output /tmp/magick.wasm
+          test "$(stat -c %s /tmp/magick.wasm)" -gt 1000000
+          test "$(head -c4 /tmp/magick.wasm | od -An -tx1 | tr -d ' \n')" = "0061736d"
+          echo "TRAYDAQ_KNOWN_GOOD_WASM_SHA256=$(sha256sum /tmp/magick.wasm | cut -d' ' -f1)"
+          echo "TRAYDAQ_WASM_BYTES=$(stat -c %s /tmp/magick.wasm)"

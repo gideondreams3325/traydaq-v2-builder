@@ -72,14 +72,10 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Use preinstalled GitHub Actions Android SDK
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -d "$ANDROID_HOME"
-          command -v sdkmanager
-          sdkmanager --version
-          echo "$ANDROID_HOME/build-tools/36.0.0" >> "$GITHUB_PATH"
+      - name: Set up Android SDK with an available package
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
 
       - name: Install Android API 36
         shell: bash

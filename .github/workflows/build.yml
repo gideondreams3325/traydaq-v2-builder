@@ -86,6 +86,9 @@ jobs:
           test -d dist/assets
           test -s capacitor.config.ts
           test -s src/feed/FeedPage.tsx
+          test -s src/auth/biometric.ts
+          test -s src/i18n/translations.js
+          test -s src/settings/SettingsPage.tsx
           test -s src/feed/AlbumComposer.tsx
           test -s src/social/MessagesPage.tsx
           test -s src/social/NotificationsPage.tsx

@@ -106,10 +106,10 @@ jobs:
         with:
           packages: platform-tools
 
-      - name: Install Android API 35
+      - name: Install Android API 36
         if: ${{ env.BUILD_TARGET == 'android-preview' }}
         shell: bash
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
       - name: Generate current V2 native Android project
         if: ${{ env.BUILD_TARGET == 'android-preview' }}
@@ -119,9 +119,11 @@ jobs:
           set -euo pipefail
           npx cap add android
           npx cap sync android
+          node scripts/prepare-android-biometrics.mjs
           test -f android/app/src/main/AndroidManifest.xml
+          grep -q android.permission.USE_BIOMETRIC android/app/src/main/AndroidManifest.xml
           test -f android/gradlew
-          echo "Android wrapper generated from private TRAYDAQ V2 source."
+          echo "Android 8 wrapper with biometric permissions generated from private TRAYDAQ V2 source."
 
       - name: Restore optional persistent debug certificate
         if: ${{ env.BUILD_TARGET == 'android-preview' }}

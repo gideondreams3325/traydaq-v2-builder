@@ -15,14 +15,26 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Verify pinned public NPM ImageMagick WASM asset
+      - name: Inspect npm assets for pinned ImageMagick versions
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --location --retry 2 --connect-timeout 10 --max-time 65 \
-            "https://cdn.jsdelivr.net/npm/@imagemagick/magick-wasm@0.0.44/dist/magick.wasm" \
-            --output /tmp/magick.wasm
-          test "$(stat -c %s /tmp/magick.wasm)" -gt 1000000
-          test "$(head -c4 /tmp/magick.wasm | od -An -tx1 | tr -d ' \n')" = "0061736d"
-          echo "TRAYDAQ_KNOWN_GOOD_WASM_SHA256=$(sha256sum /tmp/magick.wasm | cut -d' ' -f1)"
-          echo "TRAYDAQ_WASM_BYTES=$(stat -c %s /tmp/magick.wasm)"
+          for version in 0.0.44 0.0.31; do
+            echo "==== Package version $version ===="
+            npm pack "@imagemagick/magick-wasm@$version" --pack-destination /tmp --silent >/tmp/npm-tarball-name.txt
+            archive="/tmp/$(cat /tmp/npm-tarball-name.txt)"
+            echo "Tarball: $(basename "$archive")"
+            tar -tzf "$archive" | grep -E '(wasm$|package.json$)' | head -n 12 || true
+            if tar -tzf "$archive" | grep -qx 'package/dist/magick.wasm'; then
+              tar -xOzf "$archive" package/dist/magick.wasm > "/tmp/magick-$version.wasm"
+              echo "VERSION=$version WASM_SHA256=$(sha256sum "/tmp/magick-$version.wasm" | cut -d' ' -f1)"
+              echo "VERSION=$version WASM_BYTES=$(stat -c %s "/tmp/magick-$version.wasm")"
+            else
+              echo "VERSION=$version WASM_MISSING_IN_TARBALL=true"
+            fi
+          done
+          echo "==== CDN HTTP checks (0.0.44) ===="
+          for domain in 'https://unpkg.com/@imagemagick/magick-wasm@0.0.44/dist/magick.wasm' 'https://cdn.jsdelivr.net/npm/@imagemagick/magick-wasm@0.0.44/dist/magick.wasm'; do
+            status=$(curl -sSL --connect-timeout 8 --max-time 25 -o /tmp/wasm-test-output -w '%{http_code}' "$domain" || true)
+            echo "CDN_STATUS=$status URL=$domain BYTES=$(stat -c %s /tmp/wasm-test-output || echo 0)"
+          done

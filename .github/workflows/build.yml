@@ -72,12 +72,20 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Use preinstalled GitHub Actions Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -d "$ANDROID_HOME"
+          command -v sdkmanager
+          sdkmanager --version
+          echo "$ANDROID_HOME/build-tools/36.0.0" >> "$GITHUB_PATH"
 
       - name: Install Android API 36
         shell: bash
-        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+        run: |
+          set -euo pipefail
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
       - name: Install native packages
         run: npm install --no-audit --no-fund

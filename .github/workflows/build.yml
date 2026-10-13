@@ -107,6 +107,8 @@ jobs:
           test -s supabase/functions/publish-picture/index.ts
           test -s supabase/migrations/202610120016_publication.sql
           grep -q 'Publish to For You' src/components/ReviewerWorkspace.tsx
+          grep -q 'Picture not published' src/components/ReviewerWorkspace.tsx
+          grep -q 'magick-wasm@0.0.44' supabase/functions/publish-picture/index.ts
 
       - name: Verify dedicated Security Team hub
         working-directory: private-src

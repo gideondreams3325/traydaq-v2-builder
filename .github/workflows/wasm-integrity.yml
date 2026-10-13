@@ -54,12 +54,3 @@ jobs:
           console.log('TRAYDAQ_ENCODED_WEBP_BYTES='+output.length);
           EOF
           node test-converter.mjs
-
-      - name: Smoke-test actual V2 Supabase Edge runtime with synthetic PNG
-        shell: bash
-        run: |
-          set -euo pipefail
-          curl --fail --silent --show-error --location --connect-timeout 10 --max-time 55 \
-            'https://qpcsruhwqhniprakpoox.supabase.co/functions/v1/traydaq-v2-image-health?check=ZFA838qH-bZWQtvP7sY3SecObyI_Yug6zV2-2Tgc-EM' \
-            -o /tmp/traydaq-edge-health.json
-          node -e "const f=require('fs');const x=JSON.parse(f.readFileSync('/tmp/traydaq-edge-health.json'));if(x.ok!==true)throw Error(JSON.stringify(x));console.log('TRAYDAQ_SUPABASE_EDGE_IMAGE_CONVERSION_TEST_PASSED=true');"

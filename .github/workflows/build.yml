@@ -2,6 +2,7 @@ name: TRAYDAQ V2 Public Builder
 
 # The publicly visible workflow fetches ONLY the private TRAYDAQ V2 main branch.
 # Never publish private source or run untrusted pull-request code with its token.
+# Rebuild: 2026-10-13 email OTP diagnostics + readable error messages from V2 main.
 on:
   push:
     branches: [main]

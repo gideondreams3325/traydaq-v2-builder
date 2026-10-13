@@ -22,7 +22,7 @@ jobs:
           mkdir -p /tmp/traydaq-magick
           cd /tmp/traydaq-magick
           npm init -y >/dev/null
-          npm install --no-audit --no-fund @imagemagick/magick-wasm@0.0.44
+          npm install --no-audit --no-fund @imagemagick/magick-wasm@0.0.44 pngjs@7
           wasm="./node_modules/@imagemagick/magick-wasm/dist/x86/magick.wasm"
           test -s "$wasm"
           test "$(head -c4 "$wasm" | od -An -tx1 | tr -d ' \n')" = "0061736d"
@@ -38,8 +38,10 @@ jobs:
           import { ImageMagick, initializeImageMagick, MagickFormat } from '@imagemagick/magick-wasm';
           const wasm=readFileSync('./node_modules/@imagemagick/magick-wasm/dist/x86/magick.wasm');
           await initializeImageMagick(wasm);
-          const minimalPng=Uint8Array.from(Buffer.from(
-            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO0fcL8AAAAASUVORK5CYII=','base64'));
+          const { PNG } = await import('pngjs');
+          const fixture=new PNG({width:1,height:1});
+          fixture.data.set([255,0,0,255]);
+          const minimalPng=new Uint8Array(PNG.sync.write(fixture));
           let output;
           const result=ImageMagick.read(minimalPng,img=>{
             if(img.width!==1 || img.height!==1)throw Error('Unexpected PNG dimensions');

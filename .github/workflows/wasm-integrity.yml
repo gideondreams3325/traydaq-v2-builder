@@ -15,26 +15,40 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Inspect npm assets for pinned ImageMagick versions
+      - name: Verify ImageMagick 0.0.44 x86 WASM and actual PNG re-encoding
         shell: bash
         run: |
           set -euo pipefail
-          for version in 0.0.44 0.0.31; do
-            echo "==== Package version $version ===="
-            npm pack "@imagemagick/magick-wasm@$version" --pack-destination /tmp --silent >/tmp/npm-tarball-name.txt
-            archive="/tmp/$(cat /tmp/npm-tarball-name.txt)"
-            echo "Tarball: $(basename "$archive")"
-            tar -tzf "$archive" | grep -E '(wasm$|package.json$)' | head -n 12 || true
-            if tar -tzf "$archive" | grep -qx 'package/dist/magick.wasm'; then
-              tar -xOzf "$archive" package/dist/magick.wasm > "/tmp/magick-$version.wasm"
-              echo "VERSION=$version WASM_SHA256=$(sha256sum "/tmp/magick-$version.wasm" | cut -d' ' -f1)"
-              echo "VERSION=$version WASM_BYTES=$(stat -c %s "/tmp/magick-$version.wasm")"
-            else
-              echo "VERSION=$version WASM_MISSING_IN_TARBALL=true"
-            fi
-          done
-          echo "==== CDN HTTP checks (0.0.44) ===="
-          for domain in 'https://unpkg.com/@imagemagick/magick-wasm@0.0.44/dist/magick.wasm' 'https://cdn.jsdelivr.net/npm/@imagemagick/magick-wasm@0.0.44/dist/magick.wasm'; do
-            status=$(curl -sSL --connect-timeout 8 --max-time 25 -o /tmp/wasm-test-output -w '%{http_code}' "$domain" || true)
-            echo "CDN_STATUS=$status URL=$domain BYTES=$(stat -c %s /tmp/wasm-test-output || echo 0)"
-          done
+          mkdir -p /tmp/traydaq-magick
+          cd /tmp/traydaq-magick
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund @imagemagick/magick-wasm@0.0.44
+          wasm="./node_modules/@imagemagick/magick-wasm/dist/x86/magick.wasm"
+          test -s "$wasm"
+          test "$(head -c4 "$wasm" | od -An -tx1 | tr -d ' \n')" = "0061736d"
+          echo "VERSION=0.0.44 X86_WASM_SHA256=$(sha256sum "$wasm" | cut -d' ' -f1)"
+          echo "VERSION=0.0.44 X86_WASM_BYTES=$(stat -c %s "$wasm")"
+          curl --fail --silent --show-error --location --connect-timeout 10 --max-time 70 \
+            'https://cdn.jsdelivr.net/npm/@imagemagick/magick-wasm@0.0.44/dist/x86/magick.wasm' \
+            -o /tmp/traydaq-cdn-magick.wasm
+          cmp "$wasm" /tmp/traydaq-cdn-magick.wasm
+          echo 'CDN_X86_WASM_VERIFIED=true'
+          cat > test-converter.mjs <<'EOF'
+          import {readFileSync} from 'node:fs';
+          import { ImageMagick, initializeImageMagick, MagickFormat } from '@imagemagick/magick-wasm';
+          const wasm=readFileSync('./node_modules/@imagemagick/magick-wasm/dist/x86/magick.wasm');
+          await initializeImageMagick(wasm);
+          const minimalPng=Uint8Array.from(Buffer.from(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO0fcL8AAAAASUVORK5CYII=','base64'));
+          let output;
+          const result=ImageMagick.read(minimalPng,img=>{
+            if(img.width!==1 || img.height!==1)throw Error('Unexpected PNG dimensions');
+            return Uint8Array.from(img.write(MagickFormat.WebP,data=>data));
+          });
+          output = await Promise.resolve(result);
+          const tag = (start) => String.fromCharCode(...output.subarray(start,start+4));
+          if(tag(0)!=='RIFF'||tag(8)!=='WEBP'||output.length<20)throw Error('WebP encoding failed');
+          console.log('TRAYDAQ_PNG_TO_WEBP_TEST_PASSED=true');
+          console.log('TRAYDAQ_ENCODED_WEBP_BYTES='+output.length);
+          EOF
+          node test-converter.mjs

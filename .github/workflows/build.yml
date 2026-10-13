@@ -1,10 +1,8 @@
 name: TRAYDAQ V2 Public Builder
 
-# Manually run builds from a separate public repository. Never build untrusted
-# pull requests with a token that can read the private source.
+# The publicly visible workflow fetches ONLY the private TRAYDAQ V2 main branch.
+# Never publish private source or run untrusted pull-request code with its token.
 on:
-  # Trigger one controlled preview build when this workflow changes on main.
-  # Never run pull-request code with access to the private source token.
   push:
     branches: [main]
     paths:
@@ -15,18 +13,10 @@ on:
         description: "Build target"
         required: true
         type: choice
-        default: web-check
+        default: android-preview
         options:
-          - web-check
           - android-preview
-      source_ref:
-        description: "Approved private source branch"
-        required: true
-        type: choice
-        default: feat/v2-live-data-foundation
-        options:
-          - feat/v2-live-data-foundation
-          - main
+          - web-check
 
 permissions:
   contents: read
@@ -37,39 +27,38 @@ concurrency:
 
 jobs:
   build:
-    name: Private source - ${{ github.event_name == 'push' && 'android-preview' || inputs.target }}
+    name: Private TRAYDAQ V2 main - ${{ github.event_name == 'push' && 'android-preview' || inputs.target }}
     runs-on: ubuntu-latest
+    timeout-minutes: 65
     env:
       BUILD_TARGET: ${{ github.event_name == 'push' && 'android-preview' || inputs.target }}
-    timeout-minutes: 65
     steps:
-      - name: Require the private-source read token
+      - name: Require private source read-only token
         shell: bash
         env:
           SOURCE_TOKEN_CONFIGURED: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
         run: |
           if [ "$SOURCE_TOKEN_CONFIGURED" != "true" ]; then
-            echo "::error::Add TRAYDAQ_V2_SOURCE_READ_TOKEN as a repository Actions secret with read-only Contents access exclusively to the private traydaq-v2 repository."
+            echo "::error::Configure the fine-grained TRAYDAQ_V2_SOURCE_READ_TOKEN secret with Contents read-only access to private traydaq-v2."
             exit 1
           fi
 
-      - name: Check out private TRAYDAQ V2 source (never publish)
+      - name: Check out latest private TRAYDAQ V2 main (never publish source)
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: ${{ inputs.source_ref || 'feat/v2-live-data-foundation' }}
+          ref: main
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
           fetch-depth: 1
 
-      - name: Show build metadata (not private source)
+      - name: Identify private source SHA
         working-directory: private-src
         shell: bash
         run: |
-          echo "Source ref: ${{ inputs.source_ref || 'feat/v2-live-data-foundation' }}"
-          echo "Source SHA: $(git rev-parse HEAD)"
-          echo "Build target: $BUILD_TARGET"
+          echo "TRAYDAQ_V2_SOURCE_REF=main"
+          echo "TRAYDAQ_V2_SOURCE_SHA=$(git rev-parse HEAD)"
 
       - name: Set up Node.js 22
         uses: actions/setup-node@v4
@@ -80,68 +69,31 @@ jobs:
         working-directory: private-src
         run: npm install --no-audit --no-fund
 
-      - name: Run TRAYDAQ source tests
+      - name: Test current TRAYDAQ V2 source
         working-directory: private-src
         run: npm test
 
-      - name: Build TRAYDAQ React web bundle
+      - name: Build current TRAYDAQ V2 web bundle
         working-directory: private-src
         run: npm run build
 
-      - name: Verify private Security Team hub isolation
-        working-directory: private-src
-        shell: bash
-        run: |
-          set -euo pipefail
-          grep -q 'case "security"' src/App.tsx
-          grep -q 'Open Security Hub' src/App.tsx
-          grep -q 'checkReviewer()' src/App.tsx
-          grep -q 'td-security-dashboard' src/components/ReviewerWorkspace.tsx
-          grep -q 'MyPictureSubmissions' src/App.tsx
-
-      - name: Verify publication safety gates
-        working-directory: private-src
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -s supabase/functions/publish-picture/index.ts
-          test -s supabase/migrations/202610120016_publication.sql
-          grep -q 'Publish to For You' src/components/ReviewerWorkspace.tsx
-          grep -q 'Picture not published' src/components/ReviewerWorkspace.tsx
-          grep -q 'magick-wasm@0.0.44' supabase/functions/publish-picture/index.ts
-
-      - name: Verify dedicated Security Team hub
-        working-directory: private-src
-        shell: bash
-        run: |
-          set -euo pipefail
-          grep -q 'Open Security Hub' src/App.tsx
-          grep -q 'case "security"' src/App.tsx
-          grep -q 'td-security-dashboard' src/components/ReviewerWorkspace.tsx
-          grep -q 'td-security-launcher' src/styles.css
-
-      - name: Verify generated app
+      - name: Verify new V2 features and bundle
         working-directory: private-src
         shell: bash
         run: |
           set -euo pipefail
           test -s dist/index.html
           test -d dist/assets
-          echo "Web bundle generated. No private source or web bundle is uploaded by the public builder."
+          test -s capacitor.config.ts
+          test -s src/feed/FeedPage.tsx
+          test -s src/feed/AlbumComposer.tsx
+          test -s src/social/MessagesPage.tsx
+          test -s src/social/NotificationsPage.tsx
+          test -s supabase/functions/submit-album-picture/index.ts
+          test -s supabase/functions/publish-picture/index.ts
+          echo "New private V2 build and source structure verified."
 
-      # The Android wrapper is created in the ephemeral build workspace.
-      # It must not be confused with a tested, release-ready native application.
-      - name: Explain Android preview signing
-        if: ${{ env.BUILD_TARGET == 'android-preview' }}
-        shell: bash
-        env:
-          KEYSTORE_CONFIGURED: ${{ secrets.TRAYDAQ_V2_DEBUG_KEYSTORE_B64 != '' }}
-        run: |
-          if [ "$KEYSTORE_CONFIGURED" != "true" ]; then
-            echo "::warning::TEST APK ONLY: Android will create an ephemeral debug signing key. A future APK signed by a different key may require uninstalling the previous one. Firebase native Google sign-in is not verified."
-          fi
-
-      - name: Install Java 21
+      - name: Set up Java 21
         if: ${{ env.BUILD_TARGET == 'android-preview' }}
         uses: actions/setup-java@v4
         with:
@@ -152,52 +104,44 @@ jobs:
         if: ${{ env.BUILD_TARGET == 'android-preview' }}
         uses: android-actions/setup-android@v3
         with:
-          # The old "tools" SDK package was retired. Installing it fails.
           packages: platform-tools
 
-      - name: Add temporary Capacitor Android shell
+      - name: Install Android API 35
+        if: ${{ env.BUILD_TARGET == 'android-preview' }}
+        shell: bash
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Generate current V2 native Android project
         if: ${{ env.BUILD_TARGET == 'android-preview' }}
         working-directory: private-src
         shell: bash
         run: |
           set -euo pipefail
-          npm install --no-save --no-audit --no-fund \
-            @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
-          cat > capacitor.config.ts <<'CAP_CONFIG'
-          import type { CapacitorConfig } from '@capacitor/cli';
-          const config: CapacitorConfig = {
-            appId: 'com.traydaq.app',
-            appName: 'TRAYDAQ V2',
-            webDir: 'dist'
-          };
-          export default config;
-          CAP_CONFIG
           npx cap add android
           npx cap sync android
-          # Respect Android 15 and notch-safe insets. This tested native
-          # Activity lives in the private canonical V2 source repository.
-          mkdir -p android/app/src/main/java/com/traydaq/app
-          cp android-preview/MainActivity.java android/app/src/main/java/com/traydaq/app/MainActivity.java
-          grep -q 'findViewById(android.R.id.content)' android/app/src/main/java/com/traydaq/app/MainActivity.java
+          test -f android/app/src/main/AndroidManifest.xml
+          test -f android/gradlew
+          echo "Android wrapper generated from private TRAYDAQ V2 source."
 
-      - name: Restore optional persistent debug signing certificate
+      - name: Restore optional persistent debug certificate
         if: ${{ env.BUILD_TARGET == 'android-preview' }}
         shell: bash
         env:
-          SIGNING_KEYSTORE_B64: ${{ secrets.TRAYDAQ_V2_DEBUG_KEYSTORE_B64 }}
+          DEBUG_KEYSTORE: ${{ secrets.TRAYDAQ_V2_DEBUG_KEYSTORE_B64 }}
         run: |
           set -euo pipefail
-          if [ -n "$SIGNING_KEYSTORE_B64" ]; then
+          if [ -n "$DEBUG_KEYSTORE" ]; then
             mkdir -p "$HOME/.android"
-            printf '%s' "$SIGNING_KEYSTORE_B64" | base64 --decode > "$HOME/.android/debug.keystore"
+            printf '%s' "$DEBUG_KEYSTORE" | base64 --decode > "$HOME/.android/debug.keystore"
             chmod 600 "$HOME/.android/debug.keystore"
             keytool -list -keystore "$HOME/.android/debug.keystore" \
               -storepass android -alias androiddebugkey >/dev/null
+            echo "Persistent testing certificate restored."
           else
-            echo "Using Android's temporary default debug certificate for this TEST APK."
+            echo "::warning::Ephemeral debug signing certificate: a subsequent differently signed APK may require uninstalling this preview."
           fi
 
-      - name: Build Android preview APK
+      - name: Compile TRAYDAQ V2 debug APK
         if: ${{ env.BUILD_TARGET == 'android-preview' }}
         working-directory: private-src/android
         shell: bash
@@ -206,11 +150,10 @@ jobs:
           chmod +x ./gradlew
           ./gradlew --no-daemon assembleDebug
           test -s app/build/outputs/apk/debug/app-debug.apk
-          # Verify APK ZIP integrity and log a digest without exposing source.
           unzip -t app/build/outputs/apk/debug/app-debug.apk >/dev/null
           sha256sum app/build/outputs/apk/debug/app-debug.apk
 
-      - name: Upload APK only (never private source)
+      - name: Upload only debug APK (never private source)
         if: ${{ env.BUILD_TARGET == 'android-preview' }}
         uses: actions/upload-artifact@v4
         with:

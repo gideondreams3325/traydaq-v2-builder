@@ -26,6 +26,8 @@ jobs:
       CI: "1"
       EXPO_NO_TELEMETRY: "1"
       NODE_OPTIONS: "--max-old-space-size=6144"
+      # The actual UUID is an Actions variable, not a made-up identifier.
+      EXPO_PUBLIC_EAS_PROJECT_ID: ${{ vars.TRAYDAQ_V2_EAS_PROJECT_ID }}
     defaults:
       run:
         working-directory: private-src/mobile
@@ -83,6 +85,32 @@ jobs:
         run: |
           set -euo pipefail
           sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Configure optional Android Firebase Cloud Messaging
+        shell: bash
+        env:
+          FIREBASE_CLIENT_B64: ${{ secrets.TRAYDAQ_V2_GOOGLE_SERVICES_JSON_B64 }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${EXPO_PUBLIC_EAS_PROJECT_ID:-}" && -z "${FIREBASE_CLIENT_B64:-}" ]]; then
+            echo "::notice::Background push not configured. Secure in-app order alerts remain enabled."
+            exit 0
+          fi
+          if [[ -z "${EXPO_PUBLIC_EAS_PROJECT_ID:-}" || -z "${FIREBASE_CLIENT_B64:-}" ]]; then
+            echo "::error::Configure both TRAYDAQ_V2_EAS_PROJECT_ID (variable) and TRAYDAQ_V2_GOOGLE_SERVICES_JSON_B64 (secret)."
+            exit 1
+          fi
+          printf '%s' "$FIREBASE_CLIENT_B64" | base64 -d > google-services.json
+          chmod 600 google-services.json
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const data=JSON.parse(fs.readFileSync('google-services.json','utf8'));
+          const expected='com.traydaq.app';
+          const match=(data.client||[]).some(c=>c.client_info?.android_client_info?.package_name===expected);
+          if(!match)throw new Error('Firebase Android client must use package '+expected);
+          if(data.project_info?.project_id!=='traydaq')throw new Error('FCM Firebase project must be traydaq.');
+          console.log('Firebase Android client package and project validated; credentials remain private.');
+          NODE
 
       - name: Install native packages
         run: npm install --no-audit --no-fund

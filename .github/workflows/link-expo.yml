@@ -1,0 +1,110 @@
+name: Link TRAYDAQ V2 to an Expo EAS Project
+
+# One-time setup for an existing React Native app. It does NOT create a
+# second codebase, change app identity, publish APKs, or expose Expo tokens.
+on:
+  workflow_dispatch:
+    inputs:
+      expo_account:
+        description: "Your Expo account username (not your email/password)"
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: traydaq-v2-expo-link
+  cancel-in-progress: false
+
+jobs:
+  link:
+    name: Create or link the existing TRAYDAQ V2 Expo project
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+      EXPO_TOKEN: ${{ secrets.TRAYDAQ_V2_EXPO_TOKEN }}
+      EXPO_ACCOUNT: ${{ inputs.expo_account }}
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - name: Check account and private credentials
+        working-directory: .
+        env:
+          EXPO_TOKEN_CONFIGURED: ${{ secrets.TRAYDAQ_V2_EXPO_TOKEN != '' }}
+          SOURCE_TOKEN_CONFIGURED: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$EXPO_TOKEN_CONFIGURED" != "true" ]]; then
+            echo "::error::Add TRAYDAQ_V2_EXPO_TOKEN to the builder's Actions repository secrets first."
+            exit 1
+          fi
+          if [[ "$SOURCE_TOKEN_CONFIGURED" != "true" ]]; then
+            echo "::error::TRAYDAQ_V2_SOURCE_READ_TOKEN is required for read-only access to TRAYDAQ V2."
+            exit 1
+          fi
+          if [[ ! "$EXPO_ACCOUNT" =~ ^[A-Za-z0-9_-]{2,70}$ ]]; then
+            echo "::error::Enter your Expo account username, not an email or access token."
+            exit 1
+          fi
+
+      - name: Checkout private TRAYDAQ V2 React Native source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/react-native-expo-v2
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install app dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Link existing Android app to Expo account
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The CLI can write an EAS ID into a static Expo configuration.
+          # Temporarily hide the dynamic configuration in this ephemeral checkout.
+          mv app.config.js "$RUNNER_TEMP/traydaq-app.config.js"
+          npx --yes eas-cli@latest project:init \
+            --account "$EXPO_ACCOUNT" --non-interactive --json \
+            > "$RUNNER_TEMP/traydaq-eas-init.json"
+          mv "$RUNNER_TEMP/traydaq-app.config.js" app.config.js
+
+          node - <<'NODE'
+          const fs=require('fs');
+          const c=JSON.parse(fs.readFileSync('app.json','utf8'));
+          const id=c.expo?.extra?.eas?.projectId;
+          if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id||'')){
+            throw Error('EAS setup finished without a valid project ID. Check the project in the Expo dashboard.');
+          }
+          const owner=process.env.EXPO_ACCOUNT;
+          const slug=c.expo.slug;
+          const url='https://expo.dev/accounts/'+encodeURIComponent(owner)+'/projects/'+encodeURIComponent(slug);
+          console.log('EXPO_PROJECT_ID='+id);
+          console.log('EXPO_PROJECT_URL='+url);
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+            '### TRAYDAQ V2 Expo project linked\n\n'+
+            '- **Project UUID (public):** `'+id+'`\n'+
+            '- **Expo project:** '+url+'\n'+
+            '- **App package:** `com.traydaq.app`\n\n'+
+            'Send only the **project UUID** back to ChatGPT (not your Expo token). '+
+            'The builder will then be connected to this project.\n');
+          NODE
+
+      - name: Explain next steps
+        working-directory: .
+        run: |
+          echo "::notice::Link created. Open this run's Summary for the Expo project ID."
+          echo "::notice::Never post your Expo token or FCM service-account private key in a chat."

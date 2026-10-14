@@ -3,12 +3,17 @@ name: Link TRAYDAQ V2 to an Expo EAS Project
 # One-time setup for an existing React Native app. It does NOT create a
 # second codebase, change app identity, publish APKs, or expose Expo tokens.
 on:
+  # Runs once on changes to this setup workflow, using the saved Expo token.
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/link-expo.yml"
   workflow_dispatch:
     inputs:
       expo_account:
-        description: "Your Expo account username (not your email/password)"
+        description: "Optional Expo username if the token can access multiple accounts"
         type: string
-        required: true
+        required: false
 
 permissions:
   contents: read
@@ -47,8 +52,8 @@ jobs:
             echo "::error::TRAYDAQ_V2_SOURCE_READ_TOKEN is required for read-only access to TRAYDAQ V2."
             exit 1
           fi
-          if [[ ! "$EXPO_ACCOUNT" =~ ^[A-Za-z0-9_-]{2,70}$ ]]; then
-            echo "::error::Enter your Expo account username, not an email or access token."
+          if [[ -n "${EXPO_ACCOUNT:-}" && ! "$EXPO_ACCOUNT" =~ ^[A-Za-z0-9_-]{2,70}$ ]]; then
+            echo "::error::An optional Expo username must not be an email or access token."
             exit 1
           fi
 
@@ -77,8 +82,11 @@ jobs:
           # The CLI can write an EAS ID into a static Expo configuration.
           # Temporarily hide the dynamic configuration in this ephemeral checkout.
           mv app.config.js "$RUNNER_TEMP/traydaq-app.config.js"
-          npx --yes eas-cli@latest project:init \
-            --account "$EXPO_ACCOUNT" --non-interactive --json \
+          ARGS=(--non-interactive --json)
+          if [[ -n "${EXPO_ACCOUNT:-}" ]]; then
+            ARGS+=(--account "$EXPO_ACCOUNT")
+          fi
+          npx --yes eas-cli@latest project:init "${ARGS[@]}" \
             > "$RUNNER_TEMP/traydaq-eas-init.json"
           mv "$RUNNER_TEMP/traydaq-app.config.js" app.config.js
 
@@ -91,7 +99,9 @@ jobs:
           }
           const owner=process.env.EXPO_ACCOUNT;
           const slug=c.expo.slug;
-          const url='https://expo.dev/accounts/'+encodeURIComponent(owner)+'/projects/'+encodeURIComponent(slug);
+          const url=owner?
+            'https://expo.dev/accounts/'+encodeURIComponent(owner)+'/projects/'+encodeURIComponent(slug):
+            'https://expo.dev/projects';
           console.log('EXPO_PROJECT_ID='+id);
           console.log('EXPO_PROJECT_URL='+url);
           fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,

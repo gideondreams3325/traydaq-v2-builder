@@ -82,7 +82,7 @@ jobs:
           # The CLI can write an EAS ID into a static Expo configuration.
           # Temporarily hide the dynamic configuration in this ephemeral checkout.
           mv app.config.js "$RUNNER_TEMP/traydaq-app.config.js"
-          ARGS=(--non-interactive --json)
+          ARGS=(--non-interactive --json --force)
           if [[ -n "${EXPO_ACCOUNT:-}" ]]; then
             ARGS+=(--account "$EXPO_ACCOUNT")
           fi

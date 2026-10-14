@@ -1,7 +1,7 @@
 name: TRAYDAQ V2 Native Android APK Builder
 
 # Public runner builds private React Native source, not the old web/Capacitor main.
-# Verified native source ref (linked Expo project and optional FCM): 15f82ea64d8772929641bce903be4ee7054ac7ee
+# Verified native source ref (private Firebase client and linked Expo EAS project): 7edc836f0cd4d488f74f0152bb743f5402b44a87
 # Never print or upload private source; only publish the signed testing APK.
 on:
   push:
@@ -86,32 +86,40 @@ jobs:
           set -euo pipefail
           sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Configure optional Android Firebase Cloud Messaging
+      - name: Configure TRAYDAQ Firebase Android client and Expo EAS project
         shell: bash
         env:
           FIREBASE_CLIENT_B64: ${{ secrets.TRAYDAQ_V2_GOOGLE_SERVICES_JSON_B64 }}
         run: |
           set -euo pipefail
-          if [[ -z "${FIREBASE_CLIENT_B64:-}" ]]; then
-            echo "::notice::Android FCM client file not configured; in-app order alerts remain available."
-            exit 0
-          fi
           EXPO_PUBLIC_EAS_PROJECT_ID="$(node -p "require('./app.json').expo.extra?.eas?.projectId || ''")"
           if [[ ! "$EXPO_PUBLIC_EAS_PROJECT_ID" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$ ]]; then
-            echo "::error::Expo EAS project not linked in app.json."
+            echo "::error::TRAYDAQ V2 Expo project UUID missing or invalid in app.json."
             exit 1
           fi
           echo "EXPO_PUBLIC_EAS_PROJECT_ID=$EXPO_PUBLIC_EAS_PROJECT_ID" >> "$GITHUB_ENV"
-          printf '%s' "$FIREBASE_CLIENT_B64" | base64 -d > google-services.json
+          # The client-side google-services.json ships from the PRIVATE source repository.
+          # Preserve a one-time secret fallback for prior builders; never publish it as an artifact.
+          if [[ ! -f google-services.json && -n "${FIREBASE_CLIENT_B64:-}" ]]; then
+            printf '%s' "$FIREBASE_CLIENT_B64" | base64 -d > google-services.json
+          fi
+          if [[ ! -f google-services.json ]]; then
+            echo "::notice::FCM Android client missing; private in-app order alerts remain enabled."
+            exit 0
+          fi
           chmod 600 google-services.json
           node - <<'NODE'
           const fs=require('node:fs');
-          const data=JSON.parse(fs.readFileSync('google-services.json','utf8'));
-          const expected='com.traydaq.app';
-          const match=(data.client||[]).some(c=>c.client_info?.android_client_info?.package_name===expected);
-          if(!match)throw new Error('Firebase Android client must use package '+expected);
-          if(data.project_info?.project_id!=='traydaq')throw new Error('FCM Firebase project must be traydaq.');
-          console.log('Firebase Android client package and project validated; credentials remain private.');
+          const info=JSON.parse(fs.readFileSync('google-services.json','utf8'));
+          const match=(info.client||[]).some(c=>
+            c.client_info?.android_client_info?.package_name==='com.traydaq.app');
+          if(!match || info.project_info?.project_id!=='traydaq' ||
+             info.project_info?.project_number!=='378411176192'){
+            throw new Error('Firebase client does not match TRAYDAQ V2 Android registration.');
+          }
+          if('private_key' in info || 'private_key_id' in info)
+            throw new Error('Never put a Firebase Admin service-account key in the Android APK.');
+          console.log('Verified TRAYDAQ V2 Android Firebase client (no private keys).');
           NODE
 
       - name: Install native packages

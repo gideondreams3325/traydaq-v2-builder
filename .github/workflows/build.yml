@@ -1,7 +1,7 @@
 name: TRAYDAQ V2 Native Android APK Builder
 
 # Public runner builds private React Native source, not the old web/Capacitor main.
-# Verified native source ref (Android-compatible push self-test confirmation): f5a211da13a44e2d52cf038086f8e44f764c226e
+# Verified native source ref (linked Expo project and optional FCM): 15f82ea64d8772929641bce903be4ee7054ac7ee
 # Never print or upload private source; only publish the signed testing APK.
 on:
   push:
@@ -26,8 +26,8 @@ jobs:
       CI: "1"
       EXPO_NO_TELEMETRY: "1"
       NODE_OPTIONS: "--max-old-space-size=6144"
-      # The actual UUID is an Actions variable, not a made-up identifier.
-      EXPO_PUBLIC_EAS_PROJECT_ID: ${{ vars.TRAYDAQ_V2_EAS_PROJECT_ID }}
+      # Expo's real project UUID is committed in the native app.json.
+      # FCM credentials remain private and entirely optional.
     defaults:
       run:
         working-directory: private-src/mobile
@@ -92,14 +92,16 @@ jobs:
           FIREBASE_CLIENT_B64: ${{ secrets.TRAYDAQ_V2_GOOGLE_SERVICES_JSON_B64 }}
         run: |
           set -euo pipefail
-          if [[ -z "${EXPO_PUBLIC_EAS_PROJECT_ID:-}" && -z "${FIREBASE_CLIENT_B64:-}" ]]; then
-            echo "::notice::Background push not configured. Secure in-app order alerts remain enabled."
+          if [[ -z "${FIREBASE_CLIENT_B64:-}" ]]; then
+            echo "::notice::Android FCM client file not configured; in-app order alerts remain available."
             exit 0
           fi
-          if [[ -z "${EXPO_PUBLIC_EAS_PROJECT_ID:-}" || -z "${FIREBASE_CLIENT_B64:-}" ]]; then
-            echo "::error::Configure both TRAYDAQ_V2_EAS_PROJECT_ID (variable) and TRAYDAQ_V2_GOOGLE_SERVICES_JSON_B64 (secret)."
+          EXPO_PUBLIC_EAS_PROJECT_ID="$(node -p "require('./app.json').expo.extra?.eas?.projectId || ''")"
+          if [[ ! "$EXPO_PUBLIC_EAS_PROJECT_ID" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$ ]]; then
+            echo "::error::Expo EAS project not linked in app.json."
             exit 1
           fi
+          echo "EXPO_PUBLIC_EAS_PROJECT_ID=$EXPO_PUBLIC_EAS_PROJECT_ID" >> "$GITHUB_ENV"
           printf '%s' "$FIREBASE_CLIENT_B64" | base64 -d > google-services.json
           chmod 600 google-services.json
           node - <<'NODE'

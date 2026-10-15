@@ -24,6 +24,7 @@ name: TRAYDAQ V2 Native Android APK Builder
 # Verified native source ref (fresh blank white design canvas; saved previous UI source): 4b5d52181188b87bd027b72059cdf22a2b922880
 # Never print or upload private source; only publish the signed testing APK.
 # Rebuild V2 source feat/v2-new-home-feed after aligning seven stale regression assertions with current native components.
+# Rebuild native V2 after 125 tests passed and fixing current TypeScript catalog/Home errors.
 on:
   push:
     branches: [main]

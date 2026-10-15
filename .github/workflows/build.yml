@@ -122,7 +122,7 @@ jobs:
               exit 1
             fi
             CERT_SHA=$(sed -n 's/^[[:space:]]*SHA1: //p' "$RUNNER_TEMP/traydaq-keystore-check.txt" | head -1 | tr -d ':' | tr '[:upper:]' '[:lower:]')
-            REGISTERED_SHAS=$(node -e "const j=require('./private-src/mobile/google-services.json'); process.stdout.write((j.client||[]).flatMap(c=>c.oauth_client||[]).filter(x=>x.client_type===1&&x.android_info?.package_name==='com.traydaq.app').map(x=>(x.android_info?.certificate_hash||'').replace(/:/g,'').toLowerCase()).join(' '))")
+            REGISTERED_SHAS=$(node -e "const j=require('./google-services.json'); process.stdout.write((j.client||[]).flatMap(c=>c.oauth_client||[]).filter(x=>x.client_type===1&&x.android_info?.package_name==='com.traydaq.app').map(x=>(x.android_info?.certificate_hash||'').replace(/:/g,'').toLowerCase()).join(' '))")
             if [[ -z "$CERT_SHA" || " $REGISTERED_SHAS " != *" $CERT_SHA "* ]]; then
               echo "::error::Permanent keystore SHA-1 not registered in the app's google-services.json. Download the updated Firebase Android configuration and rebuild."
               exit 1

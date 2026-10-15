@@ -182,9 +182,17 @@ jobs:
           fi
           CERT_SHA=$("$SIGNER" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-1 digest: //p' | head -1)
           REGISTERED_SHA=$(node -e "const j=require('./google-services.json'); const c=j.client.flatMap(x=>x.oauth_client||[]).find(x=>x.client_type===1); process.stdout.write(c?.android_info?.certificate_hash||'')")
-          if [[ -n "$REGISTERED_SHA" && "${CERT_SHA,,}" != "${REGISTERED_SHA,,}" ]]; then
-            echo "::warning::Installed test APK signing SHA-1 does not match the registered Google Sign-In Android OAuth client."
+          if [[ -z "$REGISTERED_SHA" ]]; then
+            echo "::error::Google Sign-In Android OAuth client is missing from google-services.json."
+            exit 1
           fi
+          if [[ "${CERT_SHA,,}" != "${REGISTERED_SHA,,}" ]]; then
+            echo "::error::Google Sign-In cannot work: APK signer SHA-1 differs from Firebase Android OAuth registration."
+            echo "::error::Register the APK signing SHA-1 in Firebase for com.traydaq.app and rebuild with an updated google-services.json, or configure the matching persistent upload keystore."
+            echo "Actual APK signer SHA-1: $CERT_SHA"
+            exit 1
+          fi
+          echo "Verified Google Sign-In Android OAuth certificate matches signed APK."
 
       - name: Verify native APK is installable and has an offline bundle
         shell: bash

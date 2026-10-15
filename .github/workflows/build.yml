@@ -81,6 +81,55 @@ jobs:
         with:
           node-version: "22"
 
+      # Validate private signing credentials before the 10-minute native compile.
+      # Fail safely without printing any secret, keystore bytes, or passwords.
+      - name: Preflight persistent Android keystore and registered Firebase SHA
+        shell: bash
+        env:
+          TRAYDAQ_SIGN_JKS_B64: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEYSTORE_B64 }}
+          TRAYDAQ_SIGN_STOREPASS: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEYSTORE_PASSWORD }}
+          TRAYDAQ_SIGN_KEYPASS: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEY_PASSWORD }}
+          TRAYDAQ_SIGN_ALIAS: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${TRAYDAQ_SIGN_JKS_B64:-}" ]]; then
+            echo "::warning::No persistent keystore configured; Google Sign-In will not be verified for this test APK."
+          else
+            if [[ -z "${TRAYDAQ_SIGN_STOREPASS:-}" || -z "${TRAYDAQ_SIGN_KEYPASS:-}" || -z "${TRAYDAQ_SIGN_ALIAS:-}" ]]; then
+              echo "::error::One or more persistent keystore password or alias secrets are missing."
+              exit 1
+            fi
+            umask 077
+            export SIGN_PREFLIGHT_KEYSTORE="$RUNNER_TEMP/traydaq-preflight.jks"
+            trap 'rm -f "$SIGN_PREFLIGHT_KEYSTORE" "$RUNNER_TEMP/traydaq-keystore-check.txt"' EXIT
+            python3 - <<'PY'
+          import base64, binascii, os, sys
+          content = ''.join(os.environ.get('TRAYDAQ_SIGN_JKS_B64', '').split())
+          try:
+              data = base64.b64decode(content, validate=True)
+          except (binascii.Error, ValueError):
+              print('::error::TRAYDAQ_V2_UPLOAD_KEYSTORE_B64 is not valid Base64. Copy ONLY the entire Base64 line from the PRIVATE signing kit paste-value file; do not paste a ZIP, a JKS filename, explanatory text or quotation marks.')
+              sys.exit(1)
+          if len(data) < 500 or data[:4] != bytes.fromhex('feedfeed'):
+              print('::error::Decoded TRAYDAQ_V2_UPLOAD_KEYSTORE_B64 is not a valid JKS. Use the original TRAYDAQ signing kit Base64 line.')
+              sys.exit(1)
+          with open(os.environ['SIGN_PREFLIGHT_KEYSTORE'], 'wb') as file:
+              file.write(data)
+          print('Decoded private JKS structure successfully (contents not logged).')
+          PY
+            if ! keytool -list -v -keystore "$SIGN_PREFLIGHT_KEYSTORE" -storepass:env TRAYDAQ_SIGN_STOREPASS -alias "$TRAYDAQ_SIGN_ALIAS" > "$RUNNER_TEMP/traydaq-keystore-check.txt" 2>&1; then
+              echo "::error::Keystore opened, but its password or key alias did not match. Recheck the signing kit values."
+              exit 1
+            fi
+            CERT_SHA=$(sed -n 's/^[[:space:]]*SHA1: //p' "$RUNNER_TEMP/traydaq-keystore-check.txt" | head -1 | tr -d ':' | tr '[:upper:]' '[:lower:]')
+            REGISTERED_SHAS=$(node -e "const j=require('./private-src/mobile/google-services.json'); process.stdout.write((j.client||[]).flatMap(c=>c.oauth_client||[]).filter(x=>x.client_type===1&&x.android_info?.package_name==='com.traydaq.app').map(x=>(x.android_info?.certificate_hash||'').replace(/:/g,'').toLowerCase()).join(' '))")
+            if [[ -z "$CERT_SHA" || " $REGISTERED_SHAS " != *" $CERT_SHA "* ]]; then
+              echo "::error::Permanent keystore SHA-1 not registered in the app's google-services.json. Download the updated Firebase Android configuration and rebuild."
+              exit 1
+            fi
+            echo "::notice::Permanent Android signing certificate matches Firebase OAuth configuration."
+          fi
+
       - name: Set up Android SDK with an available package
         uses: android-actions/setup-android@v3
         with:
@@ -175,7 +224,14 @@ jobs:
             fi
             umask 077
             KEYSTORE="$RUNNER_TEMP/traydaq-private-upload-signing.jks"
-            printf '%s' "$TRAYDAQ_SIGN_JKS_B64" | base64 -d > "$KEYSTORE"
+            # The preflight has validated the JKS; accept harmless line-wrap whitespace safely.
+          export KEYSTORE
+          python3 - <<'PY'
+          import os, base64
+          decoded=base64.b64decode(''.join(os.environ['TRAYDAQ_SIGN_JKS_B64'].split()),validate=True)
+          with open(os.environ['KEYSTORE'],'wb') as output:
+              output.write(decoded)
+          PY
             trap 'rm -f "$KEYSTORE" "$RUNNER_TEMP/traydaq-resigned.apk"' EXIT
             "$SIGNER" sign --ks "$KEYSTORE" --ks-key-alias "$TRAYDAQ_SIGN_ALIAS"               --ks-pass env:TRAYDAQ_SIGN_STOREPASS --key-pass env:TRAYDAQ_SIGN_KEYPASS               --out "$RUNNER_TEMP/traydaq-resigned.apk" "$APK"
             "$SIGNER" verify "$RUNNER_TEMP/traydaq-resigned.apk"

@@ -182,19 +182,25 @@ jobs:
             echo "::warning::A temporary test-signing certificate is in use. For Google Sign-In, register the installed APK's actual SHA or securely configure the permanent upload keystore."
           fi
           CERT_SHA=$("$SIGNER" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-1 digest: //p' | head -1)
-          REGISTERED_SHA=$(node -e "const j=require('./google-services.json'); const c=j.client.flatMap(x=>x.oauth_client||[]).find(x=>x.client_type===1); process.stdout.write(c?.android_info?.certificate_hash||'')")
-          if [[ -z "$REGISTERED_SHA" ]]; then
+          # Firebase may retain multiple Android OAuth clients after adding a new signing key.
+          # Match the actual signed APK against ANY registered SHA-1 for this package.
+          REGISTERED_SHAS=$(node -e "const j=require('./google-services.json'); const shas=(j.client||[]).flatMap(x=>x.oauth_client||[]).filter(c=>c.client_type===1&&c.android_info?.package_name==='com.traydaq.app').map(c=>(c.android_info?.certificate_hash||'').replace(/:/g,'').toLowerCase()).filter(s=>/^[0-9a-f]{40}$/.test(s)); process.stdout.write(shas.join(' '))")
+          if [[ -z "$REGISTERED_SHAS" ]]; then
             echo "::error::Google Sign-In Android OAuth client is missing from google-services.json."
             exit 1
           fi
-          if [[ "${CERT_SHA,,}" != "${REGISTERED_SHA,,}" ]]; then
+          CERT_MATCHED=false
+          for REGISTERED_SHA in $REGISTERED_SHAS; do
+            if [[ "${CERT_SHA,,}" == "$REGISTERED_SHA" ]]; then CERT_MATCHED=true; break; fi
+          done
+          if [[ "$CERT_MATCHED" != "true" ]]; then
             echo "::warning::Google Sign-In is NOT READY: signed APK SHA-1 differs from Firebase Android OAuth registration."
             echo "TRAYDAQ_GOOGLE_SIGN_IN_SHA_MISMATCH=true" >> "$GITHUB_ENV"
             {
               echo "### Google Sign-In not ready for this test APK"
               echo
               echo "- **Actual APK signing SHA-1:** \`$CERT_SHA\`"
-              echo "- **Registered Firebase SHA-1:** \`$REGISTERED_SHA\`"
+              echo "- **Registered Firebase SHA-1 values:** \`$REGISTERED_SHAS\`"
               echo "- APK can be downloaded for other feature testing only; Google Sign-In will fail."
               echo "- Configure one persistent Android signing keystore in the builder's Actions secrets, register its SHA-1 and SHA-256 in Firebase for \`com.traydaq.app\`, and refresh the private app's \`google-services.json\`."
             } >> "$GITHUB_STEP_SUMMARY"

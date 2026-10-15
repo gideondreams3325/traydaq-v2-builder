@@ -188,12 +188,20 @@ jobs:
             exit 1
           fi
           if [[ "${CERT_SHA,,}" != "${REGISTERED_SHA,,}" ]]; then
-            echo "::error::Google Sign-In cannot work: APK signer SHA-1 differs from Firebase Android OAuth registration."
-            echo "::error::Register the APK signing SHA-1 in Firebase for com.traydaq.app and rebuild with an updated google-services.json, or configure the matching persistent upload keystore."
-            echo "Actual APK signer SHA-1: $CERT_SHA"
-            exit 1
+            echo "::warning::Google Sign-In is NOT READY: signed APK SHA-1 differs from Firebase Android OAuth registration."
+            echo "TRAYDAQ_GOOGLE_SIGN_IN_SHA_MISMATCH=true" >> "$GITHUB_ENV"
+            {
+              echo "### Google Sign-In not ready for this test APK"
+              echo
+              echo "- **Actual APK signing SHA-1:** \`$CERT_SHA\`"
+              echo "- **Registered Firebase SHA-1:** \`$REGISTERED_SHA\`"
+              echo "- APK can be downloaded for other feature testing only; Google Sign-In will fail."
+              echo "- Configure one persistent Android signing keystore in the builder's Actions secrets, register its SHA-1 and SHA-256 in Firebase for \`com.traydaq.app\`, and refresh the private app's \`google-services.json\`."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "TRAYDAQ_GOOGLE_SIGN_IN_SHA_MISMATCH=false" >> "$GITHUB_ENV"
+            echo "Verified Google Sign-In Android OAuth certificate matches signed APK."
           fi
-          echo "Verified Google Sign-In Android OAuth certificate matches signed APK."
 
       - name: Verify native APK is installable and has an offline bundle
         shell: bash
@@ -211,7 +219,16 @@ jobs:
       - name: Upload APK only (never private source)
         uses: actions/upload-artifact@v4
         with:
-          name: TRAYDAQ-V2-native-test-APK
+          name: ${{ env.TRAYDAQ_GOOGLE_SIGN_IN_SHA_MISMATCH == 'true' && 'TRAYDAQ-V2-test-APK-GOOGLE-SIGNIN-NOT-READY' || 'TRAYDAQ-V2-native-test-APK' }}
           path: private-src/mobile/build-output/TRAYDAQ-V2-native-test.apk
           if-no-files-found: error
           retention-days: 14
+
+      # Artifact is available for Android UI testing, but the run stays RED until
+      # the real APK signer is registered in Firebase and uses a persistent key.
+      - name: Enforce Google OAuth certificate before declaring APK ready
+        if: ${{ env.TRAYDAQ_GOOGLE_SIGN_IN_SHA_MISMATCH == 'true' }}
+        shell: bash
+        run: |
+          echo "::error::Google Sign-In is not ready. Test APK uploaded for non-Google QA only. Configure stable signing and the matching Firebase Android OAuth SHA fingerprint."
+          exit 1

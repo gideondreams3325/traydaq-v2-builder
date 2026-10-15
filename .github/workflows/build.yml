@@ -1,6 +1,7 @@
 name: TRAYDAQ V2 Native Android APK Builder
 
 # Public runner builds private React Native source, not the old web/Capacitor main.
+# Build update for Android upload compatibility.
 # Rebuild TRAYDAQ V2 after fixing Expo multipart uploads and canceled biometric prompts.
 # Build redesigned V2 Profile with corrected React Native gallery overlay style.
 # Rebuild after fixing profile/security test source newline parse issue.

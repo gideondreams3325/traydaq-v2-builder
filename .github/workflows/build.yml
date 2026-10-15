@@ -1,6 +1,7 @@
 name: TRAYDAQ V2 Native Android APK Builder
 
 # Public runner builds private React Native source, not the old web/Capacitor main.
+# Rebuild after removing full-screen crash fallback and isolating render errors per screen.
 # Rebuild confirmation redesign after updating old Security Hub moderation assertions.
 # Rebuild TRAYDAQ native V2 after branded Security Hub confirmation and successful action pages.
 # Rebuild orders screen after updating previous Marketplace layout test assertion.

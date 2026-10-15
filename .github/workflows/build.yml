@@ -118,8 +118,14 @@ jobs:
               file.write(data)
           print('Decoded private JKS structure successfully (contents not logged).')
           PY
+            # Split validation to pinpoint which GitHub secret needs correction.
+            # Redirect keytool output to avoid leaking sensitive metadata in logs.
+            if ! keytool -list -keystore "$SIGN_PREFLIGHT_KEYSTORE" -storepass:env TRAYDAQ_SIGN_STOREPASS > /dev/null 2>&1; then
+              echo "::error::The JKS file decoded, but TRAYDAQ_V2_UPLOAD_KEYSTORE_PASSWORD does not open it. Replace this GitHub secret with the exact keystore password from the private signing kit."
+              exit 1
+            fi
             if ! keytool -list -v -keystore "$SIGN_PREFLIGHT_KEYSTORE" -storepass:env TRAYDAQ_SIGN_STOREPASS -alias "$TRAYDAQ_SIGN_ALIAS" > "$RUNNER_TEMP/traydaq-keystore-check.txt" 2>&1; then
-              echo "::error::Keystore opened, but its password or key alias did not match. Recheck the signing kit values."
+              echo "::error::The JKS password works, but TRAYDAQ_V2_UPLOAD_KEY_ALIAS does not match the alias in the signing kit. Replace that GitHub secret with the exact alias."
               exit 1
             fi
             CERT_SHA=$(sed -n 's/^[[:space:]]*SHA1: //p' "$RUNNER_TEMP/traydaq-keystore-check.txt" | head -1 | tr -d ':' | tr '[:upper:]' '[:lower:]')

@@ -124,8 +124,37 @@ jobs:
               echo "::error::The JKS file decoded, but TRAYDAQ_V2_UPLOAD_KEYSTORE_PASSWORD does not open it. Replace this GitHub secret with the exact keystore password from the private signing kit."
               exit 1
             fi
-            if ! keytool -list -v -keystore "$SIGN_PREFLIGHT_KEYSTORE" -storepass:env TRAYDAQ_SIGN_STOREPASS -alias "$TRAYDAQ_SIGN_ALIAS" > "$RUNNER_TEMP/traydaq-keystore-check.txt" 2>&1; then
-              echo "::error::The JKS password works, but TRAYDAQ_V2_UPLOAD_KEY_ALIAS does not match the alias in the signing kit. Replace that GitHub secret with the exact alias."
+            # Use the exact verified alias of this TRAYDAQ signing kit. The keystore
+            # itself is authoritative even if a GitHub secret contains a wrong alias.
+            TRAYDAQ_VERIFIED_ALIAS="traydaq-v2-upload"
+            if ! keytool -list -v -keystore "$SIGN_PREFLIGHT_KEYSTORE" -storepass:env TRAYDAQ_SIGN_STOREPASS -alias "$TRAYDAQ_VERIFIED_ALIAS" > "$RUNNER_TEMP/traydaq-keystore-check.txt" 2>&1; then
+              echo "::error::The JKS password works, but the expected TRAYDAQ signing key is absent from the JKS."
+              exit 1
+            fi
+            if [[ "$TRAYDAQ_SIGN_ALIAS" != "$TRAYDAQ_VERIFIED_ALIAS" ]]; then
+              echo "::warning::TRAYDAQ_V2_UPLOAD_KEY_ALIAS secret is incorrect. Using the matching, verified key alias from the JKS for this build."
+            fi
+            echo "TRAYDAQ_SIGNING_KEY_ALIAS=$TRAYDAQ_VERIFIED_ALIAS" >> "$GITHUB_ENV"
+            # Ensure the separate private-key password unlocks this key before
+            # spending minutes on Gradle; don't print key material or passwords.
+            cat > "$RUNNER_TEMP/CheckJksKey.java" <<'JAVA'
+          import java.io.FileInputStream;
+          import java.security.KeyStore;
+          import java.security.PrivateKey;
+          public class CheckJksKey {
+            public static void main(String[] args) throws Exception {
+              KeyStore ks = KeyStore.getInstance("JKS");
+              try (FileInputStream in = new FileInputStream(System.getenv("SIGN_PREFLIGHT_KEYSTORE"))) {
+                ks.load(in, System.getenv("TRAYDAQ_SIGN_STOREPASS").toCharArray());
+              }
+              if (!(ks.getKey("traydaq-v2-upload", System.getenv("TRAYDAQ_SIGN_KEYPASS").toCharArray()) instanceof PrivateKey)) {
+                throw new IllegalStateException("Private key unavailable");
+              }
+            }
+          }
+          JAVA
+            if ! java "$RUNNER_TEMP/CheckJksKey.java" > /dev/null 2>&1; then
+              echo "::error::TRAYDAQ_V2_UPLOAD_KEY_PASSWORD does not unlock the private signing key. Set it to the exact key password from the signing kit."
               exit 1
             fi
             CERT_SHA=$(sed -n 's/^[[:space:]]*SHA1: //p' "$RUNNER_TEMP/traydaq-keystore-check.txt" | head -1 | tr -d ':' | tr '[:upper:]' '[:lower:]')
@@ -240,7 +269,7 @@ jobs:
               output.write(decoded)
           PY
             trap 'rm -f "$KEYSTORE" "$RUNNER_TEMP/traydaq-resigned.apk"' EXIT
-            "$SIGNER" sign --ks "$KEYSTORE" --ks-key-alias "$TRAYDAQ_SIGN_ALIAS"               --ks-pass env:TRAYDAQ_SIGN_STOREPASS --key-pass env:TRAYDAQ_SIGN_KEYPASS               --out "$RUNNER_TEMP/traydaq-resigned.apk" "$APK"
+            "$SIGNER" sign --ks "$KEYSTORE" --ks-key-alias "${TRAYDAQ_SIGNING_KEY_ALIAS:-$TRAYDAQ_SIGN_ALIAS}"               --ks-pass env:TRAYDAQ_SIGN_STOREPASS --key-pass env:TRAYDAQ_SIGN_KEYPASS               --out "$RUNNER_TEMP/traydaq-resigned.apk" "$APK"
             "$SIGNER" verify "$RUNNER_TEMP/traydaq-resigned.apk"
             mv "$RUNNER_TEMP/traydaq-resigned.apk" "$APK"
             echo "TRAYDAQ stable upload certificate applied securely."

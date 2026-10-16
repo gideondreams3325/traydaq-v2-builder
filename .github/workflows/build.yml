@@ -27,6 +27,7 @@ name: TRAYDAQ V2 Native Android APK Builder
 # Rebuild native V2 after 125 tests passed and fixing current TypeScript catalog/Home errors.
 # Requested TRAYDAQ V2 APK build 2026-10-16: compile latest private main source including new Drafts, branding, Cloudinary, security, and back controls.
 # Retry 2026-10-16 after repairing native branded alerts, safe drafts, and regression checks; source: main.
+# Retry after full native member-facing screen scan and safe error handling fixes.
 on:
   push:
     branches: [main]

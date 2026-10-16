@@ -29,6 +29,7 @@ name: TRAYDAQ V2 Native Android APK Builder
 # Retry 2026-10-16 after repairing native branded alerts, safe drafts, and regression checks; source: main.
 # Retry after full native member-facing screen scan and safe error handling fixes.
 # Rebuild latest private main after fixing verification TypeScript string syntax.
+# Retry after fixing narrowed Security Team broadcaster role typecheck.
 on:
   push:
     branches: [main]

@@ -25,6 +25,7 @@ name: TRAYDAQ V2 Native Android APK Builder
 # Never print or upload private source; only publish the signed testing APK.
 # Rebuild V2 source feat/v2-new-home-feed after aligning seven stale regression assertions with current native components.
 # Rebuild native V2 after 125 tests passed and fixing current TypeScript catalog/Home errors.
+# Requested TRAYDAQ V2 APK build 2026-10-16: compile restored native source branch, run QA, preserve all approved features.
 on:
   push:
     branches: [main]

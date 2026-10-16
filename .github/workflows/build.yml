@@ -25,7 +25,7 @@ name: TRAYDAQ V2 Native Android APK Builder
 # Never print or upload private source; only publish the signed testing APK.
 # Rebuild V2 source feat/v2-new-home-feed after aligning seven stale regression assertions with current native components.
 # Rebuild native V2 after 125 tests passed and fixing current TypeScript catalog/Home errors.
-# Requested TRAYDAQ V2 APK build 2026-10-16: compile restored native source branch, run QA, preserve all approved features.
+# Requested TRAYDAQ V2 APK build 2026-10-16: compile latest private main source including new Drafts, branding, Cloudinary, security, and back controls.
 on:
   push:
     branches: [main]
@@ -70,7 +70,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: feat/v2-new-home-feed
+          ref: main
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -80,7 +80,7 @@ jobs:
         shell: bash
         working-directory: private-src
         run: |
-          echo "TRAYDAQ_SOURCE_REF=feat/v2-new-home-feed"
+          echo "TRAYDAQ_SOURCE_REF=main"
           echo "TRAYDAQ_SOURCE_SHA=$(git rev-parse HEAD)"
           test -f mobile/src/App.tsx
           test -f mobile/app.json

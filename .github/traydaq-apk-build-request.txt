@@ -31,3 +31,8 @@ Retry user-authorized V2 Android APK after #119 passed all 323 tests and Expo Do
 Corrected source main: 73b43a91c66948d63d7e78fb41e9406abf00596e.
 Replaced nonexistent StyleSheet.absoluteFillObject with supported React Native StyleSheet.absoluteFill in StorefrontScreen.
 Expected checks: tests, Expo dependencies, TypeScript, Android JS bundle, Gradle assemble, persistent signing, publish APK artifact.
+
+User-approved TRAYDAQ V2 Android APK build request (2026-10-17).
+Private source gideondreams3325/traydaq-v2/main @ 1ab0e1d9481464943bf4ec912f0cd4e870ef36b6
+Verify and compile: For You MP4 upload and playback, Security Team private review & archive, approval/rejection push notices, storefront discovery, popularity rank and all existing native functionality.
+Use dedicated public TRAYDAQ V2 Native Android APK Builder. Test, typecheck, bundle, build, sign, upload APK; investigate and repair build failures.

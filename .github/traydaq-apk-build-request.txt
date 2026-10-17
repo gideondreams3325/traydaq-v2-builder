@@ -16,3 +16,8 @@ Build request purpose: compile, test, sign and upload latest TRAYDAQ.apk. Fix an
 
 Retry user-requested build #116: fix two outdated feed regression assertions.
 Latest private source: cd9fa60f67f72e8a9ea914e721f1bd432ff7e5f9
+
+User-authorized build request: 2026-10-17 cross-chat update audit and latest TRAYDAQ V2 source.
+Private source repository: gideondreams3325/traydaq-v2, main, f467d6cf80e5869bf240f95f63cf649bcd79925d
+Changes to validate: approved-only Visit Store, no-store scam safety notices, storefront/chat/security push alerts, verified Popular Stores scores, native workflows and Android APK.
+Use ONLY dedicated public V2 builder. Run all native tests, TypeScript, Expo dependency checks, JS bundle, Gradle, signing, APK upload.

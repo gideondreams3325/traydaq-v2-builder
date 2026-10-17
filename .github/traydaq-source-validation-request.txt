@@ -14,3 +14,8 @@ Preflight retry 2026-10-17: private main 99a370c227df65e696250c53e6407d18920a11a
 Source-only validation requested for video play redirect fix (no APK), 2026-10-17.
 Private main at 0edecb60021ac8c65fba6637acbaaaeed4ee5c3b.
 Verify video-player render error boundary, tap isolation, playback after readyToPlay and native tests, typechecks, Expo checks and JS export. Do not package or sign an APK.
+
+
+User-requested native Security Hub video playback check, 2026-10-17.
+Private source main 1c433b7a3d0a92a1aaa0f15e46bec3b392a4d173.
+Verify review queue and Storage Hub share the isolated video player and cannot route video play taps to Marketplace; run native regression tests, Expo Doctor, TypeScript and Android JS export only. Do not build an APK.

@@ -1,5 +1,7 @@
 name: TRAYDAQ V2 Native Android APK Builder
 
+# User-requested V2 APK build 2026-10-17 after cross-chat source audit; private source main: c31cc595499444b83a0f3bb809b5cd49c273149d.
+
 # Public runner builds private React Native source, not the old web/Capacitor main.
 # Follow-up crash-hardening APK: validate public catalog JSON and restricted security snapshot records.
 # Rebuild after removing full-screen crash fallback and isolating render errors per screen.

@@ -5,3 +5,5 @@ Validate native regressions, Expo dependencies, TypeScript and JS export only.
 
 Retry no-APK validation after 328 tests passed and Expo SDK 57 changed fullscreen prop to fullscreenOptions.
 Private source: 2db2e20e2abfda393ce514c3153c56068717b1a7
+
+User-requested APK repair preflight: 2026-10-17. Validate private native main c76af15a5cf0ba4ec901581590274a32508c717f after fixing stale video/post studio tests. Check all tests, Expo Doctor, TypeScript and Android export BEFORE another APK build.

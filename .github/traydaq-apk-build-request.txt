@@ -41,3 +41,6 @@ Use dedicated public TRAYDAQ V2 Native Android APK Builder. Test, typecheck, bun
 User-requested TRAYDAQ V2 Android APK build: 2026-10-17 after default video cover and Picture / Video Post fixes.
 Canonical private source: gideondreams3325/traydaq-v2 main @ d00a4da70cbfc6662c04f7a07d08d0a7359b6b6b.
 Use the dedicated public V2 Native APK Builder. Run regression tests, Expo dependency checks, TypeScript, Android JS bundle and Gradle, then verify signing and upload APK. If a build step fails, inspect logs, fix source, and retry under this user authorization.
+
+APK retry #123 authorized by 2026-10-17 user request to build and fix errors.
+Private source main 99a370c227df65e696250c53e6407d18920a11ac. Native source validation #4 succeeded: tests + Expo Doctor + TypeScript + Android JS export. Fixed 2 stale tests and 5 absoluteFill TypeScript issues. Compile, sign and upload dedicated public builder TRAYDAQ.apk.

@@ -1,4 +1,4 @@
-name: TRAYDAQ V2 Native Android APK Builder
+name: TRAYDAQ APK Builder
 
 # User authorized native V2 build after fixing final audio progress TypeScript width: f738d03efef96f675d7d1032aae57db13bae090a.
 
@@ -40,11 +40,8 @@ name: TRAYDAQ V2 Native Android APK Builder
 # Retry after full native member-facing screen scan and safe error handling fixes.
 # Rebuild latest private main after fixing verification TypeScript string syntax.
 # Retry after fixing narrowed Security Team broadcaster role typecheck.
+# Manual builds only — changing branding must never trigger an APK build.
 on:
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/build.yml"
   workflow_dispatch:
 
 permissions:
@@ -56,7 +53,7 @@ concurrency:
 
 jobs:
   android:
-    name: TRAYDAQ V2 React Native standalone APK
+    name: TRAYDAQ Android APK
     runs-on: ubuntu-latest
     timeout-minutes: 75
     env:
@@ -345,13 +342,13 @@ jobs:
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$APK"
           sha256sum "$APK"
           mkdir -p build-output
-          cp "$APK" build-output/TRAYDAQ-V2-native-test.apk
+          cp "$APK" build-output/TRAYDAQ.apk
 
       - name: Upload APK only (never private source)
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.TRAYDAQ_GOOGLE_SIGN_IN_SHA_MISMATCH == 'true' && 'TRAYDAQ-V2-test-APK-GOOGLE-SIGNIN-NOT-READY' || 'TRAYDAQ-V2-native-test-APK' }}
-          path: private-src/mobile/build-output/TRAYDAQ-V2-native-test.apk
+          name: ${{ env.TRAYDAQ_GOOGLE_SIGN_IN_SHA_MISMATCH == 'true' && 'TRAYDAQ-APK-GOOGLE-SIGNIN-NOT-READY' || 'TRAYDAQ-APK' }}
+          path: private-src/mobile/build-output/TRAYDAQ.apk
           if-no-files-found: error
           retention-days: 14
 

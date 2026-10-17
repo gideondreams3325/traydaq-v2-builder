@@ -13,3 +13,6 @@ Current private main: 7d2d8bce3d01b335b5cc213f007013327faca99e
 User-authorized native build: 2026-10-17 after live approved-post detection and New posts available button.
 Private source main: 77af85ac6fa69c4575ee5a237cf58813d39da9d9
 Build request purpose: compile, test, sign and upload latest TRAYDAQ.apk. Fix and retry if failed.
+
+Retry user-requested build #116: fix two outdated feed regression assertions.
+Latest private source: cd9fa60f67f72e8a9ea914e721f1bd432ff7e5f9

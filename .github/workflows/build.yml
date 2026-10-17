@@ -40,9 +40,14 @@ name: TRAYDAQ APK Builder
 # Retry after full native member-facing screen scan and safe error handling fixes.
 # Rebuild latest private main after fixing verification TypeScript string syntax.
 # Retry after fixing narrowed Security Team broadcaster role typecheck.
-# Manual builds only — changing branding must never trigger an APK build.
+# Builds run only on explicit manual dispatch or a dedicated user-authorized
+# build-request marker. Ordinary source/branding pushes never start an APK build.
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/traydaq-apk-build-request.txt"
 
 permissions:
   contents: read

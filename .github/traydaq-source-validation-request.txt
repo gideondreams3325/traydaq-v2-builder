@@ -19,3 +19,8 @@ Verify video-player render error boundary, tap isolation, playback after readyTo
 User-requested native Security Hub video playback check, 2026-10-17.
 Private source main 1c433b7a3d0a92a1aaa0f15e46bec3b392a4d173.
 Verify review queue and Storage Hub share the isolated video player and cannot route video play taps to Marketplace; run native regression tests, Expo Doctor, TypeScript and Android JS export only. Do not build an APK.
+
+
+2026-10-17 User-reported reproducible Home -> Marketplace on video Play, confirmed by screen recording. SOURCE CHECK ONLY.
+Private TRAYDAQ V2 source main ab1ace182e0508586bdd4285f71b483292afb1dd.
+Validate new stable single-player video, in-place video errors, no Home-to-Marketplace crash fallback, For You and Security Hub. Run all regression tests, Expo SDK checks, TypeScript and Android JS export. Do not build APK until user requests.

@@ -1,5 +1,7 @@
 name: TRAYDAQ V2 Native Android APK Builder
 
+# Run user-requested V2 APK with verified five TypeScript fixes: dc6368086c1436c431e8126fb807b596b85072c5.
+
 # User-requested V2 APK rerun after passing regression-alignment changes: 32d2670deeca15af31b5777816f43a2c54e4ed45.
 
 # User-requested corrected test build 2026-10-17; private main SHA a7c739415149091a06defb71e5afb3e7eb97f3c5.

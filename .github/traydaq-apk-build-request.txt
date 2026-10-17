@@ -36,3 +36,8 @@ User-approved TRAYDAQ V2 Android APK build request (2026-10-17).
 Private source gideondreams3325/traydaq-v2/main @ 1ab0e1d9481464943bf4ec912f0cd4e870ef36b6
 Verify and compile: For You MP4 upload and playback, Security Team private review & archive, approval/rejection push notices, storefront discovery, popularity rank and all existing native functionality.
 Use dedicated public TRAYDAQ V2 Native Android APK Builder. Test, typecheck, bundle, build, sign, upload APK; investigate and repair build failures.
+
+
+User-requested TRAYDAQ V2 Android APK build: 2026-10-17 after default video cover and Picture / Video Post fixes.
+Canonical private source: gideondreams3325/traydaq-v2 main @ d00a4da70cbfc6662c04f7a07d08d0a7359b6b6b.
+Use the dedicated public V2 Native APK Builder. Run regression tests, Expo dependency checks, TypeScript, Android JS bundle and Gradle, then verify signing and upload APK. If a build step fails, inspect logs, fix source, and retry under this user authorization.

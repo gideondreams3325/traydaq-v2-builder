@@ -1,0 +1,47 @@
+name: TRAYDAQ V2 Video Source Validation (No APK)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/traydaq-source-validation-request.txt"
+
+permissions:
+  contents: read
+
+jobs:
+  video-source:
+    name: Check private V2 React Native source
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - name: Checkout private TRAYDAQ V2 (read only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: main
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Identify source commit
+        working-directory: private-src
+        run: git rev-parse HEAD
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install native packages
+        run: npm install --no-audit --no-fund
+      - name: Run all native regression tests
+        run: node --test tests/*.test.mjs
+      - name: Check SDK compatibility
+        run: npx expo-doctor
+      - name: Verify TypeScript
+        run: npm run typecheck
+      - name: Check Android JavaScript bundle (no Gradle or APK)
+        run: npx expo export --platform android
+
+# Source validation only: never generate or sign an Android APK.

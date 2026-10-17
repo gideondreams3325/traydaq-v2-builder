@@ -27,3 +27,8 @@ Validate new stable single-player video, in-place video errors, no Home-to-Marke
 
 
 Retry 2026-10-17 source-only after correcting two stale regression checks. Private main e15b62021fd97f7a93a457bb020e407477ac1983. All native tests, Expo doctor, TypeScript, Android bundle. Never build APK in this workflow.
+
+
+User requested clickable Recently sent Security Team messages, 2026-10-17.
+Canonical private main ad0d12340b5509b4f4635dea83c6647845bbe2aa.
+Source-only QA: UI tap-to-read modal, current staff authorization, full message body, signed private images, historical detail endpoint. Run all native regressions, Expo compatibility, TypeScript and Android JS export. Do NOT trigger APK build.

@@ -21,3 +21,8 @@ User-authorized build request: 2026-10-17 cross-chat update audit and latest TRA
 Private source repository: gideondreams3325/traydaq-v2, main, f467d6cf80e5869bf240f95f63cf649bcd79925d
 Changes to validate: approved-only Visit Store, no-store scam safety notices, storefront/chat/security push alerts, verified Popular Stores scores, native workflows and Android APK.
 Use ONLY dedicated public V2 builder. Run all native tests, TypeScript, Expo dependency checks, JS bundle, Gradle, signing, APK upload.
+
+Retry user-authorized TRAYDAQ V2 APK build after #118 failed five outdated regression assertions.
+Private source main now: 58640427682978a53eaaf086bd9010d410fedda4.
+Fixes: accurate store report ID, Storefront About reference, back navigation, authorized chat thread navigation and approved brand color tests.
+Run dedicated V2 builder; compile latest private main, fix further errors if any.

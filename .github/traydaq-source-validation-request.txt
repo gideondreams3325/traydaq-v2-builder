@@ -24,3 +24,6 @@ Verify review queue and Storage Hub share the isolated video player and cannot r
 2026-10-17 User-reported reproducible Home -> Marketplace on video Play, confirmed by screen recording. SOURCE CHECK ONLY.
 Private TRAYDAQ V2 source main ab1ace182e0508586bdd4285f71b483292afb1dd.
 Validate new stable single-player video, in-place video errors, no Home-to-Marketplace crash fallback, For You and Security Hub. Run all regression tests, Expo SDK checks, TypeScript and Android JS export. Do not build APK until user requests.
+
+
+Retry 2026-10-17 source-only after correcting two stale regression checks. Private main e15b62021fd97f7a93a457bb020e407477ac1983. All native tests, Expo doctor, TypeScript, Android bundle. Never build APK in this workflow.

@@ -1,0 +1,8 @@
+TRAYDAQ APK build request
+Requested: 2026-10-17
+Requested source: gideondreams3325/traydaq-v2, main
+Recent latest source commit: 1afb91640abcf133b501da0b7263eb5877451e54
+Builder: public gideondreams3325/traydaq-v2-builder, .github/workflows/build.yml
+APK output: TRAYDAQ.apk
+Requested by user in chat: Trigger the build for me.
+This marker is intentionally dedicated to explicit, user-requested build runs.

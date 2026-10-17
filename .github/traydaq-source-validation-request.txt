@@ -9,3 +9,8 @@ Private source: 2db2e20e2abfda393ce514c3153c56068717b1a7
 User-requested APK repair preflight: 2026-10-17. Validate private native main c76af15a5cf0ba4ec901581590274a32508c717f after fixing stale video/post studio tests. Check all tests, Expo Doctor, TypeScript and Android export BEFORE another APK build.
 
 Preflight retry 2026-10-17: private main 99a370c227df65e696250c53e6407d18920a11ac. React Native StyleSheet.absoluteFill TS fix. Re-run tests, Expo Doctor, tsc and Android export.
+
+
+Source-only validation requested for video play redirect fix (no APK), 2026-10-17.
+Private main at 0edecb60021ac8c65fba6637acbaaaeed4ee5c3b.
+Verify video-player render error boundary, tap isolation, playback after readyToPlay and native tests, typechecks, Expo checks and JS export. Do not package or sign an APK.

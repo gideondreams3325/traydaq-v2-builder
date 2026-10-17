@@ -26,3 +26,8 @@ Retry user-authorized TRAYDAQ V2 APK build after #118 failed five outdated regre
 Private source main now: 58640427682978a53eaaf086bd9010d410fedda4.
 Fixes: accurate store report ID, Storefront About reference, back navigation, authorized chat thread navigation and approved brand color tests.
 Run dedicated V2 builder; compile latest private main, fix further errors if any.
+
+Retry user-authorized V2 Android APK after #119 passed all 323 tests and Expo Doctor but failed four TypeScript style properties.
+Corrected source main: 73b43a91c66948d63d7e78fb41e9406abf00596e.
+Replaced nonexistent StyleSheet.absoluteFillObject with supported React Native StyleSheet.absoluteFill in StorefrontScreen.
+Expected checks: tests, Expo dependencies, TypeScript, Android JS bundle, Gradle assemble, persistent signing, publish APK artifact.

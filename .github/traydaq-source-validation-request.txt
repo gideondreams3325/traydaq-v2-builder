@@ -1,0 +1,4 @@
+TRAYDAQ V2 native source validation request, no APK build.
+Requested 2026-10-17 after For You video, Security Team review playback and archive updates.
+Private source: gideondreams3325/traydaq-v2 main b05a29761ddfd64ecc2948288216799dd2bfa206
+Validate native regressions, Expo dependencies, TypeScript and JS export only.

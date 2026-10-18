@@ -99,3 +99,6 @@ FINAL 2026-10-18 Place Order design source validation at 878aa7771c149aeeb8a7254
 
 
 2026-10-18 For You algorithm personalized relevance and pull-to-refresh, private source 97fa58a51ad1b1d0d7e1eca664dda95282210c39. Refresh on app background->foreground and swipe down, reshuffle current approved posts per new visit based on true likes/comments/saves/shares, public topic keywords, freshness, author diversity and account-scoped recently viewed history. Keep stable scroll for live updates, promote newly approved via existing button and never expose drafts. Check regression tests, Expo compatibility, TypeScript, Android JS bundle. SOURCE ONLY, DO NOT BUILD APK.
+
+
+RETRY 2026-10-18 source-only For You personalized ranking + swipe pull-to-refresh 1e4bb13f7f2251f35ecf51b4807d9edf46ca8688. Updated four stale/miswritten static assertions; run full tests, Expo, TypeScript, Android JS export; NO APK BUILD.

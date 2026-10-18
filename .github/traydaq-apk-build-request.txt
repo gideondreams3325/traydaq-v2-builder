@@ -50,3 +50,9 @@ User-authorized TRAYDAQ V2 Android APK build after Security Hub playback/navigat
 Canonical private source: gideondreams3325/traydaq-v2 main @ 1c433b7a3d0a92a1aaa0f15e46bec3b392a4d173.
 Source-only validation #6 PASSED (337 tests, Expo Doctor, TypeScript, Android JS bundle).
 Use ONLY public gideondreams3325/traydaq-v2-builder TRAYDAQ APK Builder workflow. Run native tests, build, verify signature and upload TRAYDAQ-APK. If any step fails, inspect exact errors, fix private source and retry this user-requested build.
+
+
+User-authorized Android APK build request: 2026-10-18, after personalized For You feed algorithm and pull-to-refresh implementation.
+Private source: gideondreams3325/traydaq-v2 main @ 1e4bb13f7f2251f35ecf51b4807d9edf46ca8688
+Dedicated public builder: gideondreams3325/traydaq-v2-builder / .github/workflows/build.yml.
+Run all native tests, Expo, TypeScript, Android JS bundle, Gradle, signing, APK validation and artifact upload. If failing, diagnose, fix and retry under this user request. Never use legacy TRAYDAQ builder.

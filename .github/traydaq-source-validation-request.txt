@@ -47,3 +47,6 @@ Retry 2026-10-18 keyboard source QA after fixing Storefront category ScrollView 
 
 
 Retry full native Android keyboard QA on 2026-10-18, c7c64a6a6c1a5e6c18f8a7b1861367b56e0a9a56. Fixed ScrollView measurement via getNativeScrollRef(). Run tests, Expo compatibility, TypeScript, Android JS bundle; no APK.
+
+
+2026-10-18 user requested app-wide Android keyboard overlap fixes. Private source e71de234ef432163a1266d769d18525e09e5aec3. Source-only validation: all native tests, Expo SDK checks, TypeScript, Android JS export. Verify shared focus scroller, Security forms, comment modal, chat compositor, Home navigation, storefront search, modal inputs and legacy forms. Do NOT run APK builder.

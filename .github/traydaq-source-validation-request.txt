@@ -41,3 +41,6 @@ Retry source-only UI cleanup validation on 2026-10-18: private TRAYDAQ V2 main f
 
 
 User-requested full TRAYDAQ V2 Android keyboard and input overlap audit 2026-10-18. Private source main 290be7d74620f2c0150608e84f135792715eb319. Enhanced native viewport scrolling, focus measurements, home comment modal flex, chat composer and account/storefront, product/order and legacy form screens. Run ALL regression tests, Expo doctor, TypeScript, Android JS export, inspect/fix any failures. SOURCE CHECKS ONLY; DO NOT BUILD APK.
+
+
+Retry 2026-10-18 keyboard source QA after fixing Storefront category ScrollView JSX mismatch, private source a3c8880d29ede8adee0c81003921843f3ad5335c. Run all regression, Expo SDK checks, TypeScript and Android JS export; no APK.

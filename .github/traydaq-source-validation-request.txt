@@ -93,3 +93,6 @@ RETRY 2026-10-18 source validation (no APK) for reference checkout UI 7ddab8eb22
 
 
 RETRY 2026-10-18 native checkout after strict TS narrowing for persisted cart quantities 1f06ab2850a103711a29f0eac6fa115ad9b5d32c. All native regression tests, Expo SDK, TypeScript and Android JS; source-only no APK.
+
+
+FINAL 2026-10-18 Place Order design source validation at 878aa7771c149aeeb8a7254d178c01d8daabc4e5. Keep buyer contact and address inputs expanded while first typing. Run 363+ native tests, Expo, TypeScript, Android bundle. SOURCE-ONLY, NO APK.

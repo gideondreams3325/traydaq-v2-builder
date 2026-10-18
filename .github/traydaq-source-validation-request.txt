@@ -53,3 +53,6 @@ Retry full native Android keyboard QA on 2026-10-18, c7c64a6a6c1a5e6c18f8a7b1861
 
 
 RETRY 2026-10-18 source-only keyboard overlap validation, private main e06cae551c1c775f852a3e49ce64d89d4669b651. Six obsolete QuickNavigation test expectations now require Home and keyboard not visible. Run all native regression tests, Expo, TypeScript and Android JS export. DO NOT BUILD APK.
+
+
+2026-10-18 Profile Videos tab fix: source 6121f7c09bc1e88a0a7f2bff1b7c017170ea0be4. Replace legacy disabled placeholder, expose approved Post video from mediaType and public_urls through authorized native-profile API, retain photo-only galleries and native playback. Validate native regression tests, Expo, TypeScript and Android JS export. SOURCE ONLY; no APK.

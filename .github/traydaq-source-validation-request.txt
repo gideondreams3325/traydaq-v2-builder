@@ -50,3 +50,6 @@ Retry full native Android keyboard QA on 2026-10-18, c7c64a6a6c1a5e6c18f8a7b1861
 
 
 2026-10-18 user requested app-wide Android keyboard overlap fixes. Private source e71de234ef432163a1266d769d18525e09e5aec3. Source-only validation: all native tests, Expo SDK checks, TypeScript, Android JS export. Verify shared focus scroller, Security forms, comment modal, chat compositor, Home navigation, storefront search, modal inputs and legacy forms. Do NOT run APK builder.
+
+
+RETRY 2026-10-18 source-only keyboard overlap validation, private main e06cae551c1c775f852a3e49ce64d89d4669b651. Six obsolete QuickNavigation test expectations now require Home and keyboard not visible. Run all native regression tests, Expo, TypeScript and Android JS export. DO NOT BUILD APK.

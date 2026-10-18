@@ -84,3 +84,6 @@ RETRY SOURCE ONLY on 2026-10-18: openai moderation integration at 2042dab51c30a4
 
 
 Final OpenAI moderation source validation 2026-10-18: 19139d0885c68a0d184ddb519a56be59c8e2abd1. Security Hub AI status indicator added, preserve private staff-only flags, no secret in mobile. Run all native tests, Expo check, TypeScript, Android JS export; NO APK.
+
+
+2026-10-18 user asks full order page redesign from attached reference, source 55297efbb37511c5be87a7f69aa60ba3f7817c6b. New NativePlaceOrderScreen checkout, validated account-scoped cart, marketplace cart icon, product add-to-cart and place-order actions. Protect native server order requests with UUID idempotency, real seller payment options, UI quantities/edit/remove, pickup/delivery preference, no fake payment processing/promotions/shipping fees. Run all native tests, Expo compatibility, TypeScript and Android JavaScript bundle; SOURCE VALIDATION ONLY, NO APK BUILD.

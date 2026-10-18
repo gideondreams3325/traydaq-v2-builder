@@ -56,3 +56,8 @@ User-authorized Android APK build request: 2026-10-18, after personalized For Yo
 Private source: gideondreams3325/traydaq-v2 main @ 1e4bb13f7f2251f35ecf51b4807d9edf46ca8688
 Dedicated public builder: gideondreams3325/traydaq-v2-builder / .github/workflows/build.yml.
 Run all native tests, Expo, TypeScript, Android JS bundle, Gradle, signing, APK validation and artifact upload. If failing, diagnose, fix and retry under this user request. Never use legacy TRAYDAQ builder.
+
+User-authorized TRAYDAQ V2 native Android APK build: 2026-10-18 after Music Studio render-crash guard and two-column Jobs, Events and Marketplace content grids.
+Private canonical source gideondreams3325/traydaq-v2 main @ 934fc2ea40547b25d9ccc31169a86b833cd8f148.
+Public builder gideondreams3325/traydaq-v2-builder, .github/workflows/build.yml ONLY. Source validation #44 successful (373 tests, 21 Expo checks, TypeScript, Android JavaScript export).
+Run tests, Expo doctor, TypeScript, Android JS bundle, Android Gradle APK assemble, signing verification, and publish TRAYDAQ-APK artifact. Explicit user approval includes investigating failures, fixing source and retrying if needed.

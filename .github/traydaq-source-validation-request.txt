@@ -59,3 +59,7 @@ RETRY 2026-10-18 source-only keyboard overlap validation, private main e06cae551
 
 
 2026-10-18 notification categories invisible on Android screenshot. Private source 3cdeba2f302568336e4603091dc15b37b5655fc5. Fix filter chips explicit colors, font sizes, row alignment, counts and accessibility labels. Run source-only native tests, Expo, TypeScript and Android JS export; no APK requested.
+
+
+2026-10-18 Product details modal screenshot regression, source commit af14523291f4ab0e323f14af94fa10648a0baa38.
+Verify product modal Android safe areas (top status bar and gesture navigation), remove customer-facing raw product/store IDs while keeping ID in ReportPostSheet, remove all Maps actions, wrap pickup/delivery location, format stock. Run native tests, Expo compatibility, TypeScript, Android JS bundle. SOURCE VALIDATION ONLY; DO NOT TRIGGER APK BUILD.

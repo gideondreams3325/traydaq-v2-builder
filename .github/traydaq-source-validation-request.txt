@@ -32,3 +32,6 @@ Retry 2026-10-17 source-only after correcting two stale regression checks. Priva
 User requested clickable Recently sent Security Team messages, 2026-10-17.
 Canonical private main ad0d12340b5509b4f4635dea83c6647845bbe2aa.
 Source-only QA: UI tap-to-read modal, current staff authorization, full message body, signed private images, historical detail endpoint. Run all native regressions, Expo compatibility, TypeScript and Android JS export. Do NOT trigger APK build.
+
+
+User-requested UI cleanup 2026-10-18. Private source 39c1619fadfd1d07b921a5e4af4e3e20a497e589: remove every native Open in Maps action, preserve GPS and location display, remove Buyer contact from Product Studio and suppress stale contact on submission. SOURCE VALIDATION ONLY: all tests, Expo compatibility, TypeScript, Android JS bundle. DO NOT BUILD APK.

@@ -110,3 +110,5 @@ RETRY 2026-10-18 source-only For You personalized ranking + swipe pull-to-refres
 2026-10-18 Final native source-only check after Music Studio original release calendar selector, private main 79f942d717cd1a244836e6f4445bc4c6b0896b92. All tests, Expo Doctor, TS and JS export only. NO APK, no Gradle.
 
 2026-10-18 Additional source-only validation: date of birth picker replaces typed verification date; native month/year fast select; archived event editor calendar and old dates rejection. Test private source eae81d307f60163d627256a2e50c5fba0df9935a with all native tests, Expo doctor, TypeScript and Android JS export; NO APK BUILD.
+
+2026-10-18 Final source-only media check: security moderation rows show generated video cover for public video and clear private video indicator, authenticated detail still opens protected video; calendar changes and verification still included. Source 62eda801ad7b424ebdf2d5f7231a5bf6d307aa56. Run full native tests, Expo doctor, TypeScript, Android JS export. NO APK.

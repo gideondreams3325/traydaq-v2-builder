@@ -56,3 +56,6 @@ RETRY 2026-10-18 source-only keyboard overlap validation, private main e06cae551
 
 
 2026-10-18 Profile Videos tab fix: source 6121f7c09bc1e88a0a7f2bff1b7c017170ea0be4. Replace legacy disabled placeholder, expose approved Post video from mediaType and public_urls through authorized native-profile API, retain photo-only galleries and native playback. Validate native regression tests, Expo, TypeScript and Android JS export. SOURCE ONLY; no APK.
+
+
+2026-10-18 notification categories invisible on Android screenshot. Private source 3cdeba2f302568336e4603091dc15b37b5655fc5. Fix filter chips explicit colors, font sizes, row alignment, counts and accessibility labels. Run source-only native tests, Expo, TypeScript and Android JS export; no APK requested.

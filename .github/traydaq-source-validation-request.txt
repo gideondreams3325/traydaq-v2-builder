@@ -104,3 +104,5 @@ FINAL 2026-10-18 Place Order design source validation at 878aa7771c149aeeb8a7254
 RETRY 2026-10-18 source-only For You personalized ranking + swipe pull-to-refresh 1e4bb13f7f2251f35ecf51b4807d9edf46ca8688. Updated four stale/miswritten static assertions; run full tests, Expo, TypeScript, Android JS export; NO APK BUILD.
 
 2026-10-18 Source-only check (NO APK): verified identity roster, moderator @username candidate lookup, video notification covers, recipient details on sent broadcasts, Contact Us official brand, native calendar/time selection, expiry-aware Events feed and modern Job application form. Private source main 5a830b7a50ea1cdb7350a93fb8ffcb366b6ab869. Run all native tests, Expo doctor, TypeScript and Android JavaScript export. Do not start Gradle or create an APK.
+
+2026-10-18 rerun security, notifications, events and job applicant source-only checks after aligning protected verified-identity roster regression assertion. Private source main: 788a9201381c687042ec2bdd3e9a96521f990d58. No APK and no Gradle.

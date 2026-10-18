@@ -90,3 +90,6 @@ Final OpenAI moderation source validation 2026-10-18: 19139d0885c68a0d184ddb519a
 
 
 RETRY 2026-10-18 source validation (no APK) for reference checkout UI 7ddab8eb2235c5091d9c86330232539a1d5e58a5; obsolete wording assertion updated. All native regression, Expo compatibility, TS, Android JS export. DO NOT RUN APK BUILD.
+
+
+RETRY 2026-10-18 native checkout after strict TS narrowing for persisted cart quantities 1f06ab2850a103711a29f0eac6fa115ad9b5d32c. All native regression tests, Expo SDK, TypeScript and Android JS; source-only no APK.

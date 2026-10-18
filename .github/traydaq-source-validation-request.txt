@@ -69,3 +69,6 @@ Retry Product details source-only QA after aligning report-ID privacy test: priv
 
 
 2026-10-18 account switching UX fix for unresponsive saved-account rows on Android. Private source main 3af547a79406593c922cb12f7945db3a4ecde774. Make avatar plus name plus row tappable, prefill selected email, scroll and focus password, keep active Firebase account until successful authentication, separate forget action and prevent storing credentials. Run native regression, Expo, TypeScript and Android JS export, SOURCE ONLY. DO NOT BUILD APK.
+
+
+2026-10-18 Google-only saved account switching improvement. Private TRAYDAQ V2 source d8673ad80a1837a33b1ab33bf2173e35b04a4ab4. Remember Google/password provider labels without credentials, tap saved Google account to show Google chooser rather than password, refuse switching if Google email does not match chosen saved profile. Source-only validation: regression tests, Expo SDK, TypeScript, Android bundle. DO NOT BUILD APK.

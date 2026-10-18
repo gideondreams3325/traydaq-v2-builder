@@ -66,3 +66,6 @@ Verify product modal Android safe areas (top status bar and gesture navigation),
 
 
 Retry Product details source-only QA after aligning report-ID privacy test: private source 1fae705fe4c31b5efd33e41d47d416abe4aeeb4c. The report sheet preserves immutable postId; customer UI omits raw IDs and Maps links. Test Android safe areas, all regression tests, Expo compatibility, TypeScript and Android JS. Do NOT build APK.
+
+
+2026-10-18 account switching UX fix for unresponsive saved-account rows on Android. Private source main 3af547a79406593c922cb12f7945db3a4ecde774. Make avatar plus name plus row tappable, prefill selected email, scroll and focus password, keep active Firebase account until successful authentication, separate forget action and prevent storing credentials. Run native regression, Expo, TypeScript and Android JS export, SOURCE ONLY. DO NOT BUILD APK.

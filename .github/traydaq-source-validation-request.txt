@@ -44,3 +44,6 @@ User-requested full TRAYDAQ V2 Android keyboard and input overlap audit 2026-10-
 
 
 Retry 2026-10-18 keyboard source QA after fixing Storefront category ScrollView JSX mismatch, private source a3c8880d29ede8adee0c81003921843f3ad5335c. Run all regression, Expo SDK checks, TypeScript and Android JS export; no APK.
+
+
+Retry full native Android keyboard QA on 2026-10-18, c7c64a6a6c1a5e6c18f8a7b1861367b56e0a9a56. Fixed ScrollView measurement via getNativeScrollRef(). Run tests, Expo compatibility, TypeScript, Android JS bundle; no APK.

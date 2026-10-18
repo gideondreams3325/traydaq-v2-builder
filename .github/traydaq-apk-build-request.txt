@@ -61,3 +61,7 @@ User-authorized TRAYDAQ V2 native Android APK build: 2026-10-18 after Music Stud
 Private canonical source gideondreams3325/traydaq-v2 main @ 934fc2ea40547b25d9ccc31169a86b833cd8f148.
 Public builder gideondreams3325/traydaq-v2-builder, .github/workflows/build.yml ONLY. Source validation #44 successful (373 tests, 21 Expo checks, TypeScript, Android JavaScript export).
 Run tests, Expo doctor, TypeScript, Android JS bundle, Android Gradle APK assemble, signing verification, and publish TRAYDAQ-APK artifact. Explicit user approval includes investigating failures, fixing source and retrying if needed.
+
+User-authorized TRAYDAQ V2 native APK build: 2026-10-18 after app/API security upgrades. Canonical private source: gideondreams3325/traydaq-v2 main @ abf01e79a84297ed4f7fa8cc6e496d64546dc4f0.
+Build ONLY via dedicated public gideondreams3325/traydaq-v2-builder .github/workflows/build.yml; source validation #49 passed (384/384 native tests, 21/21 Expo checks, TypeScript and Android JS export). Updates include service-only rate limiting, Firebase-verified API abuse prevention and stream-limited creator/music/report/security-broadcast uploads.
+Execute full regression checks, Gradle Android APK compile, signing and artifact upload. User explicitly approved fixing build errors and retrying if needed.

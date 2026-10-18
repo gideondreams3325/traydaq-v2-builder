@@ -75,3 +75,6 @@ Retry Product details source-only QA after aligning report-ID privacy test: priv
 
 
 2026-10-18 User-requested customer and seller usernames on Received Orders, My Orders and receipts. Private source 3e40b5fbb2761de6fe2520f4a4fffecf066c0866. Order API resolves public profile usernames by immutable Firebase buyer_uid/seller_uid under already authorized list and receipt detail; fallback only when unavailable. Test username formatting, auth scoping, Expo compatibility, native regressions, TS and Android JS. SOURCE CHECK ONLY, DO NOT BUILD APK.
+
+
+2026-10-18 user requested OpenAI basic moderation for sexual/unsafe posts, images and comments, source 27801167124b41149ad183de8c23acd011c68552. Source-only validation: OpenAI server-only moderation module (omni-moderation-latest), private flag queue migration, comment screening before public inserts, creator status still pending human approval, Security Hub AI review page, 353+ regression tests, Expo compatibility, TypeScript and Android JS bundle. DO NOT RUN APK BUILDER.

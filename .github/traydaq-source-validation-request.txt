@@ -81,3 +81,6 @@ Retry Product details source-only QA after aligning report-ID privacy test: priv
 
 
 RETRY SOURCE ONLY on 2026-10-18: openai moderation integration at 2042dab51c30a43fe25b62f4cb7a714673129354, updated obsolete analyst Security Hub test for new private AI flags. Run all tests, Expo SDK, TypeScript, Android bundle, no APK.
+
+
+Final OpenAI moderation source validation 2026-10-18: 19139d0885c68a0d184ddb519a56be59c8e2abd1. Security Hub AI status indicator added, preserve private staff-only flags, no secret in mobile. Run all native tests, Expo check, TypeScript, Android JS export; NO APK.

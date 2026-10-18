@@ -72,3 +72,6 @@ Retry Product details source-only QA after aligning report-ID privacy test: priv
 
 
 2026-10-18 Google-only saved account switching improvement. Private TRAYDAQ V2 source d8673ad80a1837a33b1ab33bf2173e35b04a4ab4. Remember Google/password provider labels without credentials, tap saved Google account to show Google chooser rather than password, refuse switching if Google email does not match chosen saved profile. Source-only validation: regression tests, Expo SDK, TypeScript, Android bundle. DO NOT BUILD APK.
+
+
+2026-10-18 User-requested customer and seller usernames on Received Orders, My Orders and receipts. Private source 3e40b5fbb2761de6fe2520f4a4fffecf066c0866. Order API resolves public profile usernames by immutable Firebase buyer_uid/seller_uid under already authorized list and receipt detail; fallback only when unavailable. Test username formatting, auth scoping, Expo compatibility, native regressions, TS and Android JS. SOURCE CHECK ONLY, DO NOT BUILD APK.

@@ -96,3 +96,6 @@ RETRY 2026-10-18 native checkout after strict TS narrowing for persisted cart qu
 
 
 FINAL 2026-10-18 Place Order design source validation at 878aa7771c149aeeb8a7254d178c01d8daabc4e5. Keep buyer contact and address inputs expanded while first typing. Run 363+ native tests, Expo, TypeScript, Android bundle. SOURCE-ONLY, NO APK.
+
+
+2026-10-18 For You algorithm personalized relevance and pull-to-refresh, private source 97fa58a51ad1b1d0d7e1eca664dda95282210c39. Refresh on app background->foreground and swipe down, reshuffle current approved posts per new visit based on true likes/comments/saves/shares, public topic keywords, freshness, author diversity and account-scoped recently viewed history. Keep stable scroll for live updates, promote newly approved via existing button and never expose drafts. Check regression tests, Expo compatibility, TypeScript, Android JS bundle. SOURCE ONLY, DO NOT BUILD APK.

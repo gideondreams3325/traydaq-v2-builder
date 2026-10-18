@@ -35,3 +35,6 @@ Source-only QA: UI tap-to-read modal, current staff authorization, full message 
 
 
 User-requested UI cleanup 2026-10-18. Private source 39c1619fadfd1d07b921a5e4af4e3e20a497e589: remove every native Open in Maps action, preserve GPS and location display, remove Buyer contact from Product Studio and suppress stale contact on submission. SOURCE VALIDATION ONLY: all tests, Expo compatibility, TypeScript, Android JS bundle. DO NOT BUILD APK.
+
+
+Retry source-only UI cleanup validation on 2026-10-18: private TRAYDAQ V2 main f56d7a83f092ff9d93d364fdf65db353e4fc073c. Fixed stale native test expecting Google Maps link. Run all tests, Expo compatibility, TypeScript and Android JS export. NO APK BUILD.

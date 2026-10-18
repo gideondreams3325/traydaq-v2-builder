@@ -1,0 +1,46 @@
+name: TRAYDAQ V2 Weekly Security Audit (No APK)
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '22 6 * * 1'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/security-dependency-audit.yml'
+permissions:
+  contents: read
+jobs:
+  audit:
+    name: Audit private V2 packages without APK build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - name: Check out private native source with read-only credentials
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: main
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependency metadata without lifecycle scripts
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Find high and critical vulnerabilities in production packages
+        run: npm audit --omit=dev --audit-level=high
+      - name: Reject tracked private credential files
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git ls-files | grep -Eq '(^|/)(\.env(\..*)?|[^/]+\.(jks|keystore|p12|p8|pem)|[^/]*service.account[^/]*\.json|firebase.admin[^/]*\.json)$'; then
+            echo '::error::A potential private key or environment file is tracked in the source repository.'
+            exit 1
+          fi
+      - name: Report security scan completed
+        run: echo 'TRAYDAQ dependency audit completed without generating an APK.'

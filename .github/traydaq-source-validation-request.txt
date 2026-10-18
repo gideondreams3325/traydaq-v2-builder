@@ -38,3 +38,6 @@ User-requested UI cleanup 2026-10-18. Private source 39c1619fadfd1d07b921a5e4af4
 
 
 Retry source-only UI cleanup validation on 2026-10-18: private TRAYDAQ V2 main f56d7a83f092ff9d93d364fdf65db353e4fc073c. Fixed stale native test expecting Google Maps link. Run all tests, Expo compatibility, TypeScript and Android JS export. NO APK BUILD.
+
+
+User-requested full TRAYDAQ V2 Android keyboard and input overlap audit 2026-10-18. Private source main 290be7d74620f2c0150608e84f135792715eb319. Enhanced native viewport scrolling, focus measurements, home comment modal flex, chat composer and account/storefront, product/order and legacy form screens. Run ALL regression tests, Expo doctor, TypeScript, Android JS export, inspect/fix any failures. SOURCE CHECKS ONLY; DO NOT BUILD APK.

@@ -63,3 +63,6 @@ RETRY 2026-10-18 source-only keyboard overlap validation, private main e06cae551
 
 2026-10-18 Product details modal screenshot regression, source commit af14523291f4ab0e323f14af94fa10648a0baa38.
 Verify product modal Android safe areas (top status bar and gesture navigation), remove customer-facing raw product/store IDs while keeping ID in ReportPostSheet, remove all Maps actions, wrap pickup/delivery location, format stock. Run native tests, Expo compatibility, TypeScript, Android JS bundle. SOURCE VALIDATION ONLY; DO NOT TRIGGER APK BUILD.
+
+
+Retry Product details source-only QA after aligning report-ID privacy test: private source 1fae705fe4c31b5efd33e41d47d416abe4aeeb4c. The report sheet preserves immutable postId; customer UI omits raw IDs and Maps links. Test Android safe areas, all regression tests, Expo compatibility, TypeScript and Android JS. Do NOT build APK.

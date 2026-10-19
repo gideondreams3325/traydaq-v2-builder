@@ -104,3 +104,6 @@ User-authorized native V2 APK retry #137 on 2026-10-19 after #136 passed 403/403
 
 
 User explicitly authorized TRAYDAQ V2 native APK build 2026-10-19. Build private gideondreams3325/traydaq-v2 main commit 1cc552075cc3ba68a58e16e994bfb43a232c8c84 with first-run notification permission, per-account push on a shared phone, Settings gear, unlimited category selection and Growth Analytics. Use this public V2 builder only. Run all regression/security tests, Expo dependency validation, TypeScript, bundle, Gradle signed APK, signature/install checks, and upload artifact. Fix and rerun any errors as authorized.
+
+
+User-authorized V2 APK retry 2026-10-19 after #138 ran 408 native tests with 407 passed. Corrected remaining stale Android security notification test to assert recipientUid scope on shared phones. Private source main 748bf811db3a44960f77398392d1c944df979f97. Rerun tests, Expo, TypeScript, JS bundle, signed Gradle APK and upload, fixing errors if necessary. Dedicated traydaq-v2-builder only.

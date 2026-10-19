@@ -98,3 +98,6 @@ User-authorized TRAYDAQ V2 Android build — 2026-10-19. Private app source gide
 
 
 User-authorized APK retry #136 on 2026-10-19. The previous #135 run passed 401 of 403 native tests; two old Saved/Drafts tests asserted a now-obsolete tab visibility list. Updated both to preserve private owner-only Growth Analytics and public profile privacy. Private source main e26cf3c93ea3afead3667087b3dc73bada8cb008. Build with dedicated V2 builder, fix any new errors, validate and upload TRAYDAQ APK.
+
+
+User-authorized native V2 APK retry #137 on 2026-10-19 after #136 passed 403/403 tests and 21 Expo dependency checks, then TypeScript found two StyleSheet.absoluteFillObject type errors. Fixed both in mobile/src/new-design/DeletionRequestSheet.tsx and HomeFeedScreen.tsx using StyleSheet.absoluteFill. Latest source main e9485917585accd4c7e00a8fc9e195ad78d196ec. Run tests, TypeScript, bundle, Gradle signing and APK upload. Investigate and repair any further failures under user authorization.

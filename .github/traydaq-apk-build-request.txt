@@ -65,3 +65,7 @@ Run tests, Expo doctor, TypeScript, Android JS bundle, Android Gradle APK assemb
 User-authorized TRAYDAQ V2 native APK build: 2026-10-18 after app/API security upgrades. Canonical private source: gideondreams3325/traydaq-v2 main @ abf01e79a84297ed4f7fa8cc6e496d64546dc4f0.
 Build ONLY via dedicated public gideondreams3325/traydaq-v2-builder .github/workflows/build.yml; source validation #49 passed (384/384 native tests, 21/21 Expo checks, TypeScript and Android JS export). Updates include service-only rate limiting, Firebase-verified API abuse prevention and stream-limited creator/music/report/security-broadcast uploads.
 Execute full regression checks, Gradle Android APK compile, signing and artifact upload. User explicitly approved fixing build errors and retrying if needed.
+
+
+User-authorized TRAYDAQ V2 native APK build: 2026-10-19. Private React Native source main @ a01c6c2e03809b1747afc97b79b700e7da94662c.
+Use dedicated public V2 builder only. Validate updated entrepreneur storefront, booking archive, store sanctions, For You business links, service photos, security alerts, native TypeScript and Android Gradle; fix failed builds and retry under explicit user request.

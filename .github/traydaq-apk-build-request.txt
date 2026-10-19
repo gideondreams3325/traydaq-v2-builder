@@ -78,3 +78,10 @@ User-approved APK retry 2026-10-19 after #129 passed 400 tests and Expo then Typ
 
 
 User-approved retry after #130 TypeScript found Firebase RN-only persistence typing and missing focused post onLinkedContent. Both fixed; private V2 main 9ff16b269248552c8a727dd20677b5d9a118bc02. 2026-10-19. Compile, bundle, sign, upload APK; fix further errors.
+
+
+User-authorized TRAYDAQ V2 native Android APK build — 2026-10-19.
+Canonical private source: gideondreams3325/traydaq-v2 main @ afc33a1fd1f73654061d1f7d0d3e7d8e687ee27d.
+Build via dedicated public gideondreams3325/traydaq-v2-builder, .github/workflows/build.yml ONLY.
+Includes loading and chat timeout improvements, reviewed deletion requests, smaller comments panel, and strict sellers/professionals/jobs grouping.
+Run native regressions, Expo Doctor, TypeScript, Android JS bundle, Gradle assemble, keystore signing verification, and upload TRAYDAQ APK. User explicitly asked to fix errors and rerun if needed.

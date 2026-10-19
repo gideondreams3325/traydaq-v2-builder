@@ -118,3 +118,6 @@ User-authorized follow-up V2 APK build after #140: 411/412 tests passed; changed
 
 
 User-authorized TRAYDAQ V2 Android APK build 2026-10-19 with private source gideondreams3325/traydaq-v2 main a28ca8e406605de3fc757e11fb083615ddbd1d58. Changes: approved picture and video-cover thumbnails on content, order and Security Team push notifications (never raw MP4), username and member profile in Security AI Comment Flags, automatic looping of For You videos until paused or swiped away while non-looping private reviews; new regression tests. Build ONLY in dedicated public traydaq-v2-builder workflow. Run all native tests, Expo dependencies, TypeScript, bundle, Android Gradle, signing, installability and artifact upload; diagnose and repair failures and retry until success as requested.
+
+
+User-authorized V2 APK retry after #143: native tests passed 414/415; fixed the one outdated security video notification regression to verify the recipient account ID plus rich media cover fields. Private V2 source main 07ebfe0f5498bf5248e25ccc9e9ae78ff97e7e3e. Re-run native tests, Expo Doctor, TypeScript, JS bundle, Gradle, signature and APK artifact checks using only public dedicated traydaq-v2-builder. Fix any remaining errors before finishing.

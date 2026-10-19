@@ -72,3 +72,6 @@ Use dedicated public V2 builder only. Validate updated entrepreneur storefront, 
 
 
 Retry of user-authorized APK build after #128 failed 9 stale source assertions. 2026-10-19. Private source main: f6849059231388e99c941355a272adde933ada03. Run full native tests, Expo checks, TypeScript, bundle, Gradle and upload. Investigate additional failures.
+
+
+User-approved APK retry 2026-10-19 after #129 passed 400 tests and Expo then TypeScript JSX parse failed. Fixed Security Hub unmatched JSX closure at source 735586b6de08df52dba5dcb92e3180cc5bbbf725. Continue test / typecheck / native Gradle / signing.

@@ -85,3 +85,8 @@ Canonical private source: gideondreams3325/traydaq-v2 main @ afc33a1fd1f73654061
 Build via dedicated public gideondreams3325/traydaq-v2-builder, .github/workflows/build.yml ONLY.
 Includes loading and chat timeout improvements, reviewed deletion requests, smaller comments panel, and strict sellers/professionals/jobs grouping.
 Run native regressions, Expo Doctor, TypeScript, Android JS bundle, Gradle assemble, keystore signing verification, and upload TRAYDAQ APK. User explicitly asked to fix errors and rerun if needed.
+
+Retry authorized V2 build #133 — 2026-10-19.
+Fixed six stale native regression assertions after sellers/professionals grouping; validated tests now verify separate retailer/product and entrepreneur/service views, shared category definitions, and Security Team deletion request flow.
+Latest private source main: 95fa5b9000177fe4e52e3d301eb88e09497f8597.
+Retry all tests, TypeScript, Expo bundle, Gradle, signature and TRAYDAQ APK publication. If any further errors, inspect and fix.

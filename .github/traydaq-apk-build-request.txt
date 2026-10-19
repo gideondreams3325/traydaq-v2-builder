@@ -101,3 +101,6 @@ User-authorized APK retry #136 on 2026-10-19. The previous #135 run passed 401 o
 
 
 User-authorized native V2 APK retry #137 on 2026-10-19 after #136 passed 403/403 tests and 21 Expo dependency checks, then TypeScript found two StyleSheet.absoluteFillObject type errors. Fixed both in mobile/src/new-design/DeletionRequestSheet.tsx and HomeFeedScreen.tsx using StyleSheet.absoluteFill. Latest source main e9485917585accd4c7e00a8fc9e195ad78d196ec. Run tests, TypeScript, bundle, Gradle signing and APK upload. Investigate and repair any further failures under user authorization.
+
+
+User explicitly authorized TRAYDAQ V2 native APK build 2026-10-19. Build private gideondreams3325/traydaq-v2 main commit 1cc552075cc3ba68a58e16e994bfb43a232c8c84 with first-run notification permission, per-account push on a shared phone, Settings gear, unlimited category selection and Growth Analytics. Use this public V2 builder only. Run all regression/security tests, Expo dependency validation, TypeScript, bundle, Gradle signed APK, signature/install checks, and upload artifact. Fix and rerun any errors as authorized.

@@ -107,3 +107,6 @@ User explicitly authorized TRAYDAQ V2 native APK build 2026-10-19. Build private
 
 
 User-authorized V2 APK retry 2026-10-19 after #138 ran 408 native tests with 407 passed. Corrected remaining stale Android security notification test to assert recipientUid scope on shared phones. Private source main 748bf811db3a44960f77398392d1c944df979f97. Rerun tests, Expo, TypeScript, JS bundle, signed Gradle APK and upload, fixing errors if necessary. Dedicated traydaq-v2-builder only.
+
+
+User-authorized TRAYDAQ V2 Android APK build, 2026-10-19. Build private source gideondreams3325/traydaq-v2 main SHA 1309e4f2d21ac1d966e1d097e383191651fac5ec. Features: verified members may create two separate stores (retail or entrepreneur), independent approvals and storefront management, per-store branding and reviewed changes, explicit product-to-retail-store linkage; atomic database enforcement; updated native tests. Use ONLY the dedicated public TRAYDAQ V2 Native Android APK Builder. Wait for security/native tests, dependency checks, TypeScript, Expo bundle, signed Gradle APK, signature/installability verification, artifact upload; repair failures and rerun as authorized.

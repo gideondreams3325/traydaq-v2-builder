@@ -69,3 +69,6 @@ Execute full regression checks, Gradle Android APK compile, signing and artifact
 
 User-authorized TRAYDAQ V2 native APK build: 2026-10-19. Private React Native source main @ a01c6c2e03809b1747afc97b79b700e7da94662c.
 Use dedicated public V2 builder only. Validate updated entrepreneur storefront, booking archive, store sanctions, For You business links, service photos, security alerts, native TypeScript and Android Gradle; fix failed builds and retry under explicit user request.
+
+
+Retry of user-authorized APK build after #128 failed 9 stale source assertions. 2026-10-19. Private source main: f6849059231388e99c941355a272adde933ada03. Run full native tests, Expo checks, TypeScript, bundle, Gradle and upload. Investigate additional failures.

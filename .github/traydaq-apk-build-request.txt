@@ -127,3 +127,6 @@ User-authorized TRAYDAQ V2 Native Android APK build on 2026-10-19. Build private
 
 
 User-requested CANCEL-AND-RESTART of stalled TRAYDAQ V2 APK build #145 on 2026-10-19. Prior run 39285269796 has remained queued. Replacement run supersedes old run via concurrency cancel-in-progress=true. Build ONLY dedicated public V2 builder from private source gideondreams3325/traydaq-v2 main @ 3b69475c55f52d4ce61069c0e7a6149203f853fe (professional entrepreneur service form settings and backend policies). Run native regression tests, Expo, TypeScript, Android JS bundling, signed Gradle APK, installation verification and artifact upload. Fix failures and rerun if needed. Do not use old traydaq builder.
+
+
+User-authorized corrective TRAYDAQ V2 APK build after #145 and #146: both picked up one stale store-gps-and-studio-audit native test assertion. Test fixed for entrepreneur service terms and retail-only return/shipping policy. MUST check out private source main at 07330e58e56e58318c02ca8f7d5a6831e5ee690f; dedicated public V2 builder only; run all tests, TypeScript, JS bundle, signed APK verification and upload. Fix remaining failures and rerun if required.

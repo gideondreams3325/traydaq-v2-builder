@@ -52,9 +52,10 @@ on:
 permissions:
   contents: read
 
+# User-authorized replacement runs supersede stalled/queued V2 builds.
 concurrency:
   group: traydaq-v2-native-apk
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   android:

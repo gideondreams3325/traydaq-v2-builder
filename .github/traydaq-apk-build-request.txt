@@ -95,3 +95,6 @@ User-authorized retry #134 (2026-10-19). Source main 51341f201c479ad51febbffdb7c
 
 
 User-authorized TRAYDAQ V2 Android build — 2026-10-19. Private app source gideondreams3325/traydaq-v2/main at c1b1153fd5c4a5c236bef85211dca655e59cd9ae. Includes authentic member Growth Analytics and current grouping/deletion/loading fixes. Build with dedicated public V2 workflow .github/workflows/build.yml only. Verify all native tests, Expo dependencies, TypeScript, Android JS export, Gradle, signing, installability and APK artifact. User explicitly authorizes fixing errors and rerunning until successful.
+
+
+User-authorized APK retry #136 on 2026-10-19. The previous #135 run passed 401 of 403 native tests; two old Saved/Drafts tests asserted a now-obsolete tab visibility list. Updated both to preserve private owner-only Growth Analytics and public profile privacy. Private source main e26cf3c93ea3afead3667087b3dc73bada8cb008. Build with dedicated V2 builder, fix any new errors, validate and upload TRAYDAQ APK.

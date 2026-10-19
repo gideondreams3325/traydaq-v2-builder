@@ -124,3 +124,6 @@ User-authorized V2 APK retry after #143: native tests passed 414/415; fixed the 
 
 
 User-authorized TRAYDAQ V2 Native Android APK build on 2026-10-19. Build private source gideondreams3325/traydaq-v2 main SHA 3b69475c55f52d4ce61069c0e7a6149203f853fe. Includes entrepreneur-only service terms, optional cancellation / rescheduling and workmanship guarantees, retail-only returns and shipping validation, reviewed storefront policy display; source and live server synced. Use dedicated public V2 APK builder; run all regression tests, TypeScript, Expo Doctor, JS bundle, signed Gradle APK and installability checks; fix failures and retry as authorized.
+
+
+User-requested CANCEL-AND-RESTART of stalled TRAYDAQ V2 APK build #145 on 2026-10-19. Prior run 39285269796 has remained queued. Replacement run supersedes old run via concurrency cancel-in-progress=true. Build ONLY dedicated public V2 builder from private source gideondreams3325/traydaq-v2 main @ 3b69475c55f52d4ce61069c0e7a6149203f853fe (professional entrepreneur service form settings and backend policies). Run native regression tests, Expo, TypeScript, Android JS bundling, signed Gradle APK, installation verification and artifact upload. Fix failures and rerun if needed. Do not use old traydaq builder.

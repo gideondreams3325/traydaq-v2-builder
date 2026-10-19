@@ -75,3 +75,6 @@ Retry of user-authorized APK build after #128 failed 9 stale source assertions. 
 
 
 User-approved APK retry 2026-10-19 after #129 passed 400 tests and Expo then TypeScript JSX parse failed. Fixed Security Hub unmatched JSX closure at source 735586b6de08df52dba5dcb92e3180cc5bbbf725. Continue test / typecheck / native Gradle / signing.
+
+
+User-approved retry after #130 TypeScript found Firebase RN-only persistence typing and missing focused post onLinkedContent. Both fixed; private V2 main 9ff16b269248552c8a727dd20677b5d9a118bc02. 2026-10-19. Compile, bundle, sign, upload APK; fix further errors.

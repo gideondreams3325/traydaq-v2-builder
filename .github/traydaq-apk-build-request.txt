@@ -115,3 +115,6 @@ Dedicated V2 APK builder trigger confirmation for the user-requested two-store u
 
 
 User-authorized follow-up V2 APK build after #140: 411/412 tests passed; changed the last stale store eligibility regression to assert per-store approval and product owner selection. Private source main a742e09e00884d1588f9bfa7adf7699026fed6f0. Restart tests then native TypeScript, bundle, Gradle, signature, upload; fix remaining errors. Never use legacy builder.
+
+
+User-authorized TRAYDAQ V2 Android APK build 2026-10-19 with private source gideondreams3325/traydaq-v2 main a28ca8e406605de3fc757e11fb083615ddbd1d58. Changes: approved picture and video-cover thumbnails on content, order and Security Team push notifications (never raw MP4), username and member profile in Security AI Comment Flags, automatic looping of For You videos until paused or swiped away while non-looping private reviews; new regression tests. Build ONLY in dedicated public traydaq-v2-builder workflow. Run all native tests, Expo dependencies, TypeScript, bundle, Android Gradle, signing, installability and artifact upload; diagnose and repair failures and retry until success as requested.

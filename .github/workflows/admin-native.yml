@@ -1,9 +1,14 @@
 name: TRAYDAQ V2 Native Android Admin APK Builder
 
 # Completely separate from the existing public TRAYDAQ V2 user APK builder.
-# Dedicated Admin APK workflow is manual-only; do not build automatically on push.
+# Temporary gated push for one requested corrected Admin build; restore manual-only after triggering.
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/admin-native.yml
 
 permissions:
   contents: read
@@ -14,6 +19,7 @@ concurrency:
 
 jobs:
   admin-android:
+    if: "${{ github.event_name == 'workflow_dispatch' || github.event.head_commit.message == 'ci(admin): fix private key password used for signing' }}"
     name: TRAYDAQ Admin Native Android APK
     runs-on: ubuntu-latest
     timeout-minutes: 75
@@ -142,6 +148,17 @@ jobs:
             echo "::error::The Admin keystore opened, but TRAYDAQ_ADMIN_UPLOAD_KEY_ALIAS does not identify an entry in it."
             exit 1
           fi
+          # The recovered Admin JKS uses the same password for the store and private key.
+          # Test private key recovery now to prevent a long build ending in signing failure.
+          CSR="$RUNNER_TEMP/traydaq-admin-preflight.csr"
+          if ! keytool -certreq -keystore "$KEYSTORE" -alias "$ADMIN_ALIAS" \
+            -storepass:env ADMIN_STOREPASS -keypass:env ADMIN_STOREPASS \
+            -file "$CSR" >/dev/null 2>&1; then
+            echo "::error::Admin private key cannot be unlocked using the verified original signing password."
+            exit 1
+          fi
+          rm -f "$CSR"
+          echo "Admin private key recovery verified before compiling."
           KEY_SHA="$(keytool -list -v -keystore "$KEYSTORE" \
             -storepass:env ADMIN_STOREPASS -alias "$ADMIN_ALIAS" \
             | sed -n 's/^[[:space:]]*SHA1: //p' | head -1 | tr -d ':' | tr '[:upper:]' '[:lower:]')"
@@ -193,16 +210,14 @@ jobs:
         env:
           ADMIN_KEYSTORE_B64: ${{ secrets.TRAYDAQ_ADMIN_UPLOAD_KEYSTORE_B64 }}
           ADMIN_STOREPASS: ${{ secrets.TRAYDAQ_ADMIN_UPLOAD_KEYSTORE_PASSWORD }}
-          ADMIN_KEYPASS: ${{ secrets.TRAYDAQ_ADMIN_UPLOAD_KEY_PASSWORD }}
           ADMIN_ALIAS: ${{ secrets.TRAYDAQ_ADMIN_UPLOAD_KEY_ALIAS }}
         run: |
           set -euo pipefail
           ADMIN_STOREPASS="$(node -p 'process.env.ADMIN_STOREPASS.trim()')"
-          ADMIN_KEYPASS="$(node -p 'process.env.ADMIN_KEYPASS.trim()')"
           ADMIN_ALIAS="$(node -p 'process.env.ADMIN_ALIAS.trim()')"
           ADMIN_KEYSTORE_B64="$(node -p 'process.env.ADMIN_KEYSTORE_B64.trim()')"
-          export ADMIN_STOREPASS ADMIN_KEYPASS ADMIN_ALIAS ADMIN_KEYSTORE_B64
-          if [[ -z "$ADMIN_KEYSTORE_B64" || -z "$ADMIN_STOREPASS" || -z "$ADMIN_KEYPASS" || -z "$ADMIN_ALIAS" ]]; then
+          export ADMIN_STOREPASS ADMIN_ALIAS ADMIN_KEYSTORE_B64
+          if [[ -z "$ADMIN_KEYSTORE_B64" || -z "$ADMIN_STOREPASS" || -z "$ADMIN_ALIAS" ]]; then
             echo "::error::Set separate TRAYDAQ_ADMIN signing secrets before building. The user-app signing key is not reused."
             exit 1
           fi
@@ -214,10 +229,10 @@ jobs:
           export KEYSTORE
           trap 'rm -f "$KEYSTORE" "$SIGNED"' EXIT
           printf '%s' "$ADMIN_KEYSTORE_B64" | base64 --decode > "$KEYSTORE"
-          export ADMIN_STOREPASS ADMIN_KEYPASS ADMIN_ALIAS
+          export ADMIN_STOREPASS ADMIN_ALIAS
           SIGNER="$ANDROID_HOME/build-tools/36.0.0/apksigner"
           "$SIGNER" sign --ks "$KEYSTORE" --ks-key-alias "$ADMIN_ALIAS" \
-            --ks-pass env:ADMIN_STOREPASS --key-pass env:ADMIN_KEYPASS \
+            --ks-pass env:ADMIN_STOREPASS --key-pass env:ADMIN_STOREPASS \
             --out "$SIGNED" "$APK"
           "$SIGNER" verify "$SIGNED"
           # Sign-in must use a certificate registered for this Admin package,

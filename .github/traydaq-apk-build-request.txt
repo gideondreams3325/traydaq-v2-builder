@@ -130,3 +130,10 @@ User-requested CANCEL-AND-RESTART of stalled TRAYDAQ V2 APK build #145 on 2026-1
 
 
 User-authorized corrective TRAYDAQ V2 APK build after #145 and #146: both picked up one stale store-gps-and-studio-audit native test assertion. Test fixed for entrepreneur service terms and retail-only return/shipping policy. MUST check out private source main at 07330e58e56e58318c02ca8f7d5a6831e5ee690f; dedicated public V2 builder only; run all tests, TypeScript, JS bundle, signed APK verification and upload. Fix remaining failures and rerun if required.
+
+
+User-requested REGULAR TRAYDAQ V2 Android APK build: 2026-10-21.
+User explicitly asked to review latest changes across chats, build USER APP (not standalone Admin), wait for the result and fix build errors.
+Private user-app source: gideondreams3325/traydaq-v2, main at 027ca48b036d2441184b5a0079752feb3275feb5.
+Recent changes to validate: service/entrepreneur creator posting, policy readers, notification covers/deep links, profile saved media and drafts, confirmed save/share counts, Android feed stale engagement safeguards, owner permissions, all existing Android functions.
+Use ONLY TRAYDAQ V2 Native Android APK Builder (.github/workflows/build.yml), never admin-native.yml. Run tests, Expo Doctor, TypeScript, bundle, Gradle release, stable signing/OAuth check, publish TRAYDAQ-APK.

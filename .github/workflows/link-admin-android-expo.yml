@@ -82,10 +82,29 @@ jobs:
           if(!fcm) {
             const matching=(app.ownerAccount.googleServiceAccountKeysPaginated?.edges||[])
               .map(e=>e.node).filter(k=>k.projectIdentifier==='traydaq');
-            if(matching.length===1) {
+            // Prefer the exact FCM V1 key assigned to the existing user app.
+            // Never guess between multiple saved keys for the same Firebase project.
+            let publicAppKeyId=null;
+            if(matching.length>1) {
+              try {
+                const publicResult=await request(
+                  'query($name:String!){app{byFullName(fullName:$name){slug ownerAccount{name} androidAppCredentials(filter:{applicationIdentifier:"com.traydaq.app"}){googleServiceAccountKeyForFcmV1{id projectIdentifier}}}}}',
+                  {name:'@gideondreamss-team/traydaq-v2-native'}
+                );
+                const pub=publicResult?.app?.byFullName;
+                if(pub?.slug==='traydaq-v2-native' && pub.ownerAccount?.name===accountName)
+                  publicAppKeyId=(pub.androidAppCredentials||[])
+                    .map(x=>x.googleServiceAccountKeyForFcmV1)
+                    .find(x=>x?.projectIdentifier==='traydaq')?.id||null;
+              }catch{
+                console.log('Could not confirm the user-app FCM V1 key; leaving Admin key selection unchanged.');
+              }
+            }
+            const selected=matching.length===1?matching[0]:matching.find(k=>k.id===publicAppKeyId);
+            if(selected) {
               const updated=await request(
                 'mutation($id:ID!,$keyId:ID!){androidAppCredentials{setGoogleServiceAccountKeyForFcmV1(id:$id,googleServiceAccountKeyId:$keyId){id googleServiceAccountKeyForFcmV1{id projectIdentifier}}}}',
-                {id:adminCred.id,keyId:matching[0].id}
+                {id:adminCred.id,keyId:selected.id}
               );
               fcm=updated?.androidAppCredentials?.setGoogleServiceAccountKeyForFcmV1?.googleServiceAccountKeyForFcmV1?.projectIdentifier==='traydaq';
               if(!fcm)throw new Error('Expo did not confirm the FCM V1 association.');

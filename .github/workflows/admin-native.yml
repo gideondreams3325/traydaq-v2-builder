@@ -78,7 +78,7 @@ jobs:
       - name: Restore independent Admin Firebase registration
         env:
           ADMIN_FIREBASE_CONFIG_B64: ${{ secrets.TRAYDAQ_ADMIN_GOOGLE_SERVICES_JSON_B64 }}
-          EXPO_PUBLIC_ADMIN_EAS_PROJECT_ID: ${{ vars.TRAYDAQ_ADMIN_EAS_PROJECT_ID }}
+          EXPO_PUBLIC_ADMIN_EAS_PROJECT_ID: ${{ vars.TRAYDAQ_ADMIN_EAS_PROJECT_ID || '017f3881-3581-41e3-a661-11c49614c0c9' }}
         run: |
           set -euo pipefail
           if [[ -z "$ADMIN_FIREBASE_CONFIG_B64" ]]; then
@@ -116,19 +116,19 @@ jobs:
       - name: Confirm Admin Firebase / EAS prerequisites
         env:
           TRAYDAQ_ADMIN_GOOGLE_SERVICES_FILE: ./google-services.json
-          EXPO_PUBLIC_ADMIN_EAS_PROJECT_ID: ${{ vars.TRAYDAQ_ADMIN_EAS_PROJECT_ID }}
+          EXPO_PUBLIC_ADMIN_EAS_PROJECT_ID: ${{ vars.TRAYDAQ_ADMIN_EAS_PROJECT_ID || '017f3881-3581-41e3-a661-11c49614c0c9' }}
           REQUIRE_NATIVE_CONFIG: "1"
         run: npm run preflight
 
       - name: Generate separate Admin Android native project
         env:
           TRAYDAQ_ADMIN_GOOGLE_SERVICES_FILE: ./google-services.json
-          EXPO_PUBLIC_ADMIN_EAS_PROJECT_ID: ${{ vars.TRAYDAQ_ADMIN_EAS_PROJECT_ID }}
+          EXPO_PUBLIC_ADMIN_EAS_PROJECT_ID: ${{ vars.TRAYDAQ_ADMIN_EAS_PROJECT_ID || '017f3881-3581-41e3-a661-11c49614c0c9' }}
         run: npx expo prebuild --platform android --non-interactive
 
       - name: Build standalone Admin release APK
         env:
-          EXPO_PUBLIC_ADMIN_EAS_PROJECT_ID: ${{ vars.TRAYDAQ_ADMIN_EAS_PROJECT_ID }}
+          EXPO_PUBLIC_ADMIN_EAS_PROJECT_ID: ${{ vars.TRAYDAQ_ADMIN_EAS_PROJECT_ID || '017f3881-3581-41e3-a661-11c49614c0c9' }}
         run: |
           cd android
           chmod +x ./gradlew

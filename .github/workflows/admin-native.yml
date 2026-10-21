@@ -109,6 +109,47 @@ jobs:
           console.log('Separate Firebase Admin Android client configuration validated.');
           NODE
 
+      # Reject incorrect release-signing credentials before lengthy Gradle compilation.
+      - name: Preflight Admin keystore and Firebase signing registration
+        env:
+          ADMIN_KEYSTORE_B64: ${{ secrets.TRAYDAQ_ADMIN_UPLOAD_KEYSTORE_B64 }}
+          ADMIN_STOREPASS: ${{ secrets.TRAYDAQ_ADMIN_UPLOAD_KEYSTORE_PASSWORD }}
+          ADMIN_ALIAS: ${{ secrets.TRAYDAQ_ADMIN_UPLOAD_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$ADMIN_KEYSTORE_B64" || -z "$ADMIN_STOREPASS" || -z "$ADMIN_ALIAS" ]]; then
+            echo "::error::Admin signing secrets are incomplete. Configure the separate Admin keystore, store password and alias."
+            exit 1
+          fi
+          umask 077
+          KEYSTORE="$RUNNER_TEMP/traydaq-admin-preflight.jks"
+          trap 'rm -f "$KEYSTORE"' EXIT
+          if ! printf '%s' "$ADMIN_KEYSTORE_B64" | base64 --decode > "$KEYSTORE"; then
+            echo "::error::TRAYDAQ_ADMIN_UPLOAD_KEYSTORE_B64 must contain base64 of the original Admin keystore file."
+            exit 1
+          fi
+          if ! keytool -list -keystore "$KEYSTORE" -storepass:env ADMIN_STOREPASS >/dev/null 2>&1; then
+            echo "::error::Cannot unlock Admin keystore: verify the original keystore bytes and TRAYDAQ_ADMIN_UPLOAD_KEYSTORE_PASSWORD match. No APK was signed."
+            exit 1
+          fi
+          if ! keytool -list -keystore "$KEYSTORE" -storepass:env ADMIN_STOREPASS -alias "$ADMIN_ALIAS" >/dev/null 2>&1; then
+            echo "::error::The Admin keystore opened, but TRAYDAQ_ADMIN_UPLOAD_KEY_ALIAS does not identify an entry in it."
+            exit 1
+          fi
+          KEY_SHA="$(keytool -list -v -keystore "$KEYSTORE" \
+            -storepass:env ADMIN_STOREPASS -alias "$ADMIN_ALIAS" \
+            | sed -n 's/^[[:space:]]*SHA1: //p' | head -1 | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          export KEY_SHA
+          node - <<'NODE'
+          const config=require('./google-services.json');
+          const registered=(config.client||[]).flatMap(c=>c.oauth_client||[])
+            .filter(c=>c.client_type===1 && c.android_info?.package_name==='com.traydaq.admin')
+            .map(c=>(c.android_info?.certificate_hash||'').replace(/:/g,'').toLowerCase());
+          if(!process.env.KEY_SHA || !registered.includes(process.env.KEY_SHA))
+            throw Error('Admin signing SHA-1 is not registered in Firebase for com.traydaq.admin. Register its SHA-1 and update TRAYDAQ_ADMIN_GOOGLE_SERVICES_JSON_B64.');
+          console.log('Admin keystore password, alias and Firebase signing SHA-1 verified before compilation.');
+          NODE
+
       - name: Install Admin native dependencies
         run: npm install --no-audit --no-fund
 

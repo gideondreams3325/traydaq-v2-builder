@@ -1,14 +1,9 @@
 name: TRAYDAQ V2 Native Android Admin APK Builder
 
 # Completely separate from the existing public TRAYDAQ V2 user APK builder.
-# One-time signing credential diagnostic on a gated commit, then restore manual-only.
+# Dedicated Admin APK workflow is manual-only; do not build automatically on push.
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - .github/workflows/admin-native.yml
 
 permissions:
   contents: read
@@ -19,7 +14,6 @@ concurrency:
 
 jobs:
   admin-android:
-    if: "${{ github.event_name == 'workflow_dispatch' || github.event.head_commit.message == 'ci(admin): diagnose saved signing secret mismatch once' }}"
     name: TRAYDAQ Admin Native Android APK
     runs-on: ubuntu-latest
     timeout-minutes: 75
@@ -140,15 +134,6 @@ jobs:
             echo "::error::TRAYDAQ_ADMIN_UPLOAD_KEYSTORE_B64 must contain base64 of the original Admin keystore file."
             exit 1
           fi
-          # One-time diagnostic against the owner's recovered keystore (SHA-256 only; no secrets logged).
-          # Remove after the diagnostic run; this is not a permanent signing-key pin.
-          EXPECTED_JKS_SHA256='5cacfd761ea661a95ea4a459ee230d5d4c1f17015a8aa68f7e33cc13ba3f923f'
-          ACTUAL_JKS_SHA256="$(sha256sum "$KEYSTORE" | cut -d' ' -f1)"
-          if [[ "$ACTUAL_JKS_SHA256" != "$EXPECTED_JKS_SHA256" ]]; then
-            echo "::error::The GitHub Base64 secret decodes successfully but does NOT match the original TRAYDAQ Admin keystore. Replace TRAYDAQ_ADMIN_UPLOAD_KEYSTORE_B64 with the complete original file text."
-            exit 1
-          fi
-          echo "::notice::The GitHub Base64 secret matches the recovered original Admin keystore."
           if ! keytool -list -keystore "$KEYSTORE" -storepass:env ADMIN_STOREPASS >/dev/null 2>&1; then
             echo "::error::Cannot unlock Admin keystore: verify the original keystore bytes and TRAYDAQ_ADMIN_UPLOAD_KEYSTORE_PASSWORD match. No APK was signed."
             exit 1

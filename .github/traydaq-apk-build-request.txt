@@ -141,3 +141,6 @@ Use ONLY TRAYDAQ V2 Native Android APK Builder (.github/workflows/build.yml), ne
 Build #148 follow-up, user-authorized retry, 2026-10-21.
 The prior user-app build #148 failed 16 stale native regression assertions, 434/450 passed; all 13 relevant test files were checked against current app UX and updated, preserving authoritative save/share counts, static linked video covers, owner-direct review exceptions, and professional services.
 Build the REGULAR TRAYDAQ V2 USER APK ONLY, source main at 61dbbd1b6553d1466d7d291f2ebbfb02e4a0ee32. Do not build the Admin app. If further errors occur, inspect and fix and retry until complete.
+
+
+User explicitly re-requested a TRAYDAQ V2 regular USER app APK build on 2026-10-21, after #149 failed with four outdated assertions (446/450 tests passed). The regression fixes are now on private source main 9048edc167646599e90ec468da189fa6a7b06977. Build ONLY user app com.traydaq.app, NOT Admin app, through public .github/workflows/build.yml. Test, Expo check, TypeScript, Android build, signing, upload TRAYDAQ.apk. Inspect and correct any new errors and retry under this approval.

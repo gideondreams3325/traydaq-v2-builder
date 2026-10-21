@@ -160,8 +160,23 @@ jobs:
             --ks-pass env:ADMIN_STOREPASS --key-pass env:ADMIN_KEYPASS \
             --out "$SIGNED" "$APK"
           "$SIGNER" verify "$SIGNED"
+          # Sign-in must use a certificate registered for this Admin package,
+          # not only the certificate used by the public TRAYDAQ Android app.
+          KEY_SHA="$(keytool -list -v -keystore "$KEYSTORE" \
+            -storepass:env ADMIN_STOREPASS -alias "$ADMIN_ALIAS" \
+            | sed -n 's/^[[:space:]]*SHA1: //p' | head -1 | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          export KEY_SHA
+          node - <<'NODE'
+          const config=require('./google-services.json');
+          const registered=(config.client||[]).flatMap(c=>c.oauth_client||[])
+            .filter(c=>c.client_type===1 && c.android_info?.package_name==='com.traydaq.admin')
+            .map(c=>(c.android_info?.certificate_hash||'').replace(/:/g,'').toLowerCase());
+          if(!process.env.KEY_SHA || !registered.includes(process.env.KEY_SHA))
+            throw Error('Admin signing certificate SHA-1 is not registered in Firebase for com.traydaq.admin. Download updated google-services.json.');
+          console.log('Admin package signing certificate verified against Firebase Google OAuth registration.');
+          NODE
           mv "$SIGNED" "$APK"
-          echo "Admin APK signed independently; register this keystore's SHA-1 and SHA-256 in Firebase for Google login."
+          echo "TRAYDAQ Admin APK independently signed and Firebase SHA-1 verified."
 
       - name: Publish only the Admin APK
         uses: actions/upload-artifact@v4

@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   admin-android:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.head_commit.message == 'build(admin): requested signed staff APK test' }}
+    if: "${{ github.event_name == 'workflow_dispatch' || github.event.head_commit.message == 'build(admin): requested signed staff APK test' }}"
     name: TRAYDAQ Admin Native Android APK
     runs-on: ubuntu-latest
     timeout-minutes: 75

@@ -1,9 +1,15 @@
 name: TRAYDAQ V2 Native Android Admin APK Builder
 
 # Completely separate from the existing public TRAYDAQ V2 user APK builder.
-# Deliberately manual-only. NEVER build on push or pull requests.
+# Owner-requested build only. This temporary exact-commit push gate is
+# removed after starting the explicit build; routine builds remain manual.
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/admin-native.yml
 
 permissions:
   contents: read
@@ -14,6 +20,7 @@ concurrency:
 
 jobs:
   admin-android:
+    if: "${{ github.event_name == 'workflow_dispatch' || github.event.head_commit.message == 'build(admin): requested signed staff APK test' }}"
     name: TRAYDAQ Admin Native Android APK
     runs-on: ubuntu-latest
     timeout-minutes: 75
@@ -70,7 +77,13 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - uses: android-actions/setup-android@v3
+      # GitHub's Ubuntu runner provides Android SDK command-line tools.
+      # setup-android@v3 attempts the removed "tools" package and fails.
+      - name: Verify preinstalled Android SDK
+        run: |
+          set -euo pipefail
+          test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --version
 
       - name: Install Android API 36
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0"

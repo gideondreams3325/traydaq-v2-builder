@@ -151,3 +151,5 @@ User-approved V2 USER APK retry 2026-10-21 after #151: all 450 native tests and 
 
 
 2026-10-21: User explicitly requested building the TRAYDAQ V2 regular Android USER APK following web and native page-persistence/For You empty-state updates. Source private gideondreams3325/traydaq-v2 main c5c8cdc92374d5db1f744e7a78afeae59f4d14cb. Trigger ONLY public dedicated .github/workflows/build.yml (com.traydaq.app, never Admin). Validate native tests, Expo Doctor, TypeScript, signed release APK and uploaded artifact. Repair build failures when possible; do not expose any signing credentials.
+
+2026-10-21: Retry requested USER Android APK after run 39671801361 failed 24 stale native source-pattern assertions (426/450 passing) caused by persistent tab routing and modal guards. Updated regression assertions without undoing guarded route behavior. Rebuild only com.traydaq.app from private main 99d86d8abf2666539ba71ddccaf12a72e41be763 with native V2 workflow; run tests, Expo Doctor, TypeScript and sign/package APK. No Admin build.

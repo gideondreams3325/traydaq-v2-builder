@@ -1,14 +1,9 @@
 name: TRAYDAQ V2 Native Android Admin APK Builder
 
 # Completely separate from the existing public TRAYDAQ V2 user APK builder.
-# One-time owner-requested signing validation; gated push removed immediately after dispatch.
+# Dedicated Admin APK workflow is manual-only; do not build automatically on push.
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - .github/workflows/admin-native.yml
 
 permissions:
   contents: read
@@ -19,7 +14,6 @@ concurrency:
 
 jobs:
   admin-android:
-    if: "${{ github.event_name == 'workflow_dispatch' || github.event.head_commit.message == 'ci(admin): normalize release signing inputs for one-time validation' }}"
     name: TRAYDAQ Admin Native Android APK
     runs-on: ubuntu-latest
     timeout-minutes: 75

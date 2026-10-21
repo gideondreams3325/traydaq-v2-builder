@@ -137,3 +137,7 @@ User explicitly asked to review latest changes across chats, build USER APP (not
 Private user-app source: gideondreams3325/traydaq-v2, main at 027ca48b036d2441184b5a0079752feb3275feb5.
 Recent changes to validate: service/entrepreneur creator posting, policy readers, notification covers/deep links, profile saved media and drafts, confirmed save/share counts, Android feed stale engagement safeguards, owner permissions, all existing Android functions.
 Use ONLY TRAYDAQ V2 Native Android APK Builder (.github/workflows/build.yml), never admin-native.yml. Run tests, Expo Doctor, TypeScript, bundle, Gradle release, stable signing/OAuth check, publish TRAYDAQ-APK.
+
+Build #148 follow-up, user-authorized retry, 2026-10-21.
+The prior user-app build #148 failed 16 stale native regression assertions, 434/450 passed; all 13 relevant test files were checked against current app UX and updated, preserving authoritative save/share counts, static linked video covers, owner-direct review exceptions, and professional services.
+Build the REGULAR TRAYDAQ V2 USER APK ONLY, source main at 61dbbd1b6553d1466d7d291f2ebbfb02e4a0ee32. Do not build the Admin app. If further errors occur, inspect and fix and retry until complete.

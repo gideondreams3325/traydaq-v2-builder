@@ -1,9 +1,14 @@
 name: TRAYDAQ V2 Native Android Admin APK Builder
 
 # Completely separate from the existing public TRAYDAQ V2 user APK builder.
-# Deliberately manual-only. NEVER build on push or pull requests.
+# One-time owner-requested signing validation; gated push removed immediately after dispatch.
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/admin-native.yml
 
 permissions:
   contents: read
@@ -14,6 +19,7 @@ concurrency:
 
 jobs:
   admin-android:
+    if: "${{ github.event_name == 'workflow_dispatch' || github.event.head_commit.message == 'ci(admin): normalize release signing inputs for one-time validation' }}"
     name: TRAYDAQ Admin Native Android APK
     runs-on: ubuntu-latest
     timeout-minutes: 75
@@ -117,6 +123,12 @@ jobs:
           ADMIN_ALIAS: ${{ secrets.TRAYDAQ_ADMIN_UPLOAD_KEY_ALIAS }}
         run: |
           set -euo pipefail
+          # Pasting into GitHub Actions Secrets can include accidental leading/trailing whitespace.
+          # Normalize values in memory only, without printing any signing credentials.
+          ADMIN_STOREPASS="$(node -p 'process.env.ADMIN_STOREPASS.trim()')"
+          ADMIN_ALIAS="$(node -p 'process.env.ADMIN_ALIAS.trim()')"
+          ADMIN_KEYSTORE_B64="$(node -p 'process.env.ADMIN_KEYSTORE_B64.trim()')"
+          export ADMIN_STOREPASS ADMIN_ALIAS ADMIN_KEYSTORE_B64
           if [[ -z "$ADMIN_KEYSTORE_B64" || -z "$ADMIN_STOREPASS" || -z "$ADMIN_ALIAS" ]]; then
             echo "::error::Admin signing secrets are incomplete. Configure the separate Admin keystore, store password and alias."
             exit 1
@@ -191,6 +203,11 @@ jobs:
           ADMIN_ALIAS: ${{ secrets.TRAYDAQ_ADMIN_UPLOAD_KEY_ALIAS }}
         run: |
           set -euo pipefail
+          ADMIN_STOREPASS="$(node -p 'process.env.ADMIN_STOREPASS.trim()')"
+          ADMIN_KEYPASS="$(node -p 'process.env.ADMIN_KEYPASS.trim()')"
+          ADMIN_ALIAS="$(node -p 'process.env.ADMIN_ALIAS.trim()')"
+          ADMIN_KEYSTORE_B64="$(node -p 'process.env.ADMIN_KEYSTORE_B64.trim()')"
+          export ADMIN_STOREPASS ADMIN_KEYPASS ADMIN_ALIAS ADMIN_KEYSTORE_B64
           if [[ -z "$ADMIN_KEYSTORE_B64" || -z "$ADMIN_STOREPASS" || -z "$ADMIN_KEYPASS" || -z "$ADMIN_ALIAS" ]]; then
             echo "::error::Set separate TRAYDAQ_ADMIN signing secrets before building. The user-app signing key is not reused."
             exit 1

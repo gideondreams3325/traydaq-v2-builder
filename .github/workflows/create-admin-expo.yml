@@ -1,0 +1,103 @@
+name: Provision standalone TRAYDAQ Admin Expo project
+
+# One-time Expo project setup only. No APK, no deploy, no credentials exported.
+# Uses the existing Expo token already saved in this Builder repository.
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/create-admin-expo.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: traydaq-admin-expo-project-init
+  cancel-in-progress: false
+
+jobs:
+  provision-admin-expo:
+    name: Create or link TRAYDAQ Admin only
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+      EXPO_TOKEN: ${{ secrets.TRAYDAQ_V2_EXPO_TOKEN }}
+      EXPO_ACCOUNT: gideondreamss-team
+    defaults:
+      run:
+        working-directory: private-src/admin-native
+    steps:
+      - name: Verify Expo token and read-only private source access
+        working-directory: .
+        env:
+          HAS_EXPO_TOKEN: ${{ secrets.TRAYDAQ_V2_EXPO_TOKEN != '' }}
+          HAS_SOURCE_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: |
+          if [[ "$HAS_EXPO_TOKEN" != "true" || "$HAS_SOURCE_TOKEN" != "true" ]]; then
+            echo "::error::The existing Expo and private-source secrets are needed. Do not paste them into chat."
+            exit 1
+          fi
+
+      - name: Check out separate private Admin development source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/standalone-admin-native
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Expo app dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Prepare isolated Admin Expo registration
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('fs');
+          const config=require('./app.config.js').expo;
+          if(config.slug!=='traydaq-admin-native' || config.android?.package!=='com.traydaq.admin')
+            throw Error('Refusing to initialize: expected separate TRAYDAQ Admin app, not the user APK.');
+          const extra={...(config.extra||{})};
+          delete extra.eas;
+          const expo={...config, owner:process.env.EXPO_ACCOUNT, extra};
+          fs.writeFileSync('app.json',JSON.stringify({expo},null,2)+'\n');
+          NODE
+          mv app.config.js "$RUNNER_TEMP/traydaq-admin-app.config.js"
+
+      - name: Create or link separate Admin Expo EAS project
+        run: |
+          set -euo pipefail
+          npx --yes eas-cli@latest project:init --non-interactive --json --force --account "$EXPO_ACCOUNT" \
+            > "$RUNNER_TEMP/traydaq-admin-eas-init.json"
+
+      - name: Publish nonsecret Admin Expo project UUID
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('fs');
+          const config=JSON.parse(fs.readFileSync('app.json','utf8')).expo;
+          const id=config.extra?.eas?.projectId;
+          if(config.slug!=='traydaq-admin-native' || config.android?.package!=='com.traydaq.admin' ||
+             !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id||'')) {
+            throw Error('Admin Expo project ID was not saved; inspect the Expo dashboard, do not start APK build.');
+          }
+          const url='https://expo.dev/accounts/gideondreamss-team/projects/traydaq-admin-native';
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,
+            '## Standalone TRAYDAQ Admin Expo project\n\n'+
+            '- **Admin project ID (public UUID):** `'+id+'`\n'+
+            '- **Expo project:** '+url+'\n'+
+            '- **Android package:** `com.traydaq.admin`\n\n'+
+            'No APK build, Firebase deployment, or changes to TRAYDAQ user app were made.\n');
+          console.log('TRAYDAQ_ADMIN_EAS_PROJECT_ID='+id);
+          console.log('TRAYDAQ_ADMIN_EXPO_PROJECT_URL='+url);
+          NODE

@@ -1,5 +1,5 @@
-TRAYDAQ STAFF SOURCE VALIDATION ONLY — VIDEO PLAYER TYPES FIX
+TRAYDAQ STAFF SOURCE VALIDATION ONLY — FRIENDLY ERRORS AND CLEAN REVIEW UI
 Source: gideondreams3325/traydaq-v2 / feat/standalone-admin-native
-Expected source commit: fa86e0c60eddece8512c708e3d0f51e9962c3c06
-Native Creator published video/picture preview and private pending video evidence player, role tests, 11 departments Head, popup UI. Check 90 security tests + Staff/web/Android TypeScript.
-NO APK BUILD, NO USER APP DEPLOY, NO ADMIN CUTOVER.
+Expected source commit: ec48a87018747572d5884d816eb17e917971f80a
+Check all Staff security tests + Staff/web/user Android TypeScript for compatibility. Specifically verify clean DNS/UnknownHostException messaging, removal of passive Owner notices, unchanged permissions and accurate empty states.
+STAFF ONLY. NO APK BUILD, NO WEB DEPLOY, NO USER APP BUILD, NO LEGACY ADMIN CUTOVER.

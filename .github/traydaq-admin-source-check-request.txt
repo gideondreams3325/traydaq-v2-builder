@@ -1,7 +1,7 @@
 TRAYDAQ STAFF SOURCE VALIDATION ONLY
 Private source repository: gideondreams3325/traydaq-v2
 Private source ref: feat/standalone-admin-native
-Updated source commit: a30cdc4d11ced5159d6c3226d038c8ddbe72ce68
-Changes: live Fraud priority queue plus Accounting/Technical aggregate reporting, department-gated APIs
+Updated source commit: 373eee03ea4169e047e792717f8177615149a947
+Changes: Typechecked Fraud priority screen icon; independent listing decisions; Accounting and Technical insights
 Checks: npm run test:security; npm run typecheck
 No Android APK building, signing or deployment.

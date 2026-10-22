@@ -1,6 +1,5 @@
-TRAYDAQ STAFF SOURCE VALIDATION — NO APK
-Source: gideondreams3325/traydaq-v2, branch feat/standalone-admin-native
-Commit: 73332f178e4f7d03773e0dae4a286007bd7752c4
-Goal: validate permanent Owner Head access, audit-backed Owner self-approvals, 11-department Head appointments, branded popup screens, and new native Creator video + image preview player.
-Scope: Staff security tests (now 90), Staff TypeScript, web and Android TypeScript read-only validation.
-DO NOT BUILD ANY APK. DO NOT MODIFY USER-FACING APP. KEEP LEGACY ADMIN PORTAL OPEN.
+TRAYDAQ STAFF SOURCE VALIDATION ONLY — VIDEO PLAYER TYPES FIX
+Source: gideondreams3325/traydaq-v2 / feat/standalone-admin-native
+Expected source commit: fa86e0c60eddece8512c708e3d0f51e9962c3c06
+Native Creator published video/picture preview and private pending video evidence player, role tests, 11 departments Head, popup UI. Check 90 security tests + Staff/web/Android TypeScript.
+NO APK BUILD, NO USER APP DEPLOY, NO ADMIN CUTOVER.

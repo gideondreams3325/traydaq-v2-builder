@@ -1,7 +1,6 @@
-TRAYDAQ STAFF SOURCE VERIFICATION — NO APK BUILD
-Source: gideondreams3325/traydaq-v2
+TRAYDAQ STAFF SOURCE VALIDATION ONLY — NO APK
+Private source: gideondreams3325/traydaq-v2
 Branch: feat/standalone-admin-native
-Commit: a77a031c0a367d754681294806dc2af5bbee3fef
-Scope: Owner Head across all 11 departments; bulk multi-department verified Head appointments; audited Owner self-review; Staff-wide green/gold modal dialogs.
-Checks: native security tests, Staff TypeScript, web and user Android TypeScript.
-DO NOT BUILD ANY APK, deploy user-facing apps or disable legacy Admin.
+Commit: a00141f0c56d83b13f4e6b3d0457dae589188cd6
+Validate Owner permanent Head in 11 departments; multi-department Head picker and appointment audit; owner self-review audit; branded green/gold dialogs everywhere; correct previous test expectations.
+Staff security tests and Staff/web/user Android TypeScript. NO APK build, legacy shutdown or user-facing changes.

@@ -1,7 +1,7 @@
-TRAYDAQ V2 SOURCE VALIDATION ONLY
-Private source repository: gideondreams3325/traydaq-v2
-Private source ref: feat/standalone-admin-native
-Updated source commit: c312081969973d353c066eb9e6ea80f281107ad7
-Changes: two-person Technical settings and backend Creator/Music upload pause safeguards, plus Creator copyright
-Checks: STAFF security tests; STAFF TypeScript; user web TypeScript; user Android TypeScript
-No Android APK build, signing or deployment.
+TRAYDAQ V2 SOURCE VERIFICATION ONLY
+Source repository: gideondreams3325/traydaq-v2
+Source ref: feat/standalone-admin-native
+Expected source checkpoint: df16268a7b398ee5331364f89d08578b6f5717df
+Changes: Music copyright claims and independent Head/Owner review; native STAFF desk; user Android reporting form; user web music reporting dialog; access contract tests.
+Checks: STAFF security tests; STAFF TypeScript; web TypeScript; user Android TypeScript
+No APK build, signing or deployment.

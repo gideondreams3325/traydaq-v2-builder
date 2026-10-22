@@ -1,0 +1,36 @@
+name: TRAYDAQ V2 User Web Source Validation (No Deployment)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/traydaq-web-source-validation-request.txt"
+permissions:
+  contents: read
+jobs:
+  web-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - name: Checkout current private TRAYDAQ V2 main
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: main
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install web dependencies
+        run: npm install --no-audit --no-fund
+      - name: Test production web app
+        run: npm test
+      - name: Verify web TypeScript
+        run: npm run typecheck
+      - name: Compile production web assets without deploying
+        run: npm run build

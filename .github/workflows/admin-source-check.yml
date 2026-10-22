@@ -53,6 +53,7 @@ jobs:
         working-directory: private-src
         run: npm test
       - name: Run user Android regression tests
+        if: always()
         working-directory: private-src/mobile
         run: node --test tests/*.test.mjs
       - name: Confirm no APK or signing actions in this workflow

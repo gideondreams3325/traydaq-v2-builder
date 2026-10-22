@@ -165,3 +165,6 @@ User-requested TRAYDAQ V2 Android APK build, 2026-10-22: finish and monitor comp
 Latest private source main: efe33f70c6e24e75f566ed7d9e0c84d359301577
 Fix: automatic 2 MB-safe Android selfie compression for identity verification; web camera parity; new regression tests.
 Use ONLY this dedicated V2 builder build.yml; compile, test, sign, upload artifact. Inspect errors, fix source, and rerun if needed.
+
+
+2026-10-22 USER-AUTHORIZED APK BUILD: user requests release of latest user-facing Android TRAYDAQ V2 including recipient-owned scheduled rich campaigns and notification navigation, plus native regression repairs. Source private gideondreams3325/traydaq-v2/main @ 123bc690fe679231d673b723766f3c0dfdabe838. Use ONLY public dedicated traydaq-v2-builder .github/workflows/build.yml to test, TypeScript, Expo export, sign/assemble and upload TRAYDAQ.apk. Keep standalone STAFF builder untouched; verify artifacts and failure logs.

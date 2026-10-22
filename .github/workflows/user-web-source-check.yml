@@ -31,6 +31,8 @@ jobs:
       - name: Test production web app
         run: npm test
       - name: Verify web TypeScript
+        if: always()
         run: npm run typecheck
       - name: Compile production web assets without deploying
+        if: always()
         run: npm run build

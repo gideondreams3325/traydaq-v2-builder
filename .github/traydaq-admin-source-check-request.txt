@@ -1,5 +1,6 @@
-TRAYDAQ STAFF SOURCE-ONLY REVIEW HISTORY VALIDATION
-Source: gideondreams3325/traydaq-v2 branch feat/standalone-admin-native
-HEAD d3a555a1dbcaf945bba297985683033326c29352
-Verify Staff reviews/storage details open, creator, reviewer, media access, Creator/Music/Jobs module details, Owner history, orders and bookings, role revocation, contract tests and Staff TypeScript.
-NO APK BUILD. NO USER-FACING BUILDS. NO OLD ADMIN CUTOVER.
+TRAYDAQ STAFF SOURCE VALIDATION — OPENABLE HISTORY AND CONTENT DETAILS
+Private source: gideondreams3325/traydaq-v2 / feat/standalone-admin-native
+Source SHA: d3a555a1dbcaf945bba297985683033326c29352
+Run all native Staff access/department/history tests and native TypeScript checks; include user web and Android source compatibility only.
+Verify Security review storage detail with creator reviewer and protected media, Owner audit profiles, Orders archive seller/customer, module and queue detail screens.
+STAFF ONLY. NO APK BUILD. NO USER-FACING DEPLOYMENT. NO ADMIN CUTOVER.

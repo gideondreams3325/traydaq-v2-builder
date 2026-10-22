@@ -1,6 +1,8 @@
-TRAYDAQ STAFF FINAL SOURCE VERIFICATION — ARCHIVED CONTENT OPEN AND BACK KEY
+TRAYDAQ STAFF + TRAYDAQ USER NATIVE RICH PUSH SOURCE VERIFICATION — 2026-10-22
 Source repository: gideondreams3325/traydaq-v2
 Branch: feat/standalone-admin-native
-Expected source SHA: 0ef82d404fcf9440035cdb355ade18206c5bcd12
-Run all native Staff regression tests, React Native TypeScript checks and read-only shared code compatibility. Verify Security stored content detail, creator identity, reviewer, Owner and transaction histories, native Back close behavior, and protected media URLs.
-NO APK BUILD; NO WEB OR USER APP BUILD; NO ADMIN CUTOVER.
+Expected source SHA: 14a414902e86b9c6c485ac039dbe92f0f0ce1efa
+Validate ALL existing Staff regression tests and previously failing fixes: staff records, review detail, back-key navigation, department policy, owner access, image/video preview, account and town identity, forms, profile images, department appointments, and communication approvals.
+Validate STAFF rich campaign composer, scheduled campaign SQL contract, Firebase-auth scoped alert record deep-links, and user native push rich image + category/destination routing.
+Run Admin access tests, Staff native TypeScript, web TypeScript, and user Android TypeScript.
+NO APK BUILD. NO USER-FACING APP BUILD. NO PRODUCTION CUTOVER OR MIGRATION.

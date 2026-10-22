@@ -1,5 +1,5 @@
-TRAYDAQ STAFF FULL HISTORY DETAIL REGRESSION VALIDATION — FIXED LEGACY OWNER TEST
-Source: gideondreams3325/traydaq-v2 / feat/standalone-admin-native
-Expected source SHA: f4082d45a8cc3b60de032c42656288c89472e494
-Run Staff-only source contracts, React Native TypeScript, shared web/mobile source compatibility. Test archived review opening and authorized creator/reviewer/media details, owner decision audit, order/booking participants and module queue inspector.
-Do not run APK build, do not deploy web or user app, no Admin cutover.
+TRAYDAQ STAFF — HISTORY DETAILS VERIFIED SOURCE PASS
+Standalone Staff branch: feat/standalone-admin-native in gideondreams3325/traydaq-v2
+Exact HEAD: c649f2e817171f9af3618ade802b58d5d8430c96
+Run Staff security and archive detail regression tests, TypeScript Staff React Native, and compatibility typechecks for shared apps only.
+Do not build any Android APK, do not deploy the user-facing apps or change their source, do not cut over admin.

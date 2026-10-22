@@ -1,6 +1,13 @@
 name: TRAYDAQ STAFF source verification (no APK)
 on:
   workflow_dispatch:
+  # Run Admin-only source validation for a deliberately committed request.
+  # This workflow does NOT generate, sign, or publish an APK.
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/admin-source-check.yml"
+      - ".github/traydaq-admin-source-check-request.txt"
 
 permissions:
   contents: read

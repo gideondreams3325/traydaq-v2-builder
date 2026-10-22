@@ -1,5 +1,4 @@
-TRAYDAQ STAFF SOURCE VALIDATION ONLY — FRIENDLY ERRORS AND CLEAN REVIEW UI
+TRAYDAQ STAFF SOURCE CHECK — NAVIGATION, SEARCH, AVATAR AND GPS
 Source: gideondreams3325/traydaq-v2 / feat/standalone-admin-native
-Expected source commit: ec48a87018747572d5884d816eb17e917971f80a
-Check all Staff security tests + Staff/web/user Android TypeScript for compatibility. Specifically verify clean DNS/UnknownHostException messaging, removal of passive Owner notices, unchanged permissions and accurate empty states.
-STAFF ONLY. NO APK BUILD, NO WEB DEPLOY, NO USER APP BUILD, NO LEGACY ADMIN CUTOVER.
+Expected source commit: 85f907f4887ef681213b167f2f90cd821f0ebc46
+Validate native back history, keyboard, member partial search, profile picture selection, conditional town geocoding and all Staff security contracts. Source only; no APK build, no deployment of user-facing applications, no old Admin cutover.

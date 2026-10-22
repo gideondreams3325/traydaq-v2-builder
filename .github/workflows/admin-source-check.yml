@@ -1,16 +1,12 @@
 name: TRAYDAQ STAFF source verification (no APK)
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths: ['.github/workflows/admin-source-check.yml']
 
 permissions:
   contents: read
 
 jobs:
   source-check:
-    if: "${{ github.event_name == 'workflow_dispatch' || github.event.head_commit.message == 'ci(admin): check original-green department workspaces' }}"
     runs-on: ubuntu-latest
     timeout-minutes: 20
     defaults:

@@ -1,4 +1,3 @@
-TRAYDAQ STAFF AND USER V2 SOURCE VALIDATION RETRY 2 — 2026-10-22
-Private source: gideondreams3325/traydaq-v2 branch feat/standalone-admin-native SHA 659f4509f3964279fd1893ba745c77f3fc72c471
-Check all staff security/access, previous record history and policy governance regressions, deep-linking private notifications by ID, communication rich campaigns, web and consumer-native typechecks.
-Source validation ONLY. NO APK BUILD OR DEPLOYMENT.
+TRAYDAQ V2 BUILDER SOURCE-ONLY REGRESSION 3
+Private branch feat/standalone-admin-native SHA 19e62c4d3ba138fd0fbde70a650f30db3690b5e5
+Run all existing Staff V2 regression tests plus staff-rich-campaigns tests, Staff RN typecheck, web typecheck, consumer native typecheck. Retain Staff records, policy, profile picture, direct notification and marketing campaign history. NO APK BUILD / DEPLOYMENT.

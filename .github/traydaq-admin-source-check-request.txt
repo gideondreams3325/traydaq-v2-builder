@@ -1,5 +1,6 @@
-TRAYDAQ STAFF — HISTORY DETAILS VERIFIED SOURCE PASS
-Standalone Staff branch: feat/standalone-admin-native in gideondreams3325/traydaq-v2
-Exact HEAD: c649f2e817171f9af3618ade802b58d5d8430c96
-Run Staff security and archive detail regression tests, TypeScript Staff React Native, and compatibility typechecks for shared apps only.
-Do not build any Android APK, do not deploy the user-facing apps or change their source, do not cut over admin.
+TRAYDAQ STAFF FINAL SOURCE VERIFICATION — ARCHIVED CONTENT OPEN AND BACK KEY
+Source repository: gideondreams3325/traydaq-v2
+Branch: feat/standalone-admin-native
+Expected source SHA: 0ef82d404fcf9440035cdb355ade18206c5bcd12
+Run all native Staff regression tests, React Native TypeScript checks and read-only shared code compatibility. Verify Security stored content detail, creator identity, reviewer, Owner and transaction histories, native Back close behavior, and protected media URLs.
+NO APK BUILD; NO WEB OR USER APP BUILD; NO ADMIN CUTOVER.

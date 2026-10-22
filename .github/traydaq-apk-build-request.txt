@@ -159,3 +159,9 @@ User-approved V2 USER APK retry 2026-10-21 after #151: all 450 native tests and 
 2026-10-22: Explicit user instruction to build latest TRAYDAQ V2 regular USER Android APK and fix build errors through completion. Source private gideondreams3325/traydaq-v2 main 71a5e0fb0186598939662ef827f1fdd61998858a, including native true Back-history and account-scoped restart restoration. Trigger only .github/workflows/build.yml (package com.traydaq.app), not the independently running Admin APK workflow. Validate native tests, Expo and TypeScript, assemble/sign the user APK and upload final artifact.
 
 2026-10-22: User-authorized retry of regular V2 USER APK after run 39722051203: native tests 453/459 passed; 6 assertions still hardcoded old Home/Profile Back behavior. Updated 5 test files to assert new route stack, resume, and Back controls instead. Source main b98ab419bcd06837ff15b10c4ee77226ea6ba680; run dedicated build.yml only (com.traydaq.app); then check TypeScript, Gradle signing and APK artifact.
+
+
+User-requested TRAYDAQ V2 Android APK build, 2026-10-22: finish and monitor completion.
+Latest private source main: efe33f70c6e24e75f566ed7d9e0c84d359301577
+Fix: automatic 2 MB-safe Android selfie compression for identity verification; web camera parity; new regression tests.
+Use ONLY this dedicated V2 builder build.yml; compile, test, sign, upload artifact. Inspect errors, fix source, and rerun if needed.

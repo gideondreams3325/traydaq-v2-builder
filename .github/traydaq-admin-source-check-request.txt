@@ -1,7 +1,7 @@
 TRAYDAQ V2 SOURCE VALIDATION ONLY
 Private source repository: gideondreams3325/traydaq-v2
 Private source ref: feat/standalone-admin-native
-Updated source commit: 79b6c8c50c20cf84c3a5200fa9ba5e184cba7357
-Changes: Creator copyright rights submission and independent review, plus strict web TypeScript error repairs
-Checks: STAFF security; STAFF TypeScript; web TypeScript; user Android TypeScript
+Updated source commit: ae7e59ceff686d86d7c1bf96415a278fb4db1e73
+Changes: Creator rights migration, strict STAFF and web source repairs, null-safe mobile media validation
+Checks: STAFF security tests; STAFF TypeScript; web TypeScript; user Android TypeScript
 No Android APK build, signing or deployment.

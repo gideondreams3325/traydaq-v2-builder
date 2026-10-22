@@ -1,7 +1,7 @@
 TRAYDAQ STAFF SOURCE VALIDATION ONLY — NO APK
 Source: gideondreams3325/traydaq-v2
 Branch: feat/standalone-admin-native
-Commit: ff44406d405f9ab8aaf764472893083a0c1c708f
-Scope: V2 verified identities directory; active Verification role protection; Marketplace store logos, covers, GPS map review.
-Checks: Security contract tests; TypeScript for Staff, user web and user Android.
-DO NOT build an APK, disable the previous Admin portal or change DNS.
+Commit: 47bcac41afa26beef03bbc7e5d66b3e52f9529f4
+Scope: Verified identities directory, captured verification selfies/GPS, store initial image/GPS inspection and independent store evidence.
+Checks: Staff department security tests, Staff TypeScript, user web and user Android TypeScript.
+No Android APK signing or publication; no legacy Admin cutover.

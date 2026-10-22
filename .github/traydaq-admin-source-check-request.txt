@@ -1,7 +1,7 @@
-TRAYDAQ STAFF SOURCE VALIDATION ONLY — NO APK
-Source: gideondreams3325/traydaq-v2
+TRAYDAQ STAFF SOURCE VERIFICATION ONLY — NO APK
+Private source: gideondreams3325/traydaq-v2
 Branch: feat/standalone-admin-native
-Commit: 86c2d7238aaa2c4190bcb9e3b7f08528fc1afad1
-Scope: Verification photos/GPS, approved identities, Marketplace initial and independent photos/GPS, Staff header/scroll navigation.
-Checks: Staff security tests and Staff, user web, user Android TypeScript.
-No Android APK build/signing/publication; no Owner legacy cutover.
+Commit: 662bde204dfdc408a4313715ec8e3d2af0bdefa6
+Scope: Entire 11-department Staff versus current V2 legacy Security Hub; restored Safety/Fraud report evidence inspections and independent review protections.
+Checks: Staff contracts, Staff TypeScript, web TypeScript, Android TypeScript.
+Do not build any APK, change deployment domains, or shut down the legacy portal.

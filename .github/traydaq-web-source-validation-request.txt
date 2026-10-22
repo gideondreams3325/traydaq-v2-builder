@@ -2,3 +2,5 @@ User-requested TRAYDAQ V2 web regression audit and build validation, 2026-10-22.
 Canonical source gideondreams3325/traydaq-v2/main @ 154ea20364fbb0108500e1ba0121ce7f6f134d87.
 No APK, signing, deployment or release.\n
 2026-10-22: rerun web typecheck and production asset build even if outdated unit tests fail.
+
+2026-10-22 latest web source 123bc690fe679231d673b723766f3c0dfdabe838: retest after closing AccountAccess JSX conditional and native audio null narrowing; run web tests and independent TypeScript/build even on test failures.

@@ -1,14 +1,9 @@
 name: TRAYDAQ V2 Native Android Admin APK Builder
 
 # Completely separate from the existing public TRAYDAQ V2 user APK builder.
-# Temporarily allow an explicitly requested one-shot Admin build; restore manual-only afterward.
+# Dedicated Admin APK workflow is manual-only; never build on push.
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - .github/workflows/admin-native.yml
 
 permissions:
   contents: read
@@ -20,7 +15,6 @@ concurrency:
 jobs:
   admin-android:
     name: TRAYDAQ Admin Native Android APK
-    if: "${{ github.event_name == 'workflow_dispatch' || github.event.head_commit.message == 'ci(admin): trigger requested TRAYDAQ STAFF APK' }}"
     runs-on: ubuntu-latest
     timeout-minutes: 75
     env:

@@ -1,7 +1,7 @@
 TRAYDAQ STAFF SOURCE VALIDATION ONLY
 Private source repository: gideondreams3325/traydaq-v2
 Private source ref: feat/standalone-admin-native
-Updated source commit: df26152c287993e004b431cb2f2888f2202ed613
-Changes: Marketplace Store Reviews with independent approval, audited private GPS review, app screen, 5 protected API routes
+Updated source commit: a6986d344d3fcb83069486d3ce153357b11c51e6
+Changes: Marketplace store reviews, independent GPS evidence and audited decisions; correct Owner audit duplication
 Checks: npm run test:security; npm run typecheck
 No Android APK build, signing, or publishing.

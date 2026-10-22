@@ -1,7 +1,7 @@
 TRAYDAQ STAFF SOURCE VALIDATION ONLY
 Private source repository: gideondreams3325/traydaq-v2
 Private source ref: feat/standalone-admin-native
-Updated source commit: 5784275cb1cbb797110e63c9f65f89e3ea258bd2
-Changes: independent Safety Reports Security triage, 4 routes, React Native page, migrations and tests
+Updated source commit: 8c855756c493a6ba5d4e7a2c6b914e10437e9c7d
+Changes: Safety Reports, independent Security Head decisions, Owner rejection audit, complete module inventory
 Checks: npm run test:security; npm run typecheck
 No Android APK building, no signing, no publishing.

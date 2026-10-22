@@ -49,6 +49,12 @@ jobs:
       - name: Typecheck user Android source
         working-directory: private-src/mobile
         run: npm run typecheck
+      - name: Run user web regression tests
+        working-directory: private-src
+        run: npm test
+      - name: Run user Android regression tests
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
       - name: Confirm no APK or signing actions in this workflow
         run: |
           test -f src/departmentModules.ts

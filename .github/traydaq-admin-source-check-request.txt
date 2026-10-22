@@ -1,3 +1,6 @@
-TRAYDAQ V2 BUILDER SOURCE-ONLY REGRESSION 4
-Private branch feat/standalone-admin-native SHA 1fee6bd819a239ca341729eaa5ddde12e418e9e4
-Run all Staff V2 regression tests, including rich-campaign-delivery.test.mjs, Staff React Native typecheck, web typecheck, consumer native typecheck. Ensure each concurrent campaign goes to each registered user's app, staff push remains private, and record deep links are authorized. NO APK BUILD / DEPLOYMENT.
+TRAYDAQ STAFF + USER V2 FINAL SOURCE VALIDATION — 2026-10-22
+Development source gideondreams3325/traydaq-v2 @ feat/standalone-admin-native
+Expected SHA db20164c456c0b6aba4dfc8622560901c939c7a5
+Run every existing Staff permission/governance/history/policy, notification case-record and new rich picture campaign regression, plus Staff TypeScript, user-facing web TypeScript and Android-native TypeScript.
+Validate storage cap, notification account isolation, owner scope, all departmental review records, scheduling/promotion routing. Do not skip previously failing tests.
+SOURCE ONLY. DO NOT BUILD AN APK. DO NOT DEPLOY OR CUT OVER ANY PORTAL.

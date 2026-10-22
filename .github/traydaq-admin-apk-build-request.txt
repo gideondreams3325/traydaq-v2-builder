@@ -1,0 +1,9 @@
+TRAYDAQ STAFF NATIVE ANDROID APK BUILD REQUEST
+Requested: 2026-10-22
+Source repository: gideondreams3325/traydaq-v2
+Source branch: feat/standalone-admin-native
+Validation: Dedicated V2 source check run 39783325647 passed 79 security tests and STAFF, web and Android typechecks.
+Builder: .github/workflows/admin-native.yml
+Android package: com.traydaq.admin
+Output: independently signed testing APK artifact.
+Do not disable the old Admin portal, execute cutover SQL, or merge unfinished final cutover.

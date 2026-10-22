@@ -1,7 +1,7 @@
 TRAYDAQ STAFF SOURCE VALIDATION ONLY
 Private source repository: gideondreams3325/traydaq-v2
 Private source ref: feat/standalone-admin-native
-Updated source commit: 99a43eccbc346c818fb4b0a75fea546e906d22a2
-Changes: Verified Support case approvals and member messaging, user-friendly Android case copy, 39-tool inventory
+Updated source commit: 000f67599f52419cadc23ccf099dd50d8c0eb6bf
+Changes: Support Team Inbox independent replies, Firebase-linked profiles, permanent Owner decisions
 Checks: npm run test:security; npm run typecheck
 No Android APK building, no signing, no publishing.

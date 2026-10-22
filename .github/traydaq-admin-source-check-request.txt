@@ -1,4 +1,6 @@
-TRAYDAQ STAFF SOURCE CHECK — NAVIGATION, SEARCH, AVATAR AND GPS
+TRAYDAQ STAFF SOURCE VALIDATION — MEMBER SEARCH, NAVIGATION, GPS LOCALITY, KEYBOARD AND AVATARS
 Source: gideondreams3325/traydaq-v2 / feat/standalone-admin-native
-Expected source commit: 85f907f4887ef681213b167f2f90cd821f0ebc46
-Validate native back history, keyboard, member partial search, profile picture selection, conditional town geocoding and all Staff security contracts. Source only; no APK build, no deployment of user-facing applications, no old Admin cutover.
+Expected commit: e5c983297b862f839b7c8a26fa04211cec500c5e
+Scope: standalone Staff app only. Run security contracts, Staff TypeScript checks and non-building user source compatibility checks.
+Check live partial match accounts, photos, camera GPS approximate town, Android back history and keyboard avoiding controls.
+NO APK BUILD OR SIGNING. DO NOT BUILD USER-FACING ANDROID OR WEB. DO NOT CUT OVER ADMIN.

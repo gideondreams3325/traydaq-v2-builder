@@ -1,7 +1,7 @@
-TRAYDAQ STAFF SOURCE CHECK ONLY — DO NOT BUILD AN APK
-Private repository: gideondreams3325/traydaq-v2
+TRAYDAQ STAFF SOURCE VERIFICATION — NO APK BUILD
+Source: gideondreams3325/traydaq-v2
 Branch: feat/standalone-admin-native
-Commit: 7614e7103edf5b4cca22af1ea01724fcc9deb697
-Scope: 11-department legacy parity; protected Safety/Fraud report evidence; independent Security review; initial private Creator Marketplace and Jobs/Events listing pictures.
-Checks: Security contract tests, Staff native TypeScript, user web TypeScript, user Android TypeScript.
-NO APK / NO GRADLE / NO OWNER LEGACY CUTOVER / NO PUBLIC APP DEPLOY.
+Commit: a77a031c0a367d754681294806dc2af5bbee3fef
+Scope: Owner Head across all 11 departments; bulk multi-department verified Head appointments; audited Owner self-review; Staff-wide green/gold modal dialogs.
+Checks: native security tests, Staff TypeScript, web and user Android TypeScript.
+DO NOT BUILD ANY APK, deploy user-facing apps or disable legacy Admin.

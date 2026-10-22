@@ -1,7 +1,7 @@
-TRAYDAQ V2 SOURCE CHECK ONLY
+TRAYDAQ STAFF SOURCE VALIDATION ONLY — NO APK
 Source: gideondreams3325/traydaq-v2
-Ref: feat/standalone-admin-native
-Commit: cbd6a50a5008d14ae49d3a6766857a28d5611abb
-Scope: Owner-only legacy cutover readiness dashboard; restricted backend snapshot; Music copyright migration previously validated.
-Checks: 79 STAFF security contract tests; STAFF TypeScript; web TypeScript; Android TypeScript
-Do NOT compile an APK, disable the legacy Admin portal, or execute cutover SQL.
+Branch: feat/standalone-admin-native
+Commit: fe0b9e979de21186888778c7cb8e0687d3379df7
+Scope: Protected pending identity application selfies and captured GPS, independent reviewer parity.
+Checks: Staff security contract tests; TypeScript for Staff, user web and user Android.
+DO NOT start an Android APK workflow or disable the old Admin portal.

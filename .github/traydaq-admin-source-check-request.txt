@@ -1,6 +1,7 @@
-TRAYDAQ V2 SOURCE VERIFICATION ONLY
-Private branch: gideondreams3325/traydaq-v2 feat/standalone-admin-native
-Source commit: 95fbd6261ed17a42b764e324667ca8bee898f7fd
-Validations: Music copyright private claims, independent decisions, native/web forms, secure APIs, 38 active modules.
-Checks: STAFF security; STAFF TypeScript; web TypeScript; Android TypeScript.
-No APK compilation, signing, production release or legacy portal cutover.
+TRAYDAQ V2 SOURCE CHECK ONLY
+Source: gideondreams3325/traydaq-v2
+Ref: feat/standalone-admin-native
+Commit: cbd6a50a5008d14ae49d3a6766857a28d5611abb
+Scope: Owner-only legacy cutover readiness dashboard; restricted backend snapshot; Music copyright migration previously validated.
+Checks: 79 STAFF security contract tests; STAFF TypeScript; web TypeScript; Android TypeScript
+Do NOT compile an APK, disable the legacy Admin portal, or execute cutover SQL.

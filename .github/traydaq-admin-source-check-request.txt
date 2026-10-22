@@ -1,3 +1,3 @@
-TRAYDAQ STAFF SOURCE VALIDATION: LIVE VAULT SCHEDULER REGRESSIONS
-Source branch feat/standalone-admin-native SHA 46731bdca7a2c0cf7637218ff8823891a5dafe1d
-Confirm staff campaign Vault-authenticated worker, scheduled rich notifications, staff direct-record security, native Staff React typecheck, user web and Android typechecks. Preserve all existing user Android regression failures in report; do not silently skip or build APK.
+TRAYDAQ STAFF SOURCE VERIFICATION — PROFESSIONAL LISTINGS AND ARCHIVE DETAILS
+Source: gideondreams3325/traydaq-v2 feat/standalone-admin-native 84876f8862101d24f69256b8eadd1607a8be02d0
+Run SOURCE ONLY: Admin permission contracts, native TypeScript checks, professional service review, protected archived identity images, Communications searchable proposals, campaign image format. No APK, signing or publishing. Preserve unrelated regression failures for reporting.

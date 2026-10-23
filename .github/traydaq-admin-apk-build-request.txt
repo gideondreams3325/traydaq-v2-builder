@@ -1,14 +1,6 @@
-TRAYDAQ STAFF NATIVE ANDROID APK BUILD — REQUESTED 2026-10-22, AGAIN
-Build ONLY the standalone TRAYDAQ Staff Android app (com.traydaq.admin).
-Workflow: .github/workflows/admin-native.yml
-Private source: gideondreams3325/traydaq-v2, branch feat/standalone-admin-native
-Expected source commit at request: 3c44c71169c3bfb5a8b250fa1d2485d4c51f4185
-Scope: Staff native app only; include restricted Creator video preview, published image/video viewer, department parity, Owner records and appointment permissions.
-Run Staff security tests, TypeScript, Expo validation, preflight, signed release APK, and publish ONLY TRAYDAQ-V2-Admin-Native-Android-APK.
-DO NOT trigger user-facing Android APK workflow, web deployment, or legacy Admin cutover.
-
-2026-10-22: USER-REQUESTED NEW STANDALONE STAFF APK REBUILD.
-Workflow: .github/workflows/admin-native.yml only (com.traydaq.admin).
-Source: gideondreams3325/traydaq-v2 feat/standalone-admin-native @ 46731bdca7a2c0cf7637218ff8823891a5dafe1d.
-Run staff department, records, policy, campaign and security tests, strict TypeScript, Expo preflight and separate signed APK release.
-Do NOT trigger user-facing Android builds, web deployment, or legacy admin cutover.
+TRAYDAQ STAFF APK BUILD - USER REQUEST 2026-10-23
+Trigger ONLY .github/workflows/admin-native.yml using dedicated public gideondreams3325/traydaq-v2-builder.
+Source: private gideondreams3325/traydaq-v2 branch feat/standalone-admin-native at c265fd491deb30040776ae49b6b80669974818b5.
+App: standalone native Staff / com.traydaq.admin ONLY.
+Include latest professional service listing reviews, communications promotions searchable title/caption, photo validation and archived verification pictures.
+Validate security tests, native typecheck, Firebase and signing preflight, Expo Android prebuild, Gradle release APK and artifact publication. Do not build user-facing app.

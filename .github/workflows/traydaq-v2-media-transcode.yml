@@ -37,3 +37,5 @@ jobs:
       - name: Auto-compress approved video and music without changing file URLs
         run: python3 .github/scripts/traydaq_media_transcode.py
       # This job deliberately DOES NOT compile, package or release any Android APK.
+
+# Backend-only audio transfer diagnostic run; not an Android workflow.

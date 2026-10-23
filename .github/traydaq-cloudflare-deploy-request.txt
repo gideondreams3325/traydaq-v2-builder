@@ -1,0 +1,5 @@
+USER-AUTHORIZED TRAYDAQ V2 WEB DEPLOYMENT 2026-10-23
+Target: Cloudflare Pages existing project traydaq-v2 (override if CLOUDFLARE_PAGES_PROJECT variable configured).
+Source: gideondreams3325/traydaq-v2 main at c39063177c297937f799195e1bbea75ee49e8c89
+Run tests, TypeScript, and Vite build, then deploy using preconfigured Cloudflare Actions credentials if available.
+Do not build APKs, change DNS, or modify backend.

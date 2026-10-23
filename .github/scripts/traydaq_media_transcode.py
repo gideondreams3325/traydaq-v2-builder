@@ -170,4 +170,24 @@ if __name__ == "__main__":
         # No signed storage URL, JWT or media path should ever enter workflow logs.
         status = " HTTP " + str(error.code) if isinstance(error, urllib.error.HTTPError) else ""
         print("Automatic media job stopped safely: " + type(error).__name__ + status)
+        if isinstance(error, urllib.error.HTTPError):
+            try:
+                details = json.loads(error.read(1024))
+                safe = details.get("error", "")
+                if safe in {
+                    "Not eligible or no longer approved",
+                    "Source is new or outside safe size limits",
+                    "Source unavailable", "Source format or size changed",
+                    "Original changed during encoding",
+                    "Unrecognized optimized upload", "Optimized staging file is not ready",
+                    "Output must be valid, same-format, and at least 12% smaller",
+                    "Source changed during encoding", "Backup failed",
+                    "Original backup failed checksum", "Media replacement failed",
+                    "Replacement checksum failed; restoration attempted",
+                    "Automatic media optimization failed without changing source",
+                    "Media inventory unavailable", "Media service unavailable"
+                }:
+                    print("Safe backend diagnostic: " + safe)
+            except Exception:
+                pass
         raise SystemExit(1)

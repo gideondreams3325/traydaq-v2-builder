@@ -50,7 +50,7 @@ jobs:
           node-version: "22"
       - run: npm install --no-audit --no-fund
       - name: Android appeal and support workflow tests
-        run: node --test tests/member-appeals-parity.test.mjs tests/support-history-parity.test.mjs
+        run: node --test tests/member-appeals-parity.test.mjs tests/support-history-parity.test.mjs tests/creator-rights-parity.test.mjs
       - name: Native TypeScript
         if: always()
         run: npm run typecheck

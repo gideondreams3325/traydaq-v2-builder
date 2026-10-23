@@ -1,3 +1,4 @@
-TRAYDAQ V2 2026-10-23 rerun: music explicit choices, play/like counts, marketplace/jobs/events and professional service reactions.
-Checkout latest private traydaq-v2 main, including current copyright workflow regression assertions and the professional listing split.
-Scope: web and Android source tests + TypeScript; NO APK signing/build, NO deployment.
+TRAYDAQ V2 qualified repeat viewing/listening and member profile statistics — 2026-10-23.
+Check latest private gideondreams3325/traydaq-v2 main, including media view event migration, safe service-role RPC gate, feed watchers, repeat music listeners, and picture/video profile stats.
+Validation scope: both web + Android tests and TypeScript source checks.
+No APK build, no Play Store release and no Cloudflare deployment.

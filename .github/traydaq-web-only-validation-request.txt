@@ -1,0 +1,2 @@
+Run V2 USER WEB tests + TypeScript ONLY (no web build, no Android build, no Staff APK, no deploy).
+Private source feat/standalone-admin-native web contract repairs at 83cb30e9611f7671049e88466f60b5a720a08cd0.

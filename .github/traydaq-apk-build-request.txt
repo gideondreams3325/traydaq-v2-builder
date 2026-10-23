@@ -193,3 +193,6 @@ Run dedicated V2 USER workflow build.yml; test all native, Expo, TypeScript, JS 
 USER-AUTHORIZED FINAL PRODUCTION RELEASE — 2026-10-23
 TRAYDAQ V2 USER production, version 1.0.0, source b0ab4bc94d78a3e0acdd6399144d954a2b9697d8
 No test builds. Require stable independent signing certificate, registered Firebase SHA, Android versionCode 2, complete tests, TypeScript, JavaScript bundle, production Gradle release, signature verification and APK artifact. Build through dedicated TRAYDAQ V2 builder only, not legacy; separate packages. Fix any errors before reporting success.
+
+PRODUCTION BUILD RETRY — 2026-10-23
+Source main 8deaa53c67137a2ccb82c356735877ceda1a88dd; 2 obsolete tests were updated after user Security Hub retirement and For You-only music stopping. The previous 1.0.0 user release stopped before compilation with 488/490 tests passed. Run every native test again, require stable signing and Google SHA, and build certified v1.0.0 code 2.

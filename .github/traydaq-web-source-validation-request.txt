@@ -1,3 +1,3 @@
-TRAYDAQ V2 final qualified media counts verification — 2026-10-23.
-Use current private gideondreams3325/traydaq-v2 main including latest published photo carousel asset-count SQL migration and its test.
-Check: Web regression, TypeScript and bundle. No Android APK build, no Cloudflare release or production change.
+TRAYDAQ V2 2026-10-23 public live synchronization validation.
+Use latest gideondreams3325/traydaq-v2 private main, with public Postgres change tokens (feed, marketplace, vacancies, events, music, profiles), web Supabase realtime listener, Android publication signal websocket, missed-event revision probes, and professional directory/profile refresh.
+Run Web regression tests, TypeScript, production bundle. NO deployment.

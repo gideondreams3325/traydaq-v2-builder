@@ -27,8 +27,8 @@ EXTENSIONS = {"video/mp4": ".mp4", "audio/mpeg": ".mp3",
               "audio/mp4": ".m4a", "audio/wav": ".wav"}
 
 
-def request(url, *, data=None, headers=None, timeout=60):
-    req = urllib.request.Request(url, data=data, headers=headers or {})
+def request(url, *, data=None, headers=None, timeout=60, method=None):
+    req = urllib.request.Request(url, data=data, headers=headers or {}, method=method)
     with urllib.request.urlopen(req, timeout=timeout) as reply:
         return reply.read()
 
@@ -138,12 +138,24 @@ def main():
                 }, timeout=60)
                 unchanged += 1
                 continue
-            print("Phase: backend verified transfer "+mime+" ("+str(after.stat().st_size)+" bytes)")
-            answer = json.loads(request(ROOT, data=after.read_bytes(), headers={
-                **auth(), "Content-Type": mime,
+
+            print("Phase: signed private-staging upload "+mime+" ("+str(after.stat().st_size)+" bytes)")
+            upload = urllib.parse.urlparse(job["uploadUrl"])
+            if (upload.scheme != "https" or
+                    upload.hostname != "qpcsruhwqhniprakpoox.supabase.co" or
+                    not upload.path.startswith("/storage/v1/object/upload/sign/traydaq-media-optimization-staging/") or
+                    not urllib.parse.parse_qs(upload.query).get("token")):
+                raise ValueError("Private staging URL validation failed")
+            request(job["uploadUrl"], data=after.read_bytes(), method="PUT",
+                    headers={"Content-Type": mime, "cache-control": "max-age=0",
+                             "x-upsert": "false"}, timeout=180)
+            print("Phase: server-side original backup and file verification "+mime)
+            answer = json.loads(request(ROOT, data=b"", headers={
+                **auth(), "Content-Type": "application/json",
                 "x-traydaq-media-bucket": bucket,
-                "x-traydaq-media-path": path
-            }, timeout=175))
+                "x-traydaq-media-path": path,
+                "x-traydaq-stage-path": job["stagePath"]
+            }, timeout=140))
             if answer.get("status") != "optimized":
                 raise ValueError("Backend did not confirm verified replacement")
             optimized += 1

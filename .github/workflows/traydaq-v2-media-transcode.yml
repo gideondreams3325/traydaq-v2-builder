@@ -1,0 +1,37 @@
+name: TRAYDAQ V2 Legacy Videos — One-time Compression (No APK)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/traydaq-v2-media-transcode.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: traydaq-v2-media-backfill
+  cancel-in-progress: false
+
+jobs:
+  optimize-media:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - name: Checkout PRIVATE TRAYDAQ V2 source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify FFmpeg available
+        run: |
+          set -euo pipefail
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -qq -y ffmpeg
+          fi
+          ffmpeg -version | head -n 1
+      - name: Compress and independently validate existing public videos
+        run: python3 .github/scripts/traydaq_media_transcode.py
+      # This job deliberately DOES NOT compile, package or release any Android APK.

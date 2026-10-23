@@ -1,6 +1,7 @@
-TRAYDAQ V2 MAIN WEB+ANDROID SOURCE RE-VALIDATION
-Date 2026-10-23
-Updated main with deployed Firebase appeal and support endpoints and copyright helper.
-Latest commit: 4a4853b5a4f37c822688a1719da81e7c69e34064
-Run web npm test + typecheck; native appeal/support/copyright parity + typecheck.
-No APK build, Expo export, signing or deployment.
+TRAYDAQ V2 USER WEB + NATIVE SOURCE PARITY VALIDATION
+Requested: 2026-10-23 (follow-up)
+Validate source repository: gideondreams3325/traydaq-v2
+Expected current main: 4a4853b5a4f37c822688a1719da81e7c69e34064
+Run web regression tests and TypeScript, native member appeals/support-history/creator-rights tests and TypeScript.
+Review earlier migration gaps: authenticated creator-rights helper, Firebase appeals and support migrations, Android private appeal record lifecycle.
+This is validation only. DO NOT compile/build/install APK, export Expo bundle, sign, publish or deploy.

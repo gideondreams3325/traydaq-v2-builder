@@ -3,3 +3,5 @@ Source: gideondreams3325/traydaq-v2 branch feat/standalone-admin-native
 Date: 2026-10-23
 Validate Staff visual calendar and time selection in Communications campaigns and Policy Management; user web album and legacy Studio visual scheduled publishing; user Android built-in native date/time selection. Validate TypeScript and regression tests.
 SOURCE ONLY. No APK compilation, signing, Android artifact, or release.
+
+Regression follow-up: web scheduled-publishing test updated to assert visual calendar instead of removed typed input; revalidate source-only. No APK.

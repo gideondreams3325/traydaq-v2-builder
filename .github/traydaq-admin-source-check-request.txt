@@ -1,7 +1,4 @@
-TRAYDAQ STAFF Security Head video decision migration | SOURCE VALIDATION ONLY
-Date 2026-10-23
-Private source gideondreams3325/traydaq-v2 ref feat/standalone-admin-native
-Latest commit a7138e4fe92c5cc6b898e8beee0d16d791456c50
-Validate staff access permissions, media evidence, C.E.O oversight, Security Head scope,
-review audit, notification wiring, React Native typecheck.
-This request does NOT build, sign or publish an APK.
+TRAYDAQ V2 STAFF deletion review validation | 2026-10-23
+Use feat/standalone-admin-native. Check independent Security review accepts Service, Music, Account and preserves protected erasure.
+Run staff security tests, deletion-parity contracts and TypeScript.
+Validation only. NO APK build, no deployment.

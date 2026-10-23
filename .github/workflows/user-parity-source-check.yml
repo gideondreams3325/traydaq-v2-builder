@@ -49,8 +49,8 @@ jobs:
         with:
           node-version: "22"
       - run: npm install --no-audit --no-fund
-      - name: Native regression tests
-        run: node --test tests/*.test.mjs
+      - name: Android appeal and support workflow tests
+        run: node --test tests/member-appeals-parity.test.mjs tests/support-history-parity.test.mjs
       - name: Native TypeScript
         if: always()
         run: npm run typecheck

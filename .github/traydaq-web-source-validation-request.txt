@@ -1,1 +1,4 @@
-TRAYDAQ V2 USER WEB ONLY validation, 2026-10-23. Validate source main via .github/workflows/user-web-source-check.yml. Do not run staff workflow, do not build any Android APK, do not deploy. Check npm test, TS, web assets compile.
+TRAYDAQ V2 WEB-ONLY validation after user-facing web test correction 2026-10-23.
+Private source: gideondreams3325/traydaq-v2 MAIN commit 2675102cfcc699f2b944b0dd1cc4ffed26fcc064.
+Validate all web npm tests (208), web TypeScript and production Vite compilation. Web app only; no deploy, APK, Android or Staff job.
+The previous web-only run exposed an outdated professional service button test expecting View Services instead of actual per-service View Service action; regression now checks exact onStore(store.id,service.id) handler and label.

@@ -188,3 +188,8 @@ Retry explicitly authorized build — 2026-10-23.
 Previous user APK run 39951444930 failed 1/489 native tests because old guest-browsing test forgot the protected Appeals route.
 Fixed source main 61dfb21d2177c2025d5c648357bcdfa29aaeea96.
 Run dedicated V2 USER workflow build.yml; test all native, Expo, TypeScript, JS export, Gradle, signing, artifact. Fix further errors and retry.
+
+
+USER-AUTHORIZED FINAL PRODUCTION RELEASE — 2026-10-23
+TRAYDAQ V2 USER production, version 1.0.0, source b0ab4bc94d78a3e0acdd6399144d954a2b9697d8
+No test builds. Require stable independent signing certificate, registered Firebase SHA, Android versionCode 2, complete tests, TypeScript, JavaScript bundle, production Gradle release, signature verification and APK artifact. Build through dedicated TRAYDAQ V2 builder only, not legacy; separate packages. Fix any errors before reporting success.

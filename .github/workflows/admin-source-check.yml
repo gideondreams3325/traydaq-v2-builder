@@ -33,6 +33,8 @@ jobs:
           node-version: "22"
       - name: Admin access contracts
         run: npm run test:security
+      - name: Deletion review parity contracts
+        run: node --test tests/deletion-parity.test.mjs
       - name: Install TypeScript dependencies
         run: npm install --no-audit --no-fund
       - name: Typecheck React Native screens

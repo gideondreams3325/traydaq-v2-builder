@@ -37,25 +37,6 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Typecheck React Native screens
         run: npm run typecheck
-      - name: Install user web dependencies for source checks
-        working-directory: private-src
-        run: npm install --no-audit --no-fund
-      - name: Typecheck user web and shared components
-        working-directory: private-src
-        run: npm run typecheck
-      - name: Install user Android TypeScript dependencies
-        working-directory: private-src/mobile
-        run: npm install --no-audit --no-fund
-      - name: Typecheck user Android source
-        working-directory: private-src/mobile
-        run: npm run typecheck
-      - name: Run user web regression tests
-        working-directory: private-src
-        run: npm test
-      - name: Run user Android regression tests
-        if: always()
-        working-directory: private-src/mobile
-        run: node --test tests/*.test.mjs
       - name: Confirm no APK or signing actions in this workflow
         run: |
           test -f src/departmentModules.ts

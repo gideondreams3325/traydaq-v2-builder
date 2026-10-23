@@ -1,3 +1,3 @@
-TRAYDAQ STAFF five-department multi-role source revalidation 2026-10-23
-Source: feat/standalone-admin-native at 470662e9576f10e75eb23ad64b1d55c238c44f2b
-Recheck complete Staff security contracts and TypeScript after hierarchy test updates. NO APK.
+TRAYDAQ STAFF cutover go/no-go checklist and 5-parent/11-team readiness source validation 2026-10-23
+2f68291c61fdc20ac24ac1fbc3d0f78dcd6645d3
+Strict access contracts, deletion parity, TypeScript, no APK, no legacy route shutdown.

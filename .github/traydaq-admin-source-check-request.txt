@@ -1,3 +1,3 @@
-TRAYDAQ STAFF five-parent / eleven-team hierarchy and scoped leadership chat source verification 2026-10-23
-Source feat/standalone-admin-native at df5898ad7c021d6127bfb60b77f58c6f65d84be1
-Run staff security contracts, division hierarchy, TypeScript. No APK and no deployment.
+TRAYDAQ STAFF five-department multi-role source revalidation 2026-10-23
+Source: feat/standalone-admin-native at 470662e9576f10e75eb23ad64b1d55c238c44f2b
+Recheck complete Staff security contracts and TypeScript after hierarchy test updates. NO APK.

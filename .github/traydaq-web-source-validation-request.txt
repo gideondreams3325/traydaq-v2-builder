@@ -1,2 +1,2 @@
-TRAYDAQ V2 immediate media playback counters — 2026-10-23.
-Source: current private gideondreams3325/traydaq-v2 main. Count videos/music at actual start on both web and native; each real replay can count, pause/resume cannot; retain photo visibility. Check regression tests, web/native TypeScript and web Vite production bundle. Preserve backend approval/privacy rules. This is SOURCE CHECK ONLY: do not build APK, deploy Cloudflare, or modify DNS.
+TRAYDAQ V2 playback-start count final validation — 2026-10-23.
+Private source gideondreams3325/traydaq-v2 main contains instant actual-playback video/music counters on web/Android, approved-video and music backend changes, short duplicate suppression and updated regression tests including corrected obsolete playback threshold assertion. Validate web source tests + TypeScript + production web compilation; parity workflow also Android tests + TypeScript. NO APK build and NO Cloudflare deployment.

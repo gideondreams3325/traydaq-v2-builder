@@ -1,3 +1,3 @@
-TRAYDAQ V2 2026-10-23 public live synchronization validation.
-Use latest gideondreams3325/traydaq-v2 private main, with public Postgres change tokens (feed, marketplace, vacancies, events, music, profiles), web Supabase realtime listener, Android publication signal websocket, missed-event revision probes, and professional directory/profile refresh.
-Run Web and native TypeScript, regression tests including catalog-realtime-parity and feed-live-updates. NO APK.
+TRAYDAQ V2 final immediate cross-platform synchronization source validation, 2026-10-23.
+Use latest private gideondreams3325/traydaq-v2 main with queued browser catalog reload fix, public realtime PostgreSQL revisions for feed/products/jobs/events/music/profiles/services and native websocket recovery.
+Run Web+native tests and both TypeScript; no APK. Do not start Android or staff APK builds or Cloudflare publishing.

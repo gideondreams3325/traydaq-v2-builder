@@ -1,0 +1,68 @@
+name: TRAYDAQ V2 Cloudflare Web Production Deploy
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/traydaq-cloudflare-deploy-request.txt"
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-cloudflare-web-production
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - name: Checkout latest private TRAYDAQ V2 web source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: main
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Capture exact production source commit
+        id: source
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install web dependencies
+        run: npm install --no-audit --no-fund
+      - name: Validate user-web regression tests
+        run: npm test
+      - name: Validate web TypeScript
+        run: npm run typecheck
+      - name: Build Cloudflare web SPA
+        run: npm run build
+      - name: Check existing Cloudflare Pages credentials (do not expose secrets)
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+          CF_PAGES_PROJECT: ${{ vars.CLOUDFLARE_PAGES_PROJECT || 'traydaq-v2' }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$CF_API_TOKEN" ]]; then
+            echo "::error::Cloudflare deploy blocked: configure CLOUDFLARE_API_TOKEN in public V2 builder Actions secrets."
+            exit 1
+          fi
+          if [[ -z "$CF_ACCOUNT_ID" ]]; then
+            echo "::error::Cloudflare deploy blocked: configure CLOUDFLARE_ACCOUNT_ID in V2 builder Actions secrets/variables."
+            exit 1
+          fi
+          test -n "$CF_PAGES_PROJECT"
+          echo "Cloudflare credentials are present. Deploying to configured EXISTING Pages project."
+      - name: Deploy static site to Cloudflare Pages production
+        uses: cloudflare/wrangler-action@v3
+        with:
+          workingDirectory: private-src
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT || 'traydaq-v2' }} --branch=main --commit-hash=${{ steps.source.outputs.sha }}
+      - name: Mark validated Cloudflare deployment
+        run: echo "Published verified TRAYDAQ web commit ${{ steps.source.outputs.sha }}."

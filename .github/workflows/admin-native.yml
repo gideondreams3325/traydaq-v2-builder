@@ -1,4 +1,4 @@
-name: TRAYDAQ V2 Native Android Admin APK Builder
+name: TRAYDAQ V2 Staff Android Production Release
 
 # Completely separate from the existing public TRAYDAQ V2 user APK builder.
 # Dedicated Admin APK workflow runs only on manual dispatch or an explicitly committed
@@ -61,6 +61,8 @@ jobs:
           node - <<'NODE'
           const config=require('./app.config.js').expo;
           if(config.android?.package!=='com.traydaq.admin') throw Error('Wrong Android package: must be com.traydaq.admin.');
+          if(config.version!=='1.0.0'||config.android.versionCode!==3)
+           throw Error('Production STAFF version must be 1.0.0 / code 3.');
           if(JSON.stringify(config.platforms)!=='["android"]') throw Error('The Admin app must remain Android native-only.');
           console.log('Verified separate Admin app package and sources.');
           NODE
@@ -251,6 +253,24 @@ jobs:
           NODE
           mv "$SIGNED" "$APK"
           echo "TRAYDAQ Admin APK independently signed and Firebase SHA-1 verified."
+
+      - name: Verify production APK metadata, offline bundle and signature
+        run: |
+          set -euo pipefail
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          test -s "$APK"
+          unzip -t "$APK" > /dev/null
+          unzip -Z1 "$APK" | grep -E '^assets/(index.android.bundle|.*\\.hbc)
+        uses: actions/upload-artifact@v4
+        with:
+          name: TRAYDAQ-V2-Admin-Native-Android-APK
+          path: private-src/admin-native/android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 14
+          if-no-files-found: error
+
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$APK"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.traydaq.admin' versionCode='3' versionName='1.0.0'"
+          sha256sum "$APK"
 
       - name: Publish only the Admin APK
         uses: actions/upload-artifact@v4

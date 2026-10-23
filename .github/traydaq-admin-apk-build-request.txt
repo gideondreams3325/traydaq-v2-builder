@@ -21,3 +21,8 @@ Build TRAYDAQ STAFF Android 0.2.0 (versionCode 2) from feat/standalone-admin-nat
 Use dedicated public V2 builder admin-native.yml only, standalone package com.traydaq.admin.
 Include cutover controls, five management departments and eleven groups, multiple scoped staff roles, Overall Heads, team and leadership chats, secure approvals, deletion hub, and CEO oversight.
 Run access tests, TypeScript, Expo checks, Android assembleRelease; sign with independent Admin keystore, verify signature/Firebase SHA-1, upload signed artifact. On errors diagnose and retry. Do not build user APK or use legacy builder.
+
+
+USER-AUTHORIZED FINAL PRODUCTION RELEASE — 2026-10-23
+TRAYDAQ V2 STAFF production, version 1.0.0, source 10a6d1875674efe97efb9ac196623190ea1e94f2
+No test builds. Require stable independent signing certificate, registered Firebase SHA, Android versionCode 3, complete tests, TypeScript, JavaScript bundle, production Gradle release, signature verification and APK artifact. Build through dedicated TRAYDAQ V2 builder only, not legacy; separate packages. Fix any errors before reporting success.

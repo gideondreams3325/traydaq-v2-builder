@@ -1,5 +1,4 @@
-TRAYDAQ V2 full deletion workflow validation | 2026-10-23
-User-facing production main source; include web TypeScript + ALL web tests and native TypeScript + appeals/support/copyright/deletion parity.
-Check categories Account, Post, Product, Service, Store, Vacancy, Event, Music.
-Confirm backend migrations and secure staff review contracts.
-Source-only. DO NOT compile APK, export Expo, sign, build or deploy.
+TRAYDAQ V2 final unified deletion validation October 23 2026.
+Production user main: f063eb3d0d18840afccffcfbcf27174ac8138140
+Web npm test, web TypeScript, Android member/deletion parity and Android TypeScript.
+Staff source separately validated: 39950650741. No APK build or deployment.

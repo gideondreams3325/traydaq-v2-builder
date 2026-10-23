@@ -1,5 +1,6 @@
-TRAYDAQ V2 PRODUCTION MAIN USER APPEALS, SUPPORT, CREATOR RIGHTS
-Date: 2026-10-23
-Source: gideondreams3325/traydaq-v2 main, commit 96a52f271699835fc37b46a90076423b0399db01
-Scope web full regression/typecheck, native appeal/support/copyright parity + typecheck.
-Existing main source must remain intact. Source check ONLY: no APK/Gradle, signing, Expo export or deployment.
+TRAYDAQ V2 MAIN WEB+ANDROID SOURCE RE-VALIDATION
+Date 2026-10-23
+Updated main with deployed Firebase appeal and support endpoints and copyright helper.
+Latest commit: 4a4853b5a4f37c822688a1719da81e7c69e34064
+Run web npm test + typecheck; native appeal/support/copyright parity + typecheck.
+No APK build, Expo export, signing or deployment.

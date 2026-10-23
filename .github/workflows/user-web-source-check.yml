@@ -36,3 +36,11 @@ jobs:
       - name: Compile production web assets without deploying
         if: always()
         run: npm run build
+      - name: Save validated Cloudflare-ready web assets (no deployment)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: traydaq-v2-web-dist
+          path: private-src/dist/
+          if-no-files-found: error
+          retention-days: 30

@@ -1,3 +1,3 @@
-TRAYDAQ STAFF final deletion review + Owner secure erasure read-only queue validation 2026-10-23
-Source feat/standalone-admin-native at bcd851b08cfc29b202d4e9fde63bf1b517fbd608
-Staff security contracts, deletion parity, TypeScript, NO APK, no deployment.
+TRAYDAQ STAFF five-parent / eleven-team hierarchy and scoped leadership chat source verification 2026-10-23
+Source feat/standalone-admin-native at df5898ad7c021d6127bfb60b77f58c6f65d84be1
+Run staff security contracts, division hierarchy, TypeScript. No APK and no deployment.

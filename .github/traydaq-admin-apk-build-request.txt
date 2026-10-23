@@ -6,3 +6,11 @@ Required package: com.traydaq.admin. No legacy builder or public users APK workf
 Validate the latest Staff department, communications, security records, media/image, verification GPS/town names, date/time picker and archive changes.
 Require Staff security tests, TypeScript, Expo checks/prebuild, Gradle release compilation, separate Admin signing, and published TRAYDAQ-V2-Admin-Native-Android-APK artifact.
 On failure inspect failing Staff job and fix the cause before retrying.
+
+
+USER-AUTHORIZED BUILD — 2026-10-23 12:10 GMT
+App: TRAYDAQ V2 STAFF Android APK
+Source: gideondreams3325/traydaq-v2, feat/standalone-admin-native at bcd851b08cfc29b202d4e9fde63bf1b517fbd608
+Build only through dedicated public v2 builder workflow admin-native.yml; validate, compile, sign and upload latest standalone installable Android APK.
+Include unified account / post / product / professional service / store / job / event / music deletion requests and Security Staff independent review.
+Inspect failed jobs, fix actual errors, and retry as authorized. Do not use legacy traydaq builder.

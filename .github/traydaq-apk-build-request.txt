@@ -182,3 +182,9 @@ Source: gideondreams3325/traydaq-v2, main at f063eb3d0d18840afccffcfbcf27174ac81
 Build only through dedicated public v2 builder workflow build.yml; validate, compile, sign and upload latest standalone installable Android APK.
 Include unified account / post / product / professional service / store / job / event / music deletion requests and Security Staff independent review.
 Inspect failed jobs, fix actual errors, and retry as authorized. Do not use legacy traydaq builder.
+
+
+Retry explicitly authorized build — 2026-10-23.
+Previous user APK run 39951444930 failed 1/489 native tests because old guest-browsing test forgot the protected Appeals route.
+Fixed source main 61dfb21d2177c2025d5c648357bcdfa29aaeea96.
+Run dedicated V2 USER workflow build.yml; test all native, Expo, TypeScript, JS export, Gradle, signing, artifact. Fix further errors and retry.

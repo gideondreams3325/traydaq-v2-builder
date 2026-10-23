@@ -1,0 +1,21 @@
+{
+  "workflow": "admin-native.yml",
+  "app": "com.traydaq.admin",
+  "runId": 39881087094,
+  "url": "https://github.com/gideondreams3325/traydaq-v2-builder/actions/runs/39881087094",
+  "headSha": "957c439358f59db4f584335c9e08eb608fced7b0",
+  "runNumber": 14,
+  "status": "in_progress",
+  "conclusion": null,
+  "updatedAt": "2026-10-23T00:59:20.399Z",
+  "jobs": [
+    {
+      "id": 120178360916,
+      "name": "TRAYDAQ Admin Native Android APK",
+      "status": "in_progress",
+      "conclusion": null,
+      "failedSteps": []
+    }
+  ],
+  "artifactName": "TRAYDAQ-V2-Admin-Native-Android-APK"
+}

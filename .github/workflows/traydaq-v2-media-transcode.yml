@@ -39,3 +39,5 @@ jobs:
       # This job deliberately DOES NOT compile, package or release any Android APK.
 
 # Backend-only audio transfer diagnostic run; not an Android workflow.
+
+# Signed staging transfer verification for audio/video; no app build.

@@ -50,7 +50,7 @@ jobs:
           node-version: "22"
       - run: npm install --no-audit --no-fund
       - name: Android member and deletion workflow tests
-        run: node --test tests/member-appeals-parity.test.mjs tests/support-history-parity.test.mjs tests/creator-rights-parity.test.mjs tests/unified-deletion-parity.test.mjs
+        run: node --test tests/member-appeals-parity.test.mjs tests/support-history-parity.test.mjs tests/creator-rights-parity.test.mjs tests/unified-deletion-parity.test.mjs tests/catalog-realtime-parity.test.mjs tests/feed-live-updates.test.mjs
       - name: Native TypeScript
         if: always()
         run: npm run typecheck

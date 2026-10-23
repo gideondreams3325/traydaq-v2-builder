@@ -171,3 +171,6 @@ Use ONLY this dedicated V2 builder build.yml; compile, test, sign, upload artifa
 
 
 2026-10-23: USER-AUTHORIZED TRAYDAQ V2 REGULAR USER ANDROID APK BUILD (not Staff/Admin). Use public dedicated workflow .github/workflows/build.yml only, checking out private gideondreams3325/traydaq-v2 main at latest 8176266c2e4b4b8101498c69efca2f72676bc60f or newer. Includes professional-service listing cards and direct service navigation on Android, badge parity, marketplace and notification refinements. Run native tests, Expo Doctor, TypeScript, Android bundle, Gradle release, signature/installability checks, and upload user APK. Investigate and repair errors when possible; preserve separate ongoing Staff workflow.
+
+
+2026-10-23 USER APP APK BUILD #160 RETRY: previous build 39913332888 passed 476 of 484 native tests; its 8 failures were stale source-pattern assertions. Updated seven regression test files without weakening production permissions, media fallback, published-service filtering, profile freshness, or bounded request parsing. New private source main 21785169364ae7ebac5b610b5a82b9fc718c6e3f. Retry ONLY regular USER APK via .github/workflows/build.yml. Continue native tests, Expo Doctor, TypeScript, Expo export, Gradle release, stable signing, verification and artifact. Diagnose further failures if they arise. Never touch Staff/Admin workflow.

@@ -1,3 +1,3 @@
-TRAYDAQ V2 2026-10-23 repeat media exposure counters validation rerun (corrected view watcher and Expo VideoPlayer type).
-Current private gideondreams3325/traydaq-v2 main includes picture/video profile metrics, repeat listen event tables, safe database RPC role gates, and corrected test expectations.
-Run web and native tests/typecheck, no APK. Do not build an APK, publish Cloudflare, or change backend secrets.
+TRAYDAQ V2 final qualified media counts verification — 2026-10-23.
+Use current private gideondreams3325/traydaq-v2 main including latest published photo carousel asset-count SQL migration and its test.
+Check: Web and Android source tests and TypeScript. No Android APK build, no Cloudflare release or production change.

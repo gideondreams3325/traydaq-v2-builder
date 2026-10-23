@@ -1,4 +1,1 @@
-TRAYDAQ V2 final unified deletion validation October 23 2026.
-Production user main: f063eb3d0d18840afccffcfbcf27174ac8138140
-Web npm test, web TypeScript, Android member/deletion parity and Android TypeScript.
-Staff source separately validated: 39950650741. No APK build or deployment.
+TRAYDAQ V2 user web + Android legacy admin UI retirement 2026-10-23. Validate sources only, NO APK.

@@ -188,6 +188,9 @@ if __name__ == "__main__":
                     "Media inventory unavailable", "Media service unavailable"
                 }:
                     print("Safe backend diagnostic: " + safe)
+                    stage = details.get("phase", "")
+                    if stage in {"eligibility","inspect","read_original","read_staged","recheck_source","backup_original","verify_backup","replace_live","verify_live","record_audit","update_catalog"}:
+                        print("Safe verifier phase: "+stage)
             except Exception:
                 pass
         raise SystemExit(1)

@@ -1,6 +1,5 @@
-TRAYDAQ V2 USER PLATFORM STAFF-TO-MEMBER WORKFLOW PARITY
-Date 2026-10-23
-Private source feat/standalone-admin-native commit f98419c8be60f91e86dfc17ac548944e79acd7e2
-Validates native and web: member appeals and history, support/safety report statuses,
-Creator post copyright/rights claims, real Firebase authentication.
-No APK, no Gradle, no Expo export, no Cloudflare deployment.
+TRAYDAQ V2 PRODUCTION MAIN USER APPEALS, SUPPORT, CREATOR RIGHTS
+Date: 2026-10-23
+Source: gideondreams3325/traydaq-v2 main, commit 96a52f271699835fc37b46a90076423b0399db01
+Scope web full regression/typecheck, native appeal/support/copyright parity + typecheck.
+Existing main source must remain intact. Source check ONLY: no APK/Gradle, signing, Expo export or deployment.

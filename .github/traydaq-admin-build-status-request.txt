@@ -1,0 +1,1 @@
+Check the latest TRAYDAQ Staff APK build triggered by commit 957c439358f59db4f584335c9e08eb608fced7b0. Only report build status; do not trigger a user-app build.

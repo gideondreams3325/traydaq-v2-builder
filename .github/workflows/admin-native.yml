@@ -260,14 +260,7 @@ jobs:
           APK=android/app/build/outputs/apk/release/app-release.apk
           test -s "$APK"
           unzip -t "$APK" > /dev/null
-          unzip -Z1 "$APK" | grep -E '^assets/(index.android.bundle|.*\\.hbc)
-        uses: actions/upload-artifact@v4
-        with:
-          name: TRAYDAQ-V2-Admin-Native-Android-APK
-          path: private-src/admin-native/android/app/build/outputs/apk/release/app-release.apk
-          retention-days: 14
-          if-no-files-found: error
-
+          unzip -Z1 "$APK" | grep -E '^assets/(index.android.bundle|.*\\.hbc)$'
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$APK"
           "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.traydaq.admin' versionCode='3' versionName='1.0.0'"
           sha256sum "$APK"

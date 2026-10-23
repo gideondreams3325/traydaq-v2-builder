@@ -1,1 +1,1 @@
-TRAYDAQ V2 web legacy Security Hub retirement validation 2026-10-23. No deployment, no Android APK.
+TRAYDAQ V2 web legacy Security Hub retired and updated tests. Web tests and compile only. No APK, no deployment.

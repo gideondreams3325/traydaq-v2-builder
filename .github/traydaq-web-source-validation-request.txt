@@ -1,3 +1,2 @@
-TRAYDAQ V2 final immediate cross-platform synchronization source validation, 2026-10-23.
-Use latest private gideondreams3325/traydaq-v2 main with queued browser catalog reload fix, public realtime PostgreSQL revisions for feed/products/jobs/events/music/profiles/services and native websocket recovery.
-Run Web 100% tests, TypeScript, production bundle; no deployment. Do not start Android or staff APK builds or Cloudflare publishing.
+TRAYDAQ V2 LIVE SYNC cross-device regression checks 2026-10-23
+Source: current private github.com/gideondreams3325/traydaq-v2 main. Changes: six public-only Supabase revision tokens; approved content/stores/music/profile triggers; one Android Realtime socket; shared web invalidations; websocket reconnection + 8/9-second fallback. Validate full web tests, web TypeScript, production Vite bundle; Android targeted workflow tests and native TypeScript in parity workflow. This action MUST NOT deploy web or trigger an APK build.

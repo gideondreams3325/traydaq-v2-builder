@@ -1,4 +1,4 @@
-name: TRAYDAQ V2 Legacy Videos — One-time Compression (No APK)
+name: TRAYDAQ V2 Automatic Video + Music Compression (No APK)
 
 on:
   push:
@@ -6,6 +6,8 @@ on:
     paths:
       - '.github/workflows/traydaq-v2-media-transcode.yml'
   workflow_dispatch:
+  schedule:
+    - cron: '5,35 * * * *'
 
 permissions:
   contents: read
@@ -32,6 +34,6 @@ jobs:
             sudo apt-get install -qq -y ffmpeg
           fi
           ffmpeg -version | head -n 1
-      - name: Compress and independently validate existing public videos
+      - name: Auto-compress approved video and music without changing file URLs
         run: python3 .github/scripts/traydaq_media_transcode.py
       # This job deliberately DOES NOT compile, package or release any Android APK.

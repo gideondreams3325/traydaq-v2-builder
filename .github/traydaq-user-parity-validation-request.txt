@@ -1,4 +1,3 @@
-TRAYDAQ V2 music and listing engagement source validation — 2026-10-23
-Check latest private gideondreams3325/traydaq-v2 main for required explicit music rating, qualified play counts, music likes, and real marketplace/jobs/events/professional service likes/saves.
-Validation: web/native source and TypeScript checks (no APK).
-Do not build APKs or deploy production.
+TRAYDAQ V2 2026-10-23 rerun: music explicit choices, play/like counts, marketplace/jobs/events and professional service reactions.
+Checkout latest private traydaq-v2 main, including current copyright workflow regression assertions and the professional listing split.
+Scope: web and Android source tests + TypeScript; NO APK signing/build, NO deployment.

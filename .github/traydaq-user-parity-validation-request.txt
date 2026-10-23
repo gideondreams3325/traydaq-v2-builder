@@ -1,7 +1,7 @@
-TRAYDAQ V2 USER WEB + ANDROID APPEAL PARITY, SOURCE ONLY
+TRAYDAQ V2 USER WEB + ANDROID APPEALS / SUPPORT HISTORY
 2026-10-23
-Source: gideondreams3325/traydaq-v2 feat/standalone-admin-native
-Latest source commit: d75d53d749f2be54753c870380b8393ca60efdac
-Check web and Android regressions and TS, new authenticated Firebase appeal endpoint,
-member history, Security case queue and department-independent approval.
-No APK build, signing, Expo export, Gradle, or deployment.
+Source gideondreams3325/traydaq-v2 feat/standalone-admin-native
+Latest source: 35d0f947e893d18598d68fe2e29866a141a78d0f
+Scope: appeals create/list, Staff Security queue + decisions, report status histories.
+Validate user web tests + typecheck and native parity tests + typecheck.
+No APK build, Expo export, Gradle, publish or deployment.

@@ -1,3 +1,4 @@
-TRAYDAQ V2 controlled admin cutover user-source validation (no APK/no deployment)
-Source main b276747de4042cf25345104042642e6e23eec935
-Verify legacy Staff entry retirement, preserved member workflows, background audio and static source parity.
+TRAYDAQ V2 music and listing engagement source validation — 2026-10-23
+Check latest private gideondreams3325/traydaq-v2 main for required explicit music rating, qualified play counts, music likes, and real marketplace/jobs/events/professional service likes/saves.
+Validation: web tests, TypeScript and production bundle (no deployment).
+Do not build APKs or deploy production.

@@ -1,7 +1,5 @@
-TRAYDAQ V2 USER WEB + NATIVE SOURCE PARITY VALIDATION
-Requested: 2026-10-23 (follow-up)
-Validate source repository: gideondreams3325/traydaq-v2
-Expected current main: 4a4853b5a4f37c822688a1719da81e7c69e34064
-Run web regression tests and TypeScript, native member appeals/support-history/creator-rights tests and TypeScript.
-Review earlier migration gaps: authenticated creator-rights helper, Firebase appeals and support migrations, Android private appeal record lifecycle.
-This is validation only. DO NOT compile/build/install APK, export Expo bundle, sign, publish or deploy.
+TRAYDAQ V2 full deletion workflow validation | 2026-10-23
+User-facing production main source; include web TypeScript + ALL web tests and native TypeScript + appeals/support/copyright/deletion parity.
+Check categories Account, Post, Product, Service, Store, Vacancy, Event, Music.
+Confirm backend migrations and secure staff review contracts.
+Source-only. DO NOT compile APK, export Expo, sign, build or deploy.

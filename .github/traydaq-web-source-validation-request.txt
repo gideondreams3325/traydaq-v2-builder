@@ -1,17 +1,4 @@
-User-requested TRAYDAQ V2 web regression audit and build validation, 2026-10-22.
-Canonical source gideondreams3325/traydaq-v2/main @ 154ea20364fbb0108500e1ba0121ce7f6f134d87.
-No APK, signing, deployment or release.\n
-2026-10-22: rerun web typecheck and production asset build even if outdated unit tests fail.
-
-2026-10-22 latest web source 123bc690fe679231d673b723766f3c0dfdabe838: retest after closing AccountAccess JSX conditional and native audio null narrowing; run web tests and independent TypeScript/build even on test failures.
-
-2026-10-22 web TS and browser suite verification after UI source repairs and 12 grounded assertion upgrades, main 59f6cf2127a9ebc77a55c8ff9de3aef9593a9070. All tests/typecheck/bundle run.
-2026-10-22 resumed validation against current private main 7bc585619c3d378b1eb884427f792d973cd7293a; tests, TypeScript, and production web bundle; user-facing only, no deploy or APK rerun.
-
-Final comprehensive web verification after current notification, security, language, verification, creator, commerce, audio parity assertions and TypeScript fixes. main b4c06b56e05f9a2b1e46690448919d59bc96cdfa; no web deployment or APK.
-
-2026-10-22 FINAL after clearing 3 remaining source regression checks (language, backend-confirmed save, back history). Web source SHA 137dd62fd1126dc715d65eb642ecc978f7ff5662. Run tests, TypeScript, asset build, NO web deploy.
-2026-10-22 source 137dd62fd1126dc715d65eb642ecc978f7ff5662: verify localized legacy biometric label and current save/share/settings test contracts, no deployment or APK build.
-2026-10-22 rerun user-facing web validation on 9d68ce9a2c23dcdfa77f5642ca39da55809a5809: translated biometric sign-in test, protected saves/shares, latest navigation. TypeScript + bundle; no deployment, no APK rerun.
-
-2026-10-22 final retry at source 9d68ce9a2c23dcdfa77f5642ca39da55809a5809: current biometrics localized translation corrected. Verify all web tests, TypeScript, and Vite build independently.
+TRAYDAQ V2 WEB-ONLY regression validation 2026-10-23.
+Source: private gideondreams3325/traydaq-v2 MAIN; user-facing web ONLY.
+Check npm test, web typecheck and production web compile; no deployment and NO Android APK or Staff workflows.
+Investigate discrepancies from staff-branch broad regression suite; run main first for accurate production-web baseline.

@@ -14,3 +14,10 @@ Source: gideondreams3325/traydaq-v2, feat/standalone-admin-native at bcd851b08cf
 Build only through dedicated public v2 builder workflow admin-native.yml; validate, compile, sign and upload latest standalone installable Android APK.
 Include unified account / post / product / professional service / store / job / event / music deletion requests and Security Staff independent review.
 Inspect failed jobs, fix actual errors, and retry as authorized. Do not use legacy traydaq builder.
+
+
+USER-AUTHORIZED STAFF RELEASE — 2026-10-23
+Build TRAYDAQ STAFF Android 0.2.0 (versionCode 2) from feat/standalone-admin-native at afea819d0da0bb8711ad0de12e249794a94558ca.
+Use dedicated public V2 builder admin-native.yml only, standalone package com.traydaq.admin.
+Include cutover controls, five management departments and eleven groups, multiple scoped staff roles, Overall Heads, team and leadership chats, secure approvals, deletion hub, and CEO oversight.
+Run access tests, TypeScript, Expo checks, Android assembleRelease; sign with independent Admin keystore, verify signature/Firebase SHA-1, upload signed artifact. On errors diagnose and retry. Do not build user APK or use legacy builder.

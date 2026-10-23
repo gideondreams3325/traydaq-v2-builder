@@ -1,7 +1,7 @@
-TRAYDAQ V2 SOURCE CHECK — NO-TYPING DATE AND TIME SELECTION
-Source: gideondreams3325/traydaq-v2 branch feat/standalone-admin-native
+TRAYDAQ V2 STAFF SOURCE-ONLY VALIDATION — Creator pending queue + C.E.O labels
 Date: 2026-10-23
-Validate Staff visual calendar and time selection in Communications campaigns and Policy Management; user web album and legacy Studio visual scheduled publishing; user Android built-in native date/time selection. Validate TypeScript and regression tests.
-SOURCE ONLY. No APK compilation, signing, Android artifact, or release.
-
-Regression follow-up: web scheduled-publishing test updated to assert visual calendar instead of removed typed input; revalidate source-only. No APK.
+Source repository: gideondreams3325/traydaq-v2
+Branch: feat/standalone-admin-native
+Latest source commit: e85d37617df38e7c4d5cded123fb82f9eb86fdc7
+Purpose: Check Creator video queue, private previews, staff role display, staff access tests, TypeScript.
+No APK, no signing, no deployment. Trigger only admin-source-check.yml.

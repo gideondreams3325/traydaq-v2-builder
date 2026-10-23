@@ -1,4 +1,1 @@
-TRAYDAQ V2 WEB-ONLY regression validation 2026-10-23.
-Source: private gideondreams3325/traydaq-v2 MAIN; user-facing web ONLY.
-Check npm test, web typecheck and production web compile; no deployment and NO Android APK or Staff workflows.
-Investigate discrepancies from staff-branch broad regression suite; run main first for accurate production-web baseline.
+TRAYDAQ V2 USER WEB ONLY validation, 2026-10-23. Validate source main via .github/workflows/user-web-source-check.yml. Do not run staff workflow, do not build any Android APK, do not deploy. Check npm test, TS, web assets compile.

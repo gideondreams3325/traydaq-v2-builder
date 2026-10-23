@@ -43,3 +43,5 @@ jobs:
 # Signed staging transfer verification for audio/video; no app build.
 
 # Diagnostic: identify backend rejection safely without exposure of private audio.
+
+# Safe isolated backend stage validation (no APK).

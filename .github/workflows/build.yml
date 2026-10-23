@@ -1,4 +1,4 @@
-name: TRAYDAQ APK Builder
+name: TRAYDAQ V2 User Android Production Release
 
 # User authorized native V2 build after fixing final audio progress TypeScript width: f738d03efef96f675d7d1032aae57db13bae090a.
 
@@ -32,7 +32,7 @@ name: TRAYDAQ APK Builder
 # Rebuild request: native notifications hardening at source commit 482e8253e9357c19a23a166e345b5dbe8ed88c86.
 # Google OAuth on a test APK additionally requires Firebase registration of its actual signing certificate.
 # Verified native source ref (fresh blank white design canvas; saved previous UI source): 4b5d52181188b87bd027b72059cdf22a2b922880
-# Never print or upload private source; only publish the signed testing APK.
+# Never print or upload private source; production release requires persistent verified signing.
 # Rebuild V2 source feat/v2-new-home-feed after aligning seven stale regression assertions with current native components.
 # Rebuild native V2 after 125 tests passed and fixing current TypeScript catalog/Home errors.
 # Requested TRAYDAQ V2 APK build 2026-10-16: compile latest private main source including new Drafts, branding, Cloudinary, security, and back controls.
@@ -103,6 +103,12 @@ jobs:
           test -f mobile/app.json
           test -f mobile/src/lib/firebase.ts
           test ! -d mobile/android
+          node - <<'NODE'
+          const c=require('./mobile/app.json').expo;
+          if(c.android?.package!=='com.traydaq.app'||c.android.versionCode!==2||c.version!=='1.0.0')
+           throw Error('User production package/version verification failed');
+          console.log('TRAYDAQ user production app v1.0.0 / code 2 verified.');
+          NODE
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -127,7 +133,8 @@ jobs:
         run: |
           set -euo pipefail
           if [[ -z "${TRAYDAQ_SIGN_JKS_B64:-}" ]]; then
-            echo "::warning::No persistent keystore configured; Google Sign-In will not be verified for this test APK."
+            echo "::error::Production release requires the permanent signing keystore."
+            exit 1
           else
             if [[ -z "${TRAYDAQ_SIGN_STOREPASS:-}" || -z "${TRAYDAQ_SIGN_KEYPASS:-}" || -z "${TRAYDAQ_SIGN_ALIAS:-}" ]]; then
               echo "::error::One or more persistent keystore password or alias secrets are missing."
@@ -307,7 +314,8 @@ jobs:
             mv "$RUNNER_TEMP/traydaq-resigned.apk" "$APK"
             echo "TRAYDAQ stable upload certificate applied securely."
           else
-            echo "::warning::A temporary test-signing certificate is in use. For Google Sign-In, register the installed APK's actual SHA or securely configure the permanent upload keystore."
+            echo "::error::Production release cannot use a temporary signing certificate."
+            exit 1
           fi
           CERT_SHA=$("$SIGNER" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-1 digest: //p' | head -1)
           # Firebase may retain multiple Android OAuth clients after adding a new signing key.
@@ -322,16 +330,8 @@ jobs:
             if [[ "${CERT_SHA,,}" == "$REGISTERED_SHA" ]]; then CERT_MATCHED=true; break; fi
           done
           if [[ "$CERT_MATCHED" != "true" ]]; then
-            echo "::warning::Google Sign-In is NOT READY: signed APK SHA-1 differs from Firebase Android OAuth registration."
-            echo "TRAYDAQ_GOOGLE_SIGN_IN_SHA_MISMATCH=true" >> "$GITHUB_ENV"
-            {
-              echo "### Google Sign-In not ready for this test APK"
-              echo
-              echo "- **Actual APK signing SHA-1:** \`$CERT_SHA\`"
-              echo "- **Registered Firebase SHA-1 values:** \`$REGISTERED_SHAS\`"
-              echo "- APK can be downloaded for other feature testing only; Google Sign-In will fail."
-              echo "- Configure one persistent Android signing keystore in the builder's Actions secrets, register its SHA-1 and SHA-256 in Firebase for \`com.traydaq.app\`, and refresh the private app's \`google-services.json\`."
-            } >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::Production signing certificate is not registered for Firebase Google Sign-In."
+            exit 1
           else
             echo "TRAYDAQ_GOOGLE_SIGN_IN_SHA_MISMATCH=false" >> "$GITHUB_ENV"
             echo "Verified Google Sign-In Android OAuth certificate matches signed APK."
@@ -346,6 +346,7 @@ jobs:
           unzip -t "$APK" >/dev/null
           unzip -Z1 "$APK" | grep -E '^assets/(index.android.bundle|.*\.hbc)$'
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$APK"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.traydaq.app' versionCode='2' versionName='1.0.0'"
           sha256sum "$APK"
           mkdir -p build-output
           cp "$APK" build-output/TRAYDAQ.apk
@@ -353,28 +354,8 @@ jobs:
       - name: Upload APK only (never private source)
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.TRAYDAQ_GOOGLE_SIGN_IN_SHA_MISMATCH == 'true' && 'TRAYDAQ-APK-GOOGLE-SIGNIN-NOT-READY' || 'TRAYDAQ-APK' }}
+          name: TRAYDAQ-V2-User-Production-APK
           path: private-src/mobile/build-output/TRAYDAQ.apk
           if-no-files-found: error
           retention-days: 14
 
-      # A test APK is a valid build artifact even when an independently-configured
-      # Firebase sign-in provider is not yet ready. Do not hide the OAuth warning,
-      # and never label this artifact as Google-login-ready.
-      - name: Report Google OAuth setup needed for the QA APK
-        if: ${{ env.TRAYDAQ_GOOGLE_SIGN_IN_SHA_MISMATCH == 'true' }}
-        shell: bash
-        run: |
-          echo "::warning::Android test APK build succeeded, but Google Sign-In will not work yet. Configure the persistent Android keystore in Actions secrets and add its SHA-1/SHA-256 to Firebase, then refresh google-services.json."
-          {
-            echo
-            echo "### APK build result: SUCCESS for non-Google Android testing"
-            echo
-            echo "Google Sign-In readiness: **BLOCKED** (signer mismatch)."
-            echo
-            echo "This green workflow means compilation, tests, APK signature and artifact upload passed — it does not certify that Google OAuth works."
-            echo
-            echo "To enable Google Sign-In, add the persistent signing keystore and credentials to the builder's four \`TRAYDAQ_V2_UPLOAD_KEYSTORE_*\` Actions secrets, register the key's fingerprints in Firebase, update the private source's \`mobile/google-services.json\` and rebuild."
-            echo
-            echo "Firebase Android settings: https://console.firebase.google.com/project/traydaq/settings/general"
-          } >> "$GITHUB_STEP_SUMMARY"

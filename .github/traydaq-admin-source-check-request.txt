@@ -1,3 +1,3 @@
-TRAYDAQ STAFF 2026-10-23 source-only cutover preflight contract revalidation
-Private staff source: 4d72157b19e84771f550e53cb03422796f0bf34e
-Validate security, deletion parity, TypeScript, no APK, no shutdown.
+TRAYDAQ STAFF legacy cutover source-only guard validation 2026-10-23
+Staff branch: e7174316f9d0b5916b63e6fccfcaafcffdac5ad4
+Security and broadcast reversible gates, no APK, no legacy shutdown yet.

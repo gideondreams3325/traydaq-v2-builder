@@ -1,6 +1,8 @@
-TRAYDAQ V2 STAFF APK VALIDATION — 2026-10-23
-Run only the dedicated .github/workflows/admin-native.yml via public gideondreams3325/traydaq-v2-builder (main).
-Private source: gideondreams3325/traydaq-v2 branch feat/standalone-admin-native, latest HEAD.
-Native Staff package: com.traydaq.admin. DO NOT build the user-facing application and DO NOT use the legacy traydaq builder.
-Validate recent visual calendar/date/time selectors in Communications campaign scheduling and Policy Management, verification records location names and GPS coordinates, campaign picture previews and archive, and existing Security/Staff capabilities.
-Require full Staff security tests, native TypeScript check, Expo preflight and prebuild, Gradle signed release APK, and published Staff-only artifact. Report failures for correction.
+TRAYDAQ V2 STAFF APK BUILD REQUEST — 2026-10-23 07:02 UTC
+Build request: new standalone STAFF/ADMIN native Android signed release APK (not the user app).
+Run ONLY .github/workflows/admin-native.yml on main in gideondreams3325/traydaq-v2-builder.
+Checkout latest private source: gideondreams3325/traydaq-v2, branch feat/standalone-admin-native, admin-native/.
+Required package: com.traydaq.admin. No legacy builder or public users APK workflow.
+Validate the latest Staff department, communications, security records, media/image, verification GPS/town names, date/time picker and archive changes.
+Require Staff security tests, TypeScript, Expo checks/prebuild, Gradle release compilation, separate Admin signing, and published TRAYDAQ-V2-Admin-Native-Android-APK artifact.
+On failure inspect failing Staff job and fix the cause before retrying.

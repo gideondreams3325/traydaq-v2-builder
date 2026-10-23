@@ -1,0 +1,37 @@
+name: TRAYDAQ V2 Web-only Regression Validation (No App Build)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/traydaq-web-only-validation-request.txt"
+permissions:
+  contents: read
+jobs:
+  web-regressions:
+    name: User web regression tests and typecheck only
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - name: Checkout TRAYDAQ V2 current web source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/standalone-admin-native
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install web test dependencies
+        run: npm install --no-audit --no-fund
+      - name: Run web regression tests (no Android tests)
+        run: npm test
+      - name: Validate user web TypeScript (no app build)
+        if: always()
+        run: npm run typecheck

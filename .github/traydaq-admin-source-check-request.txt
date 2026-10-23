@@ -1,3 +1,5 @@
-TRAYDAQ STAFF SOURCE VERIFICATION — PROFESSIONAL LISTINGS AND ARCHIVE DETAILS
-Source: gideondreams3325/traydaq-v2 feat/standalone-admin-native 84876f8862101d24f69256b8eadd1607a8be02d0
-Run SOURCE ONLY: Admin permission contracts, native TypeScript checks, professional service review, protected archived identity images, Communications searchable proposals, campaign image format. No APK, signing or publishing. Preserve unrelated regression failures for reporting.
+TRAYDAQ V2 SOURCE CHECK — NO-TYPING DATE AND TIME SELECTION
+Source: gideondreams3325/traydaq-v2 branch feat/standalone-admin-native
+Date: 2026-10-23
+Validate Staff visual calendar and time selection in Communications campaigns and Policy Management; user web album and legacy Studio visual scheduled publishing; user Android built-in native date/time selection. Validate TypeScript and regression tests.
+SOURCE ONLY. No APK compilation, signing, Android artifact, or release.

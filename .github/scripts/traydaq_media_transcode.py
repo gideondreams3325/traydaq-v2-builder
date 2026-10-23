@@ -7,6 +7,7 @@ FFmpeg preserves each file's extension/container. Keeps originals when savings
 are small, verifies duration, stream type, codec and full decode before upload.
 """
 import json
+import urllib.error
 import os
 import pathlib
 import subprocess
@@ -110,6 +111,7 @@ def encode(source, dest, mime):
 
 
 def main():
+    print("Phase: inventory request")
     jobs = json.loads(request(ROOT, headers=auth(), timeout=35)).get("items", [])
     print("Approved video/audio files eligible for automatic optimization: " + str(len(jobs)))
     optimized, unchanged = 0, 0
@@ -121,9 +123,11 @@ def main():
         with tempfile.TemporaryDirectory() as scratch:
             before = pathlib.Path(scratch) / ("original" + EXTENSIONS[mime])
             after = pathlib.Path(scratch) / ("optimized" + EXTENSIONS[mime])
+            print("Phase: download approved "+mime)
             before.write_bytes(request(job["url"], timeout=135))
             if before.stat().st_size != job["size"]:
                 raise ValueError("Media changed during download")
+            print("Phase: transcode and verify "+mime)
             encode(before, after, mime)
             validate(before, after, mime)
             if after.stat().st_size >= before.stat().st_size * .88:
@@ -134,6 +138,7 @@ def main():
                 }, timeout=60)
                 unchanged += 1
                 continue
+            print("Phase: backend verified transfer "+mime+" ("+str(after.stat().st_size)+" bytes)")
             answer = json.loads(request(ROOT, data=after.read_bytes(), headers={
                 **auth(), "Content-Type": mime,
                 "x-traydaq-media-bucket": bucket,
@@ -151,5 +156,6 @@ if __name__ == "__main__":
         main()
     except Exception as error:
         # No signed storage URL, JWT or media path should ever enter workflow logs.
-        print("Automatic media job stopped safely: " + type(error).__name__)
+        status = " HTTP " + str(error.code) if isinstance(error, urllib.error.HTTPError) else ""
+        print("Automatic media job stopped safely: " + type(error).__name__ + status)
         raise SystemExit(1)

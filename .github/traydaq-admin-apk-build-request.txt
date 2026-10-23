@@ -26,3 +26,8 @@ Run access tests, TypeScript, Expo checks, Android assembleRelease; sign with in
 USER-AUTHORIZED FINAL PRODUCTION RELEASE — 2026-10-23
 TRAYDAQ V2 STAFF production, version 1.0.0, source 10a6d1875674efe97efb9ac196623190ea1e94f2
 No test builds. Require stable independent signing certificate, registered Firebase SHA, Android versionCode 3, complete tests, TypeScript, JavaScript bundle, production Gradle release, signature verification and APK artifact. Build through dedicated TRAYDAQ V2 builder only, not legacy; separate packages. Fix any errors before reporting success.
+
+CORRECTED PRODUCTION WORKFLOW RETRIGGER — 2026-10-23
+Staff source: feat/standalone-admin-native version 1.0.0 Android code 3.
+The previous production run failed in GitHub's workflow YAML parser before any jobs; the job syntax has been repaired in commit e85982f0402090a7d03989b914c6d86abe59435e.
+Build, sign, verify and upload only the STAFF app using admin-native.yml.

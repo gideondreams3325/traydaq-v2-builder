@@ -1,2 +1,2 @@
-TRAYDAQ V2 LIVE SYNC cross-device regression checks 2026-10-23
-Source: current private github.com/gideondreams3325/traydaq-v2 main. Changes: six public-only Supabase revision tokens; approved content/stores/music/profile triggers; one Android Realtime socket; shared web invalidations; websocket reconnection + 8/9-second fallback. Validate full web tests, web TypeScript, production Vite bundle; Android targeted workflow tests and native TypeScript in parity workflow. This action MUST NOT deploy web or trigger an APK build.
+TRAYDAQ V2 immediate media playback counters — 2026-10-23.
+Source: current private gideondreams3325/traydaq-v2 main. Count videos/music at actual start on both web and native; each real replay can count, pause/resume cannot; retain photo visibility. Check regression tests, web/native TypeScript and web Vite production bundle. Preserve backend approval/privacy rules. This is SOURCE CHECK ONLY: do not build APK, deploy Cloudflare, or modify DNS.

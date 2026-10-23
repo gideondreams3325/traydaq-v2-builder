@@ -1,3 +1,4 @@
-TRAYDAQ V2 Cloudflare-ready validated user-web assets archive — 2026-10-23.
-Source: latest private gideondreams3325/traydaq-v2 main (music explicit, qualified plays, listing likes and saves).
-Perform web regression suite, TypeScript and production Vite bundle. Upload the dist/ folder as a private GitHub Actions artifact. DO NOT deploy, start APK builds, or expose private source code.
+TRAYDAQ V2 qualified repeat viewing/listening and member profile statistics — 2026-10-23.
+Check latest private gideondreams3325/traydaq-v2 main, including media view event migration, safe service-role RPC gate, feed watchers, repeat music listeners, and picture/video profile stats.
+Validation scope: web tests, web TypeScript, production web asset compilation.
+No APK build, no Play Store release and no Cloudflare deployment.

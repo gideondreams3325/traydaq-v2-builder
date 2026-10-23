@@ -1,2 +1,2 @@
-Run web-only regression tests + TypeScript (no app build, APK, or deployment).
-Private source feat/standalone-admin-native latest b9171b4d86b9337188334f2550f85a459faa7a17.
+Validate V2 web regressions + TS ONLY, no app build, APK or deployment.
+Private branch feat/standalone-admin-native commit 0a033b78e6b92880b17e6f5ad58530493850e445 (live localized web nav/signin/settings).

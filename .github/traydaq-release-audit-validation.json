@@ -1,4 +1,4 @@
 {
-  "source_sha": "e68c658b3d8a753b9a9b8ec57960e0ef8696815b",
-  "purpose": "Validate isolated user release audit candidate; no APK, deployment, STAFF or signing."
+  "source_sha": "f2f6b01f6b610321232cc39ccdcb48343275db94",
+  "purpose": "Rerun source-only checks after Edge Function typing fixes. No APK, STAFF, signing or deployment."
 }

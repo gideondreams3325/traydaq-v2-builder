@@ -1,4 +1,4 @@
 {
-  "source_sha": "bb78ad5efd15c037e25648a53840ce8eca96de12",
-  "purpose": "Validate confirmed publisher policy regeneration, web/Android privacy parity and public Terms. Source checks only; no APK/AAB, STAFF or deployment."
+  "source_sha": "46e1eb154d814e4e4979dcfa4ece7a5484c2ddfe",
+  "purpose": "Source-only validation: prevent environment toggles enabling unvalidated destructive account erasure. No binary build, STAFF, or production release."
 }

@@ -1,4 +1,4 @@
 {
-  "source_sha": "5a7a3bd10ddd73b1bf8a0521db624d5380767cb8",
-  "purpose": "Source-only reciprocal blocking API validation; no deployment or binary"
+  "source_sha": "657d39596d4e06ae227e6035d8b57db6edeb594f",
+  "purpose": "Source-only checks of member blocking for content engagement, store shares and all push dispatch; no binary or deployment"
 }

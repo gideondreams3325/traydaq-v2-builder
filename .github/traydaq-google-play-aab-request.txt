@@ -5,3 +5,8 @@ Private source: 0a4fdfff95746e735952362c65b97b23457d45e5
 Existing certificate SHA-256: 716a68f5734545bc9d9700f045d2bfb1b1087ffe732021f216b32a575f03f83d
 Purpose: signed AAB plus matching user APK and verification evidence for internal testing preparation.
 No Play App Signing configuration, Play upload, public publishing, or STAFF build is authorized by this marker.
+
+Regenerate final 1.0.2/code 4 candidate after correcting About version display.
+Private release source: 644e0b2c2349ca9b400dc9b46a1f84a7a75968d3
+Branch: release/google-play-user-1.0.2-20261024
+User app only; no Play signing/configuration, public rollout or STAFF changes.

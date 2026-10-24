@@ -1,0 +1,56 @@
+name: TRAYDAQ V2 Release Audit Source Validation (No APK)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/traydaq-release-audit-validation.json']
+permissions:
+  contents: read
+env:
+  TRAYDAQ_AUDIT_SOURCE_SHA: e68c658b3d8a753b9a9b8ec57960e0ef8696815b
+jobs:
+  source:
+    name: ${{ matrix.target }} source checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [web, android, edge]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.TRAYDAQ_AUDIT_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate user web source
+        if: matrix.target == 'web'
+        working-directory: private-src
+        run: |
+          npm install --no-audit --no-fund
+          npm run typecheck
+          npm test
+          npm run build
+      - name: Validate Android source without building a binary
+        if: matrix.target == 'android'
+        working-directory: private-src/mobile
+        run: |
+          npm install --no-audit --no-fund
+          npm run typecheck
+          node --test tests/*.test.mjs
+      - name: Validate Firebase-authenticated Edge Functions
+        if: matrix.target == 'edge'
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/traydaq-release-audit-edge"
+          cp -R private-src/supabase/functions/. "$RUNNER_TEMP/traydaq-release-audit-edge/"
+          npx --yes deno@2.9.6 check --no-config --node-modules-dir=auto --no-lock \
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-account-erasure/index.ts" \
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-deletion-requests/index.ts" \
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-support-report/index.ts"
+# Source validation only. No deployment, Expo export, APK/AAB, STAFF checkout or signing.

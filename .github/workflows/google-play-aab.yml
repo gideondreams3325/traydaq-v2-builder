@@ -64,13 +64,13 @@ jobs:
           KEY_ALIAS: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEY_ALIAS }}
         run: |
           set -euo pipefail
-          for field in KEY_B64 STORE_PASS KEY_PASS KEY_ALIAS; do
+          for field in KEY_B64 STORE_PASS KEY_PASS; do
             if [[ -z "${!field:-}" ]]; then echo "::error::Existing signing secret $field is missing"; exit 1; fi
           done
-          if [[ "$KEY_ALIAS" != "traydaq-v2-upload" ]]; then
-            echo "::error::Signing alias differs from the verified original upload key."
-            exit 1
+          if [[ -n "$KEY_ALIAS" && "$KEY_ALIAS" != "traydaq-v2-upload" ]]; then
+            echo "::warning::Alias secret differs from the verified JKS alias; using the original alias."
           fi
+          KEY_ALIAS=traydaq-v2-upload
           umask 077
           export TRAYDAQ_UPLOAD_KEYSTORE="$RUNNER_TEMP/traydaq-existing-upload.jks"
           printf '%s' "$KEY_B64" | base64 --decode > "$TRAYDAQ_UPLOAD_KEYSTORE"

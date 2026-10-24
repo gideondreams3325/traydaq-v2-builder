@@ -1,4 +1,4 @@
 {
-  "source_sha": "f2f6b01f6b610321232cc39ccdcb48343275db94",
-  "purpose": "Rerun source-only checks after Edge Function typing fixes. No APK, STAFF, signing or deployment."
+  "source_sha": "c2097e72241fa72230be01532c69678a25768200",
+  "purpose": "Source-only validation of PR #17 staging and media recovery safeguards. No APK, AAB, STAFF, production deploy, or signing changes."
 }

@@ -1,0 +1,7 @@
+User-authorized Google Play candidate build — 2026-10-24
+App: TRAYDAQ user app only (com.traydaq.app)
+Release: 1.0.2 / versionCode 4; target API 36
+Private source: 0a4fdfff95746e735952362c65b97b23457d45e5
+Existing certificate SHA-256: 716a68f5734545bc9d9700f045d2bfb1b1087ffe732021f216b32a575f03f83d
+Purpose: signed AAB plus matching user APK and verification evidence for internal testing preparation.
+No Play App Signing configuration, Play upload, public publishing, or STAFF build is authorized by this marker.

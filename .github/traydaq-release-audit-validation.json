@@ -1,4 +1,4 @@
 {
-  "source_sha": "fe268f87173052572e9b30f3d8598ec9e0536d20",
-  "purpose": "Source-only validation of TRAYDAQ V2 draft after policy-regression Markdown emphasis correction. Google Play policy and Firebase/Android/web/Edge checks; no builds or deployments."
+  "source_sha": "bb78ad5efd15c037e25648a53840ce8eca96de12",
+  "purpose": "Validate confirmed publisher policy regeneration, web/Android privacy parity and public Terms. Source checks only; no APK/AAB, STAFF or deployment."
 }

@@ -1,4 +1,4 @@
 {
-  "source_sha": "9f6226d2a90b1100bdd21f7a3d24a542c16dac95",
-  "purpose": "Full TRAYDAQ V2 source-only validation: original author profile navigation, separate blocking options, filtered feed and reciprocal chat notification blocks. No APK/AAB, production deploy or staff app."
+  "source_sha": "0b9800faac3b240d83afc2018d84923349742394",
+  "purpose": "Validate TRAYDAQ V2 PR #17: blocked-member discussion reads/live comment filtering, feeds, messaging, web, Firebase rules and Edge Functions. SOURCE ONLY; no APK, AAB, deployment or STAFF."
 }

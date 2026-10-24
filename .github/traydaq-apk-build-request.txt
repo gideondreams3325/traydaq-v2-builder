@@ -196,3 +196,5 @@ No test builds. Require stable independent signing certificate, registered Fireb
 
 PRODUCTION BUILD RETRY — 2026-10-23
 Source main 8deaa53c67137a2ccb82c356735877ceda1a88dd; 2 obsolete tests were updated after user Security Hub retirement and For You-only music stopping. The previous 1.0.0 user release stopped before compilation with 488/490 tests passed. Run every native test again, require stable signing and Google SHA, and build certified v1.0.0 code 2.
+
+USER-AUTHORIZED 2026-10-24: Build the full signed TRAYDAQ V2 USER Android 1.0.1 versionCode 3 release, private traydaq-v2/main latest. Include guest music/video/picture counts and prior app updates. Dedicated public V2 builder only. Run all validations, signing and artifact verification; troubleshoot failures. Separate Staff build also requested.

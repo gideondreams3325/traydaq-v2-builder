@@ -1,4 +1,4 @@
 {
-  "source_sha": "1c9a4efb676d590ba396e371da8c86b8f79b5ae0",
-  "purpose": "Source-only Google Play release audit: reciprocal chat notification blocking and Firebase rules; web/Android/Edge/Firebase checks. No APK/AAB, STAFF, deploy, destructive erasure or signing changes."
+  "source_sha": "e329bb8aed9c95d56d299dd854d3a7fdf6f0e8fb",
+  "purpose": "Source-only TRAYDAQ V2 Google Play audit: blocked chat notification safety, Edge Deno type correction, web/android/firebase emulator. Do not build or publish."
 }

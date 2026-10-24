@@ -1,4 +1,4 @@
 {
-  "source_sha": "0b9800faac3b240d83afc2018d84923349742394",
-  "purpose": "Validate TRAYDAQ V2 PR #17: blocked-member discussion reads/live comment filtering, feeds, messaging, web, Firebase rules and Edge Functions. SOURCE ONLY; no APK, AAB, deployment or STAFF."
+  "source_sha": "8225b46ff451a48377bee3c41aa5d6e9abf3a25b",
+  "purpose": "Source-only full V2 validation at PR #17: web and Android blocked member comments/threads, Firebase RTDB rules and Edge Functions. NO APK/AAB, no publication, no STAFF."
 }

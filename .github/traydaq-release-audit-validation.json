@@ -1,4 +1,4 @@
 {
-  "source_sha": "46e1eb154d814e4e4979dcfa4ece7a5484c2ddfe",
+  "source_sha": "6a5a9f62022bc55d747391580d8ff6892af65302",
   "purpose": "Source-only validation: prevent environment toggles enabling unvalidated destructive account erasure. No binary build, STAFF, or production release."
 }

@@ -1,4 +1,4 @@
 {
-  "source_sha": "c8bdde918d1f11f051d024f823b3dd73024f5599",
-  "purpose": "Source-only TRAYDAQ V2 Google Play policy and account validation. Confirm personal publisher GIDEON APPIAH FRIEMPONG, POMAAH GROUP brand, contact location, unified email, 18+ intended audience, no paid ads, documented but unprovided retention rules. No APK, AAB, STAFF, deployment or erasure."
+  "source_sha": "fe268f87173052572e9b30f3d8598ec9e0536d20",
+  "purpose": "Source-only validation of TRAYDAQ V2 draft after policy-regression Markdown emphasis correction. Google Play policy and Firebase/Android/web/Edge checks; no builds or deployments."
 }

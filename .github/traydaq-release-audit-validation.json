@@ -1,4 +1,4 @@
 {
-  "source_sha": "fa5bafd539ab9cceb67836d8e8ac561776a73a39",
-  "purpose": "Source-only checks of TRAYDAQ public release candidate PR 17: web/android 18+ affirmation and deletion safeguards. No APK/AAB, staff app or deploy."
+  "source_sha": "56b5922a5e23d03ea7e373b16e6c383925d0289c",
+  "purpose": "Source-only TRAYDAQ V2 PR17 web, Android, Edge and Firebase RTDB emulator blocking QA. No APK, AAB, deployment, signing changes or STAFF changes."
 }

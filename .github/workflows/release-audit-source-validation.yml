@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 env:
-  TRAYDAQ_AUDIT_SOURCE_SHA: 3fec3bab9f9cd0f692ed556f1889a1aabc03035d
+  TRAYDAQ_AUDIT_SOURCE_SHA: 1c9a4efb676d590ba396e371da8c86b8f79b5ae0
 jobs:
   source:
     name: ${{ matrix.target }} source checks
@@ -63,5 +63,6 @@ jobs:
           npx --yes deno@2.9.6 check --no-config --node-modules-dir=auto --no-lock \
             "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-account-erasure/index.ts" \
             "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-deletion-requests/index.ts" \
-            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-support-report/index.ts"
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-support-report/index.ts" \\
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-member-activity/index.ts"
 # Source validation only. No deployment, Expo export, APK/AAB, STAFF checkout or signing.

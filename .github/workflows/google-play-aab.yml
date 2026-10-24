@@ -25,7 +25,7 @@ jobs:
       NODE_OPTIONS: "--max-old-space-size=6144"
       TRAYDAQ_RELEASE_VERSION: "1.0.2"
       TRAYDAQ_RELEASE_CODE: "4"
-      TRAYDAQ_SOURCE_SHA: "0a4fdfff95746e735952362c65b97b23457d45e5"
+      TRAYDAQ_SOURCE_SHA: "644e0b2c2349ca9b400dc9b46a1f84a7a75968d3"
       # Public certificate from signed User APK run 40043905049 (v1.0.1/code 3).
       TRAYDAQ_EXPECTED_SIGNING_SHA256: "716a68f5734545bc9d9700f045d2bfb1b1087ffe732021f216b32a575f03f83d"
     defaults:
@@ -36,7 +36,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: "0a4fdfff95746e735952362c65b97b23457d45e5"
+          ref: "644e0b2c2349ca9b400dc9b46a1f84a7a75968d3"
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -48,8 +48,8 @@ jobs:
           node - <<'NODE'
           const a=require('./app.json').expo;
           if(a.android?.package!=='com.traydaq.app')throw Error('Only com.traydaq.app may be published.');
-          if(!Number.isInteger(a.android.versionCode)||a.android.versionCode<3||a.android.versionCode>=Number(process.env.TRAYDAQ_RELEASE_CODE))
-            throw Error('Expected current source code 3 and strictly newer Play candidate code 4.');
+          if(!Number.isInteger(a.android.versionCode)||a.android.versionCode<3||a.android.versionCode>Number(process.env.TRAYDAQ_RELEASE_CODE))
+            throw Error('Expected current source code 3 or candidate code 4, newer than installed APK code 3.');
           console.log('Package:',a.android.package,'version:',a.version,'code:',a.android.versionCode);
           NODE
           test "$(git -C .. rev-parse HEAD)" = "$TRAYDAQ_SOURCE_SHA"

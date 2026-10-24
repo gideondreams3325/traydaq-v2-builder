@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [web, android, edge]
+        target: [web, android, edge, firebase]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,6 +28,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - uses: actions/setup-java@v4
+        if: matrix.target == 'firebase'
+        with:
+          distribution: temurin
+          java-version: '21'
       - name: Validate user web source
         if: matrix.target == 'web'
         working-directory: private-src
@@ -43,6 +48,12 @@ jobs:
           npm install --no-audit --no-fund
           npm run typecheck
           node --test tests/*.test.mjs
+      - name: Validate Firebase RTDB blocks and messaging authorization (emulator only)
+        if: matrix.target == 'firebase'
+        working-directory: private-src/firebase
+        run: |
+          npm install --no-audit --no-fund
+          npm run test:rules
       - name: Validate Firebase-authenticated Edge Functions
         if: matrix.target == 'edge'
         shell: bash

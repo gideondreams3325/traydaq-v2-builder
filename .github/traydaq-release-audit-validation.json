@@ -1,4 +1,4 @@
 {
-  "source_sha": "9c4d0b1355ba7bf64c41b88dce8d150372cf685a",
-  "purpose": "Source-only V2 validation: existing APK RTDB chat compatibility via trusted peer mapping; deny spoofed senders, missing peer mapping, unauthorized/unverified, bidirectional blocks. Android/web/Edge checks. No builds, deployment or staff."
+  "source_sha": "b0fb11b6e14f3f6b068bce3661cc2146aa17f300",
+  "purpose": "Validate TRAYDAQ V2 PR #17 publisher attribution: POMAAH GROUP, responsible individual GIDEON APPIAH FRIEMPONG, confirmed child safety contact and consistent public legal pages. Full source-only V2 matrix (web, Android, Firebase emulator, Edge); no APK/AAB/deployment/STAFF."
 }

@@ -1,4 +1,4 @@
 {
-  "source_sha": "3fec3bab9f9cd0f692ed556f1889a1aabc03035d",
-  "purpose": "Source-only latest TRAYDAQ V2 PR17 18+ terms, primary inbox blocking, Firebase emulator policy and Play Data Safety draft checks. Do not build APK/AAB, deploy, or modify STAFF."
+  "source_sha": "1c9a4efb676d590ba396e371da8c86b8f79b5ae0",
+  "purpose": "Source-only Google Play release audit: reciprocal chat notification blocking and Firebase rules; web/Android/Edge/Firebase checks. No APK/AAB, STAFF, deploy, destructive erasure or signing changes."
 }

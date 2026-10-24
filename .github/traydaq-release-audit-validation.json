@@ -1,4 +1,4 @@
 {
-  "source_sha": "657d39596d4e06ae227e6035d8b57db6edeb594f",
-  "purpose": "Source-only checks of member blocking for content engagement, store shares and all push dispatch; no binary or deployment"
+  "source_sha": "f4de62ca0968cc43438b02f7eee4c8bc03051350",
+  "purpose": "Source-only rerun after discussion Edge TypeScript correction plus member-notification blocking coverage; no APK or deployment"
 }

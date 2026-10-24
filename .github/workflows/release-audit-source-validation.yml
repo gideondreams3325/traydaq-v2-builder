@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 env:
-  TRAYDAQ_AUDIT_SOURCE_SHA: b7f5640756718f52b21cf5e0c8356c71797d979a
+  TRAYDAQ_AUDIT_SOURCE_SHA: bb7fa6e9fa8d28a247d25e001892f76e748dc523
 jobs:
   source:
     name: ${{ matrix.target }} source checks

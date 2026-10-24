@@ -1,4 +1,4 @@
 {
-  "source_sha": "56b5922a5e23d03ea7e373b16e6c383925d0289c",
-  "purpose": "Source-only TRAYDAQ V2 PR17 web, Android, Edge and Firebase RTDB emulator blocking QA. No APK, AAB, deployment, signing changes or STAFF changes."
+  "source_sha": "bf0457e7a0bd3023435634e74dc09e2a0a50ed1b",
+  "purpose": "Source-only V2 PR17 release audit: reciprocal Firebase block rules emulator, primary 18+ Android/web registration gates, Edge and web checks. No APK/AAB, deployment, signing or STAFF."
 }

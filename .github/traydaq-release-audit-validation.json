@@ -1,4 +1,4 @@
 {
-  "source_sha": "37410264effecf386601ea09477a73b304f4889f",
-  "purpose": "Source-only PR17 final Android chat block, Firebase reciprocal block emulator, age gates and web/Edge checks. No APK/AAB, STAFF, deploy or signing changes."
+  "source_sha": "8acd9b26611cc737c144f350c93790c571ff1496",
+  "purpose": "Source-only full V2 release QA for draft PR17: Android primary inbox block, age gates, terms and Firebase blocking emulator. No APK/AAB, deploy or STAFF."
 }

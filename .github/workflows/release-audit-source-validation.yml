@@ -63,6 +63,6 @@ jobs:
           npx --yes deno@2.9.6 check --no-config --node-modules-dir=auto --no-lock \
             "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-account-erasure/index.ts" \
             "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-deletion-requests/index.ts" \
-            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-support-report/index.ts" \\
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-support-report/index.ts" \
             "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-member-activity/index.ts"
 # Source validation only. No deployment, Expo export, APK/AAB, STAFF checkout or signing.

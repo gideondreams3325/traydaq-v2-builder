@@ -1,4 +1,4 @@
 {
-  "source_sha": "11fc657019f12977b49a4a90ddc185a40a0ea350",
-  "purpose": "Source-only V2 release audit: For You blocked author filtering, profile block control, chat notification suppression; validate web Android Edge Firebase emulator, no binary/deploy/staff."
+  "source_sha": "f316a22753f301707dea1dd525ee8e422a4c51bc",
+  "purpose": "Source-only TRAYDAQ V2 PR17 For You personalized block-filter validation; full Web, Android, Edge and Firebase RTDB emulator. No APK/AAB/STAFF/deploy."
 }

@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 env:
-  TRAYDAQ_AUDIT_SOURCE_SHA: 76ee2489fb1c2dae969e172eaae915831cf34d42
+  TRAYDAQ_AUDIT_SOURCE_SHA: 5a7a3bd10ddd73b1bf8a0521db624d5380767cb8
 jobs:
   source:
     name: ${{ matrix.target }} source checks
@@ -61,6 +61,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/traydaq-release-audit-edge"
           cp -R private-src/supabase/functions/. "$RUNNER_TEMP/traydaq-release-audit-edge/"
           npx --yes deno@2.9.6 check --no-config --node-modules-dir=auto --no-lock \
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-discussions/index.ts" \
             "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-account-erasure/index.ts" \
             "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-deletion-requests/index.ts" \
             "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-support-report/index.ts" \

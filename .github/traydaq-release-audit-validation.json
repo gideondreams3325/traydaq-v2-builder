@@ -1,4 +1,4 @@
 {
-  "source_sha": "f316a22753f301707dea1dd525ee8e422a4c51bc",
-  "purpose": "Source-only TRAYDAQ V2 PR17 For You personalized block-filter validation; full Web, Android, Edge and Firebase RTDB emulator. No APK/AAB/STAFF/deploy."
+  "source_sha": "58ef0e204264879da9c53f21fefd8a9b1e9b04e0",
+  "purpose": "TRAYDAQ V2 source-only public release checks: accessible author Block/Unblock preview, private For You filtering, chat push safety, Firebase rules, Android/web/Edge. No APK/AAB/STAFF/deploy."
 }

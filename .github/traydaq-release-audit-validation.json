@@ -1,4 +1,4 @@
 {
-  "source_sha": "6a5a9f62022bc55d747391580d8ff6892af65302",
-  "purpose": "Source-only validation: prevent environment toggles enabling unvalidated destructive account erasure. No binary build, STAFF, or production release."
+  "source_sha": "b7f5640756718f52b21cf5e0c8356c71797d979a",
+  "purpose": "Source-only Cloudinary parsing and secure fixture checks, owner-only safety report history, account privacy erasure holds. No APK/AAB or publication."
 }

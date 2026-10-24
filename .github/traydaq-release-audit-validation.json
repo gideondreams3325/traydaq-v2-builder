@@ -1,4 +1,4 @@
 {
-  "source_sha": "e329bb8aed9c95d56d299dd854d3a7fdf6f0e8fb",
-  "purpose": "Source-only TRAYDAQ V2 Google Play audit: blocked chat notification safety, Edge Deno type correction, web/android/firebase emulator. Do not build or publish."
+  "source_sha": "11fc657019f12977b49a4a90ddc185a40a0ea350",
+  "purpose": "Source-only V2 release audit: For You blocked author filtering, profile block control, chat notification suppression; validate web Android Edge Firebase emulator, no binary/deploy/staff."
 }

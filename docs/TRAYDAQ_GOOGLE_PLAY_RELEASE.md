@@ -1,4 +1,4 @@
-# TRAYDAQ V2 user app — Google Play release preparation
+# TRAYDAQ V2 user app — Google Play internal release
 
 Prepared 24 October 2026. Scope: `com.traydaq.app` only. TRAYDAQ STAFF is excluded.
 
@@ -21,15 +21,17 @@ Expected original user signing SHA-256:
 
 The AAB and companion APK use this same certificate. The original reference is successful user APK run 40043905049, version 1.0.1/code 3. A matching private backup has been verified; never substitute another historic key based on its alias alone.
 
-Reusing the upload key does not by itself fix Play delivery signing. Before the internal update test, configure Play App Signing to use the original matching app-signing private key, then compare the Play-held app-signing certificate with these fingerprints. Do not accept a replacement Google-generated identity or rotate this key. Retain the same app-signing identity for Palmstore and manually installed APK updates. Later distributed version codes must exceed 4.
+Play App Signing has been configured with the original matching private key after owner approval. The key was encrypted with Google's official PEPK tool and imported through Play Console. Google's active app-signing SHA-256 was verified against the original certificate above, and the signed AAB was accepted. The unused generated key was replaced before distribution; no key rotation was configured. Automatic installer protection is off for the intended Palmstore and manual APK distribution. Later distributed version codes must exceed 4. An actual phone update from 1.0.1/code 3 still needs testing.
 
-## Owner approval boundary
+## Current Console status and approval boundary
 
-No app has been created or uploaded in Play Console. The prepared Create app form reports that `com.traydaq.app` is available. Creation requires the Developer Program Policies acknowledgement, Play App Signing Terms of Service and US export acknowledgement. The owner requires approval before Play App Signing configuration and public publishing. These acknowledgements remain unchecked.
+The free TRAYDAQ user app was created on 24 October 2026 after the owner approved the Developer Program Policies acknowledgement, Play App Signing terms, US export acknowledgement, original-key import and installer-protection change.
 
-The new-app form also offers an automatic protection installer check that can prompt non-Play installs to obtain the app from Google Play. Obtain approval to disable that restriction for the intended Palmstore/sideload distribution. Prepare the exact existing-key import for approval before transmitting the encrypted private key to Google.
+The verified 1.0.2/code 4 AAB is active on the internal testing track. Play Console reports it is available to the selected internal tester and has not been reviewed. It confirms target SDK 36, minimum API 24 and four ABIs. The original app-signing identity is retained.
 
-Only internal testing is authorised after the required approvals. No open-testing or production release is authorised. Store copy, disclosure drafts, policy drafts, graphics and a device-test plan have been prepared separately. Privacy/deletion URLs, real phone screenshots, an applicable playback demonstration, child-safety contact and review access still require verification or owner review before a wider release. Do not certify draft declarations as already verified.
+The default English listing is saved as a draft with descriptions, the existing logo and a feature graphic. Social is selected as its category. Government, financial-features and health declarations are saved for later review submission. The remaining forms require owner-confirmed facts and operational evidence. Phone screenshots, public privacy/deletion/child-safety URLs, child-safety contact, audience/ads answers, review access and an applicable real playback demonstration remain outstanding. Do not certify incomplete drafts.
+
+No open-testing, closed-testing or production release has been published. Public publishing requires separate owner approval. The internal track currently uses Google's temporary unreviewed package name until setup/review is complete. The personal developer account requires a separate closed test with 12 testers continuously opted in for 14 days before applying for production access; internal testing does not replace it.
 
 ## Build controls
 

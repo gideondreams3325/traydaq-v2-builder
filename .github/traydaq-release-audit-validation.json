@@ -1,4 +1,4 @@
 {
-  "source_sha": "c2097e72241fa72230be01532c69678a25768200",
-  "purpose": "Source-only validation of PR #17 staging and media recovery safeguards. No APK, AAB, STAFF, production deploy, or signing changes."
+  "source_sha": "b2c18b82e69e858ae7e6ee5cb3c2b6c578d09c42",
+  "purpose": "Source-only release validation: Cloudinary Admin deletion receipts and strict prefix inventory. No build, deploy, or staff app."
 }

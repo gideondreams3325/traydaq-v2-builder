@@ -1,4 +1,4 @@
 {
-  "source_sha": "8acd9b26611cc737c144f350c93790c571ff1496",
-  "purpose": "Source-only full V2 release QA for draft PR17: Android primary inbox block, age gates, terms and Firebase blocking emulator. No APK/AAB, deploy or STAFF."
+  "source_sha": "3fec3bab9f9cd0f692ed556f1889a1aabc03035d",
+  "purpose": "Source-only latest TRAYDAQ V2 PR17 18+ terms, primary inbox blocking, Firebase emulator policy and Play Data Safety draft checks. Do not build APK/AAB, deploy, or modify STAFF."
 }

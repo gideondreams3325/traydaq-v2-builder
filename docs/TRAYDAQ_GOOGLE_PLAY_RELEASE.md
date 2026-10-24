@@ -1,42 +1,46 @@
-# TRAYDAQ V2 user app — Google Play release guide (October 2026)
+# TRAYDAQ V2 user app — Google Play release preparation
 
-## Scope
-- Public user app ONLY: `com.traydaq.app`; never `com.traydaq.admin`.
-- Target Android API: **36**; do not increase it for the initial release.
-- Current source version as of preparation: **1.0.1**, versionCode **3**. The workflow reads the current values at build time and refuses versionCode below 3.
-- Existing permanent TRAYDAQ user keystore and signing certificate must be reused. **Do not create or publish a new keystore.**
+Prepared 24 October 2026. Scope: `com.traydaq.app` only. TRAYDAQ STAFF is excluded.
 
-## Manual signed AAB workflow
-1. Visit https://github.com/gideondreams3325/traydaq-v2-builder/actions/workflows/google-play-aab.yml
-2. Use **Run workflow** on the default branch. This is manual-only and does not submit to Play.
-3. The workflow checks out the private V2 main branch, validates app settings, runs Expo/typechecking/tests, compiles an AAB, and signs it with the existing `TRAYDAQ_V2_UPLOAD_KEYSTORE_*` secrets already used by the user APK workflow.
-4. It verifies the bundle signature, certificate, application ID, version code, and exact **targetSdk 36** using pinned Google bundletool 1.18.3.
-5. Download the `TRAYDAQ-V2-User-Google-Play-AAB` artifact only after a **successful** workflow run. The archive contains `app-release.aab` and expires according to GitHub's artifact-retention policy.
+## Verified release candidate
 
-**No build has been run as part of preparing this workflow.** The AAB and its final manifest/signature are unverified until an actual successful run.
+- Version 1.0.2, versionCode 4; target and compile API 36; minimum API 24.
+- Private user source: `644e0b2c2349ca9b400dc9b46a1f84a7a75968d3`, now on private main. Changes are limited to user version metadata and the About version label.
+- Successful dedicated V2 Builder AAB run: https://github.com/gideondreams3325/traydaq-v2-builder/actions/runs/40075977197
+- All 494 native tests, Expo checks, TypeScript, release compilation, package/target checks and persistent-certificate checks passed.
+- Artifact: `TRAYDAQ-V2-User-Google-Play-AAB`, containing the signed AAB, matching signed user APK, final manifest, public certificate and JSON verification report. GitHub retention is 14 days.
+- The workflow verifies all 36 64-bit native ELF libraries have 16 KiB LOAD alignment. Downloaded APK native-library ZIP alignment was also checked locally.
 
-## Critical: Play App Signing and cross-store updates
-Google Play uses **two distinct signing roles**: the local **upload key** that signs your `.aab` and the **app-signing key** Google uses to sign the APKs installed from Play. Reusing the existing upload key in CI **does not by itself guarantee** that the Play-installed app can update your manually installed or Palmstore APK.
+## Signing compatibility
 
-If you want users to update an APK already signed with the original TRAYDAQ signing certificate **without uninstalling**:
-- **Before your first open-testing or production release**, configure **Play App Signing** to use a copy of the original TRAYDAQ **app-signing key**, not Google's automatically generated replacement. Follow Google's secure PEPK/import process in Play Console. This requires access to the original private key, not only its certificate.
-- Otherwise, if you accept a Google-generated Play app-signing key, expect the signature to differ from existing sideloaded APKs. You can instead download Play-generated, Play-signed distribution APKs for other stores after releasing through Play, and use a consistent signing strategy going forward.
-- Never post keystore bytes, passwords, PEPK encrypted payloads, or secret values in a public issue, public CI logs, chat, or repository.
-- Register the **Play app-signing** certificate SHA-1/SHA-256 with Firebase/Google OAuth after Google Play signing is configured. This is separate from the upload-key fingerprint.
-- Future releases must have an increased `versionCode` regardless of which store publishes them.
+Expected original user signing SHA-1:
+`27:16:2C:23:B0:DC:E4:9B:23:C2:C2:65:21:B4:46:61:C3:B3:7D:B8`
+
+Expected original user signing SHA-256:
+`71:6A:68:F5:73:45:45:BC:9D:97:00:F0:45:D2:BF:B1:B1:08:7F:FE:73:20:21:F2:16:B3:2A:57:5F:03:F8:3D`
+
+The AAB and companion APK use this same certificate. The original reference is successful user APK run 40043905049, version 1.0.1/code 3. A matching private backup has been verified; never substitute another historic key based on its alias alone.
+
+Reusing the upload key does not by itself fix Play delivery signing. Before the internal update test, configure Play App Signing to use the original matching app-signing private key, then compare the Play-held app-signing certificate with these fingerprints. Do not accept a replacement Google-generated identity or rotate this key. Retain the same app-signing identity for Palmstore and manually installed APK updates. Later distributed version codes must exceed 4.
+
+## Owner approval boundary
+
+No app has been created or uploaded in Play Console. The prepared Create app form reports that `com.traydaq.app` is available. Creation requires the Developer Program Policies acknowledgement, Play App Signing Terms of Service and US export acknowledgement. The owner requires approval before Play App Signing configuration and public publishing. These acknowledgements remain unchecked.
+
+The new-app form also offers an automatic protection installer check that can prompt non-Play installs to obtain the app from Google Play. Obtain approval to disable that restriction for the intended Palmstore/sideload distribution. Prepare the exact existing-key import for approval before transmitting the encrypted private key to Google.
+
+Only internal testing is authorised after the required approvals. No open-testing or production release is authorised. Store copy, disclosure drafts, policy drafts, graphics and a device-test plan have been prepared separately. Privacy/deletion URLs, real phone screenshots, an applicable playback demonstration, child-safety contact and review access still require verification or owner review before a wider release. Do not certify draft declarations as already verified.
+
+## Build controls
+
+`.github/workflows/google-play-aab.yml` runs on explicit workflow dispatch or the dedicated `.github/traydaq-google-play-aab-request.txt` marker. Ordinary source/branding changes do not start this build. It pins the verified private user source, reuses existing GitHub signing secrets, rejects a certificate mismatch, produces only user release files and removes temporary signing files.
+
+The separate user APK workflow is aligned to 1.0.2/code 4. Its build-request marker was not changed during this preparation. Staff workflows and staff build-request files were checked and remain unchanged.
+
+Never publish keystores, passwords, Base64 keystore values, PEPK private-key payloads, private source, service credentials or environment files as public artifacts. This release artifact includes only signed binaries and public verification material.
 
 Official references:
+- https://support.google.com/googleplay/android-developer/answer/9859152
 - https://support.google.com/googleplay/android-developer/answer/9842756
-- https://developer.android.com/guide/app-bundle/faq
-- https://support.google.com/googleplay/android-developer/answer/11926878
-
-## Play Console steps (user-owned account)
-1. Open https://play.google.com/console/ and **Create app** named **TRAYDAQ** (Apps, free if the install is free).
-2. Complete all required publisher/developer details and the store listing.
-3. Enter the genuine privacy policy URL, support contacts, access/account deletion details, age/target audience, content rating, and accurate **Data safety** disclosures. The current repo's privacy/legal copy is explicitly a draft with placeholders; do not mark those fields complete without verification.
-4. Supply real current app screenshots, an appropriate icon, and graphics as requested. Do not use generated UI screenshots to misrepresent the actual product.
-5. Configure **Play App Signing** carefully using the cross-store decision above.
-6. Upload the signed `.aab` to **Internal testing** and verify Google sign-in, real accounts, profile, post uploads, music playback/background audio, chats, marketplace orders, jobs, events, notifications, staff moderation outcomes, deletion/appeals and privacy access from a Play-installed test device.
-7. Complete closed testing if your developer account is required to do so. Publish to production only when policy review and tests are complete.
-
-Do not submit the TRAYDAQ STAFF app publicly. Do not change API 36 or signing credentials as part of this work.
+- https://support.google.com/googleplay/android-developer/answer/9845334
+- https://developer.android.com/google/play/requirements/target-sdk

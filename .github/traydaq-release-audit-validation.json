@@ -1,4 +1,4 @@
 {
-  "source_sha": "7709a75b52866fde5c3e0e0e5e92164c6cacc112",
-  "purpose": "Validate private adult eligibility, live Firebase sessions, user safety and all changed user Edge entry points; source only, no APK/AAB or deployment"
+  "source_sha": "973d639be54db2b3f842f02ab05c4ab7b6b3decc",
+  "purpose": "Rerun all four source checks after fixing expanded Edge type errors and adding actual-handler commerce safety tests; no binaries or deployment"
 }

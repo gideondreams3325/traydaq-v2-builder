@@ -1,0 +1,41 @@
+name: TRAYDAQ Branding Source Checks (No APK)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/traydaq-branding-validation.json']
+permissions:
+  contents: read
+jobs:
+  source:
+    name: ${{ matrix.target }} source checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [web, android]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 02e906a50f4c87c93744baa7131d62f284d462e0
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Web tests, typecheck and static compilation
+        if: matrix.target == 'web'
+        working-directory: private-src
+        run: |
+          npm install --no-audit --no-fund
+          npm run check
+      - name: Android tests and typecheck only
+        if: matrix.target == 'android'
+        working-directory: private-src/mobile
+        run: |
+          npm install --no-audit --no-fund
+          npm run typecheck
+          node --test tests/*.test.mjs
+# No deployment, backend changes, STAFF, APK, AAB, Gradle or signing.

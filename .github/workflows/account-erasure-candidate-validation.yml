@@ -10,9 +10,9 @@ on:
 permissions:
   contents: read
 
-# Immutable proposed retention policy candidate. No production deletion.
+# Immutable owner-approved retention policy candidate. Source validation only; release still disabled.
 env:
-  ERASURE_CANDIDATE_SHA: fda7d46b69bba4ff7746643f5f69cd72bed41724
+  ERASURE_CANDIDATE_SHA: 6c4af594a8449871e8d2d92abd1b4fd3832ebd3e
 
 jobs:
   erasure-regression:

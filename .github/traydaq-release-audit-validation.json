@@ -1,4 +1,4 @@
 {
-  "source_sha": "5b0b000e81e8f1876d8d4281faf18c32f986a06c",
-  "purpose": "Source-only web/Android manual 18+ review and authenticated status fixture correction; no ID intake, APK or deploy"
+  "source_sha": "93184ca81f23934a136a865019a9c25b6380aae9",
+  "purpose": "Validate removal of mandatory ID review, source-only adult DOB policy and web/Android gates. No APK or deploy"
 }

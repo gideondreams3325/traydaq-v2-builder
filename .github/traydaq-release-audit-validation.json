@@ -1,4 +1,4 @@
 {
-  "source_sha": "813d6f8e29d139c18cc5f82ce5a8caa96e17c50f",
-  "purpose": "Final scoped access UI web typecheck/tests/Vite and Android parity checks; no APK or deploy"
+  "source_sha": "0fd5b59cbc5cc7f885106861c2e462a40acb6c6e",
+  "purpose": "Check compact contextual wording and support page layout after screenshot feedback; web/Android source only, no APK or deployment"
 }

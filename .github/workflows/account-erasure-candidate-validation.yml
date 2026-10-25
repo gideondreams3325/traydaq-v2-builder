@@ -10,9 +10,9 @@ on:
 permissions:
   contents: read
 
-# Immutable merged account-erasure + Supabase-only media release candidate.
+# Immutable proposed retention policy candidate. No production deletion.
 env:
-  ERASURE_CANDIDATE_SHA: 7b44ca1055d48ab1c6556615d846d3808de74b7e
+  ERASURE_CANDIDATE_SHA: fda7d46b69bba4ff7746643f5f69cd72bed41724
 
 jobs:
   erasure-regression:
@@ -46,6 +46,7 @@ jobs:
             tests/account-erasure-session.test.mjs \
             tests/account-deletion-review-routing.test.mjs \
             tests/account-retention-state.test.mjs \
+            tests/retention-policy-proposal.test.mjs \
             tests/account-recovery-media-holds.test.mjs \
             tests/account-staging-erasure-holds.test.mjs \
             tests/account-storage-ownership.test.mjs \

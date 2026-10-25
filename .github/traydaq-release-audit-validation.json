@@ -1,4 +1,4 @@
 {
-  "source_sha": "9b77712e4016abebf7c5afb4039ed1a0d0e8a70d",
-  "purpose": "Validate completed session/age boundaries, blocked-member controls, private messaging rules, legal parity, retention and legacy upload safeguards; source-only, no APK/AAB or deployment"
+  "source_sha": "bdb7dfa906d1b3aba9aac88cfafe4e088f241e0d",
+  "purpose": "Final four source checks after preserving bounded upload buffers under current Deno; no native binary or deployment"
 }

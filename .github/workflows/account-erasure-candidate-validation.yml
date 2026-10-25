@@ -12,7 +12,7 @@ permissions:
 
 # Immutable merged account-erasure + Supabase-only media release candidate.
 env:
-  ERASURE_CANDIDATE_SHA: 8dd2e77b78970127a352e5e5999828906de117d0
+  ERASURE_CANDIDATE_SHA: 7b44ca1055d48ab1c6556615d846d3808de74b7e
 
 jobs:
   erasure-regression:
@@ -50,6 +50,7 @@ jobs:
             tests/account-staging-erasure-holds.test.mjs \
             tests/account-storage-ownership.test.mjs \
             tests/cloudinary-account-erasure-coverage.test.mjs \
+            tests/supabase-public-media-cutover.test.mjs \
             tests/cloudinary-admin-erasure-contract.test.mjs \
             tests/release-account-erasure.test.mjs
       - name: Verify gates are still locked (no production erasure)

@@ -1,4 +1,4 @@
 {
-  "source_sha": "bdb7dfa906d1b3aba9aac88cfafe4e088f241e0d",
-  "purpose": "Final four source checks after preserving bounded upload buffers under current Deno; no native binary or deployment"
+  "source_sha": "f6bdb9dc5457d8613fbaf3b870a3b37e1c53dff6",
+  "purpose": "Source-only validation of independent age-review release lock and regression tests; no APK or deployment"
 }

@@ -1,0 +1,88 @@
+name: TRAYDAQ Supabase-Only Media Cutover Validation (No Deployment)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/supabase-public-media-validation.yml"
+
+permissions:
+  contents: read
+
+env:
+  CANDIDATE_SHA: 53872c859eb612ca11151601a1720b246cd68ea2
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.CANDIDATE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify exact cutover commit
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Web cutover tests, TypeScript and bundle
+        working-directory: private-src
+        run: |
+          npm install --no-audit --no-fund
+          node --test tests/supabase-public-media-cutover.test.mjs tests/cloudinary-account-erasure-coverage.test.mjs tests/cloudinary-admin-erasure-contract.test.mjs tests/cloudinary-provider-origin.test.mjs
+          npm run typecheck
+          npm run build
+
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.CANDIDATE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Android media path + deletion parity
+        working-directory: private-src/mobile
+        run: |
+          npm install --no-audit --no-fund
+          node --test tests/cloudinary-picture-storage.test.mjs tests/cloudinary-video-storage.test.mjs tests/unified-deletion-parity.test.mjs
+          npm run typecheck
+
+  edge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.CANDIDATE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Deno typecheck upload, profile, store, creator, moderation, erasure
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/traydaq-cutover"
+          cp -R private-src/supabase/functions/. "$RUNNER_TEMP/traydaq-cutover/"
+          npx --yes deno@2.9.6 check --no-config --node-modules-dir=auto --no-lock \
+            "$RUNNER_TEMP/traydaq-cutover/traydaq-cloudinary-upload/index.ts" \
+            "$RUNNER_TEMP/traydaq-cutover/firebase-native-profile/index.ts" \
+            "$RUNNER_TEMP/traydaq-cutover/firebase-native-shops/index.ts" \
+            "$RUNNER_TEMP/traydaq-cutover/firebase-native-content/index.ts" \
+            "$RUNNER_TEMP/traydaq-cutover/firebase-entrepreneur/index.ts" \
+            "$RUNNER_TEMP/traydaq-cutover/firebase-security-hub/index.ts" \
+            "$RUNNER_TEMP/traydaq-cutover/firebase-account-erasure/index.ts"
+
+# Do not deploy, sign APK, mutate production buckets or write client/backend secrets.

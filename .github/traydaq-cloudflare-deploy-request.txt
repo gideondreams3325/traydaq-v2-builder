@@ -1,5 +1,8 @@
-USER-AUTHORIZED TRAYDAQ V2 WEB DEPLOYMENT 2026-10-23
+USER-AUTHORIZED TRAYDAQ V2 SUPABASE-ONLY PUBLIC MEDIA WEB DEPLOYMENT — 2026-10-25
 Target: existing Cloudflare Pages project configured by CLOUDFLARE_PAGES_PROJECT (default traydaq-v2).
-Source: gideondreams3325/traydaq-v2 main at 0e2785ac6d0b7e5396e2111e26d73b313dc8559b
-Includes the cross-device real-time catalog sync fixes for For You, Marketplace, Jobs, Events, Music, profiles and professional services.
-Validate web regressions, TypeScript, Vite production build, then deploy only if existing Cloudflare credentials permit. Do not build Android APKs, change DNS or modify backend.
+Source: gideondreams3325/traydaq-v2 main, expected merged commit 2c86a2ad484cc56fe4d841f38e1bfd06183ab326.
+PR #28 merged after public V2 Builder validation https://github.com/gideondreams3325/traydaq-v2-builder/actions/runs/40213754018
+Web client accepts verified Supabase Storage profile/store URLs and invokes the compatible Edge endpoint with x-traydaq-storage: supabase; older clients fall back to existing Supabase direct upload.
+The Supabase upload backend is already ACTIVE; no Cloudinary write path should be reenabled.
+Validate ALL web tests, TypeScript and Vite build, then deploy only to the existing authorized Cloudflare Pages project with the existing configured credentials.
+Do not change DNS, Firebase rules, identities, retention policy, account erasure release gates, Android binaries, or unrelated backend services.

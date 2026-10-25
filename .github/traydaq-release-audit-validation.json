@@ -1,4 +1,4 @@
 {
-  "source_sha": "973d639be54db2b3f842f02ab05c4ab7b6b3decc",
-  "purpose": "Rerun all four source checks after fixing expanded Edge type errors and adding actual-handler commerce safety tests; no binaries or deployment"
+  "source_sha": "9b77712e4016abebf7c5afb4039ed1a0d0e8a70d",
+  "purpose": "Validate completed session/age boundaries, blocked-member controls, private messaging rules, legal parity, retention and legacy upload safeguards; source-only, no APK/AAB or deployment"
 }

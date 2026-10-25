@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 env:
-  TRAYDAQ_AUDIT_SOURCE_SHA: 973d639be54db2b3f842f02ab05c4ab7b6b3decc
+  TRAYDAQ_AUDIT_SOURCE_SHA: 9b77712e4016abebf7c5afb4039ed1a0d0e8a70d
 jobs:
   source:
     name: ${{ matrix.target }} source checks
@@ -84,5 +84,6 @@ jobs:
             "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-support-report/index.ts" \
             "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-account-erasure/index.ts" \
             "$RUNNER_TEMP/traydaq-release-audit-edge/traydaq-cloudinary-upload/index.ts" \
+            "$RUNNER_TEMP/traydaq-release-audit-edge/submit-album-picture/index.ts" \
             "$GITHUB_WORKSPACE/private-src/supabase/verification/cloudinary_fixture.ts"
 # Source validation only. No deployment, Expo export, APK/AAB, STAFF checkout or signing.

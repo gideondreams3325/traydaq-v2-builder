@@ -1,4 +1,4 @@
 {
-  "source_sha": "cd853d4b27f19a7f8cf1a1bd07ceba61dcbfea1d",
-  "purpose": "Source-only check of manual 18+ progress endpoints and web/Android UI; no ID intake, APK or deployment"
+  "source_sha": "5b0b000e81e8f1876d8d4281faf18c32f986a06c",
+  "purpose": "Source-only web/Android manual 18+ review and authenticated status fixture correction; no ID intake, APK or deploy"
 }

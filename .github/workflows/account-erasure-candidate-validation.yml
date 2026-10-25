@@ -12,7 +12,7 @@ permissions:
 
 # Immutable PR #26 candidate: never silently substitute private main.
 env:
-  ERASURE_CANDIDATE_SHA: b9ef288160e9081cbf1af8cbbbdd3a86b7181935
+  ERASURE_CANDIDATE_SHA: 558304b4f337e06f9a7e0ad344b985265ee20f18
 
 jobs:
   erasure-regression:

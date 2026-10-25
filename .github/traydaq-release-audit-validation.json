@@ -1,4 +1,4 @@
 {
-  "source_sha": "3c14347cb0c10d244e5297e10849c930594e0baa",
-  "purpose": "Source-only validation of scoped modern responsive account/18+ web UI and native Android layout. No APK, deployment, migration or signing"
+  "source_sha": "813d6f8e29d139c18cc5f82ce5a8caa96e17c50f",
+  "purpose": "Final scoped access UI web typecheck/tests/Vite and Android parity checks; no APK or deploy"
 }

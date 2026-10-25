@@ -1,4 +1,4 @@
 {
-  "source_sha": "93184ca81f23934a136a865019a9c25b6380aae9",
-  "purpose": "Validate removal of mandatory ID review, source-only adult DOB policy and web/Android gates. No APK or deploy"
+  "source_sha": "902810115cba94452f23e9659c80f4d191737267",
+  "purpose": "Validate no-government-ID age gate and fixed web assertion, source only. No APK, deployment or merge"
 }

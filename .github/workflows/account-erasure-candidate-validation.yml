@@ -10,9 +10,9 @@ on:
 permissions:
   contents: read
 
-# Immutable PR #26 candidate: never silently substitute private main.
+# Immutable merged account-erasure + Supabase-only media release candidate.
 env:
-  ERASURE_CANDIDATE_SHA: 558304b4f337e06f9a7e0ad344b985265ee20f18
+  ERASURE_CANDIDATE_SHA: 8dd2e77b78970127a352e5e5999828906de117d0
 
 jobs:
   erasure-regression:

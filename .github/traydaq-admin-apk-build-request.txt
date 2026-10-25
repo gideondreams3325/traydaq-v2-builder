@@ -40,3 +40,10 @@ Build the latest corrected Admin Command Center signed standalone Android APK, s
 Workflow: .github/workflows/admin-native.yml only, package com.traydaq.admin, version 1.0.1 code 4.
 Include deletion recommendation layout and plain-language review labels, keyboard scroll/wrap fixes. Run security tests, TypeScript, Expo check, Android release compile, Admin-only signing verification, artifact upload.
 On build errors inspect and fix source/workflow then retry. No user-app build, no Play Store publication.
+
+
+USER REQUEST — 2026-10-25 STAFF DELETION REVIEW FIX REBUILD
+Build TRAYDAQ STAFF only, from gideondreams3325/traydaq-v2 feat/standalone-admin-native at b3b86c22b9df7eb24f82620008bbec1ac1d91cc2 (merged PR #24).
+Include fixed independent reviewer eligibility, clear Security Head appointment guidance and per-card decision error handling.
+Use only admin-native.yml, version 1.0.1 code 4, com.traydaq.admin, dedicated Admin signing and Firebase SHA verification.
+Run all source security tests, TypeScript, Expo preflight, Gradle assembleRelease, signing, APK metadata and artifact verification. Do not build public customer app or distribute externally.

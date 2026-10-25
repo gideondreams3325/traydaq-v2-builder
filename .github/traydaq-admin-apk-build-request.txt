@@ -33,3 +33,10 @@ The previous production run failed in GitHub's workflow YAML parser before any j
 Build, sign, verify and upload only the STAFF app using admin-native.yml.
 
 USER-AUTHORIZED 2026-10-24: Build full signed TRAYDAQ V2 STAFF Android 1.0.1 versionCode 4 release from private traydaq-v2/feat/standalone-admin-native latest. Use dedicated public V2 builder admin-native.yml, distinct signing identity and Firebase client. Validate, sign and publish staff APK; troubleshoot failures. Separate User build also requested.
+
+
+USER-AUTHORIZED STAFF BUILD — 2026-10-25 14:45 GMT
+Build the latest corrected Admin Command Center signed standalone Android APK, source private gideondreams3325/traydaq-v2, branch feat/standalone-admin-native at 0d6dacb5d28a813ca43bb17546586f69618961b4 (PR #23 merged).
+Workflow: .github/workflows/admin-native.yml only, package com.traydaq.admin, version 1.0.1 code 4.
+Include deletion recommendation layout and plain-language review labels, keyboard scroll/wrap fixes. Run security tests, TypeScript, Expo check, Android release compile, Admin-only signing verification, artifact upload.
+On build errors inspect and fix source/workflow then retry. No user-app build, no Play Store publication.

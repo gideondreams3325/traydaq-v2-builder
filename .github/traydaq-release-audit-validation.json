@@ -1,4 +1,4 @@
 {
-  "source_sha": "0fd5b59cbc5cc7f885106861c2e462a40acb6c6e",
-  "purpose": "Check compact contextual wording and support page layout after screenshot feedback; web/Android source only, no APK or deployment"
+  "source_sha": "20ca92bfa9e9a0792fce64d04d41d87a62b5fef0",
+  "purpose": "Validate web and Android eligibility status copy, false-success email error styling and appeals CTA; no account, backend, APK or production data changes"
 }

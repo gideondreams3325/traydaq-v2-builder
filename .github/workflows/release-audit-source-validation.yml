@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 env:
-  TRAYDAQ_AUDIT_SOURCE_SHA: f4de62ca0968cc43438b02f7eee4c8bc03051350
+  TRAYDAQ_AUDIT_SOURCE_SHA: 7709a75b52866fde5c3e0e0e5e92164c6cacc112
 jobs:
   source:
     name: ${{ matrix.target }} source checks
@@ -61,12 +61,28 @@ jobs:
           mkdir -p "$RUNNER_TEMP/traydaq-release-audit-edge"
           cp -R private-src/supabase/functions/. "$RUNNER_TEMP/traydaq-release-audit-edge/"
           npx --yes deno@2.9.6 check --no-config --node-modules-dir=auto --no-lock \
-            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-discussions/index.ts" \
-            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-account-erasure/index.ts" \
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-session/index.ts" \
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-member-eligibility/index.ts" \
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-auth-resend/index.ts" \
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-copyright/index.ts" \
             "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-deletion-requests/index.ts" \
-            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-support-report/index.ts" \
-            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-member-activity/index.ts" \
-            "$RUNNER_TEMP/traydaq-release-audit-edge/traydaq-cloudinary-upload/index.ts" \
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-discussions/index.ts" \
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-entrepreneur/index.ts" \
             "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-identity-review/index.ts" \
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-member-activity/index.ts" \
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-member-appeals/index.ts" \
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-member-growth/index.ts" \
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-native-commerce/index.ts" \
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-native-content/index.ts" \
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-native-music/index.ts" \
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-native-orders/index.ts" \
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-native-profile/index.ts" \
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-native-push-register/index.ts" \
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-native-shops/index.ts" \
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-security-broadcast/index.ts" \
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-store-reviews/index.ts" \
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-support-report/index.ts" \
+            "$RUNNER_TEMP/traydaq-release-audit-edge/firebase-account-erasure/index.ts" \
+            "$RUNNER_TEMP/traydaq-release-audit-edge/traydaq-cloudinary-upload/index.ts" \
             "$GITHUB_WORKSPACE/private-src/supabase/verification/cloudinary_fixture.ts"
 # Source validation only. No deployment, Expo export, APK/AAB, STAFF checkout or signing.

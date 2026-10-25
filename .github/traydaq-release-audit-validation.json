@@ -1,4 +1,4 @@
 {
-  "source_sha": "f4de62ca0968cc43438b02f7eee4c8bc03051350",
-  "purpose": "Source-only rerun after discussion Edge TypeScript correction plus member-notification blocking coverage; no APK or deployment"
+  "source_sha": "7709a75b52866fde5c3e0e0e5e92164c6cacc112",
+  "purpose": "Validate private adult eligibility, live Firebase sessions, user safety and all changed user Edge entry points; source only, no APK/AAB or deployment"
 }

@@ -47,3 +47,9 @@ Build TRAYDAQ STAFF only, from gideondreams3325/traydaq-v2 feat/standalone-admin
 Include fixed independent reviewer eligibility, clear Security Head appointment guidance and per-card decision error handling.
 Use only admin-native.yml, version 1.0.1 code 4, com.traydaq.admin, dedicated Admin signing and Firebase SHA verification.
 Run all source security tests, TypeScript, Expo preflight, Gradle assembleRelease, signing, APK metadata and artifact verification. Do not build public customer app or distribute externally.
+
+
+USER CORRECTION 2026-10-25: C.E.O. CAN RECOMMEND AND APPROVE SAME PROPOSAL
+Rebuild only standalone TRAYDAQ STAFF Android 1.0.1 code 4 (com.traydaq.admin) after PR #25, source feat/standalone-admin-native 55be979e21ba8c0b99fec6bb42b26cf10817e081.
+Includes restored audited C.E.O. self-proposal review (no review of own member account/content) and repaired typed API contract regex from prior failing build 40207471814.
+Live Supabase owner audit migration applied and staff Edge v63 active. Run full security tests, typecheck, Expo checks, Gradle release, dedicated Staff signing and SHA verification, and upload TRAYDAQ-V2-Admin-Native-Android-APK. No customer app build.

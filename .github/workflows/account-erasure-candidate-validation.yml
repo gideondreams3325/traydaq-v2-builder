@@ -1,0 +1,108 @@
+name: TRAYDAQ V2 Account Erasure Candidate Validation (No Deployment)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/account-erasure-candidate-validation.yml"
+
+permissions:
+  contents: read
+
+# Immutable PR #26 candidate: never silently substitute private main.
+env:
+  ERASURE_CANDIDATE_SHA: b9ef288160e9081cbf1af8cbbbdd3a86b7181935
+
+jobs:
+  erasure-regression:
+    name: Reviewed-deletion + retention regression tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact private erasure candidate (read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.ERASURE_CANDIDATE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Verify exact candidate SHA
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$ERASURE_CANDIDATE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install private V2 test dependencies
+        working-directory: private-src
+        run: npm install --no-audit --no-fund
+      - name: Run deletion and provider erasure regressions
+        working-directory: private-src
+        run: |
+          node --test \
+            tests/account-erasure-worker.test.mjs \
+            tests/account-erasure-release-lock.test.mjs \
+            tests/account-erasure-session.test.mjs \
+            tests/account-deletion-review-routing.test.mjs \
+            tests/account-retention-state.test.mjs \
+            tests/account-recovery-media-holds.test.mjs \
+            tests/account-staging-erasure-holds.test.mjs \
+            tests/account-storage-ownership.test.mjs \
+            tests/cloudinary-account-erasure-coverage.test.mjs \
+            tests/cloudinary-admin-erasure-contract.test.mjs \
+            tests/release-account-erasure.test.mjs
+      - name: Verify gates are still locked (no production erasure)
+        working-directory: private-src
+        run: |
+          node --input-type=module -e "
+            import assert from 'node:assert/strict';
+            import {ACCOUNT_ERASURE_RELEASE_VALIDATED} from './supabase/functions/_shared/accountErasureReleaseGate.mjs';
+            import {RETENTION_SCHEDULE_VALIDATED} from './supabase/functions/_shared/accountRetentionPolicy.mjs';
+            assert.equal(ACCOUNT_ERASURE_RELEASE_VALIDATED,false);
+            assert.equal(RETENTION_SCHEDULE_VALIDATED,false);
+          "
+
+  android-deletion:
+    name: Android deletion workflow parity
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.ERASURE_CANDIDATE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate Android deletion parity (no APK)
+        working-directory: private-src/mobile
+        run: |
+          npm install --no-audit --no-fund
+          node --test tests/unified-deletion-parity.test.mjs
+
+  erasure-edge:
+    name: Deno Edge account erasure static typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.ERASURE_CANDIDATE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Typecheck Edge handler against pinned private source
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/traydaq-erasure-edge"
+          cp -R private-src/supabase/functions/. "$RUNNER_TEMP/traydaq-erasure-edge/"
+          npx --yes deno@2.9.6 check --no-config --node-modules-dir=auto --no-lock \
+            "$RUNNER_TEMP/traydaq-erasure-edge/firebase-account-erasure/index.ts"
+
+# Source-only validation. Never deploy, enable deletion, build an APK,
+# package secrets, mutate production accounts, or publish private source.

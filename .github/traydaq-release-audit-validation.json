@@ -1,4 +1,4 @@
 {
-  "source_sha": "f6bdb9dc5457d8613fbaf3b870a3b37e1c53dff6",
-  "purpose": "Source-only validation of independent age-review release lock and regression tests; no APK or deployment"
+  "source_sha": "cd853d4b27f19a7f8cf1a1bd07ceba61dcbfea1d",
+  "purpose": "Source-only check of manual 18+ progress endpoints and web/Android UI; no ID intake, APK or deployment"
 }

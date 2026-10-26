@@ -1,2 +1,4 @@
 TRAYDAQ V2 playback-start count final validation — 2026-10-23.
 Private source gideondreams3325/traydaq-v2 main contains instant actual-playback video/music counters on web/Android, approved-video and music backend changes, short duplicate suppression and updated regression tests including corrected obsolete playback threshold assertion. Validate web source tests + TypeScript + production web compilation; parity workflow also Android tests + TypeScript. NO APK build and NO Cloudflare deployment.
+
+2026-10-26 sign-in-stall repair validation: source gideondreams3325/traydaq-v2 main f1a099b93bb79dc72b4cb645dac1b153bc098b8c. Validate web and native Firebase auth deadlines, visible errors, source tests and TypeScript. No production web deployment or APK from this validation marker.

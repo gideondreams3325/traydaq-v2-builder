@@ -32,7 +32,7 @@ let edgeHandler, state;
 function reset(changes={}) {
  state={bytes:Buffer.from(file),expectedSha:sha256(file),sizeBytes:file.length,
   authorized:true,grantActive:true,revokeOnFinal:false,expireOnFinal:false,
-  missingFile:false,events:[],...changes};
+  missingFile:false,events:[],http:[],...changes};
 }
 reset();
 // In SDK mode only, a loopback PostgREST/Storage gateway exercises the
@@ -44,6 +44,7 @@ if(useSDK){
   try{
    const uri=new URL(req.url,'http://127.0.0.1');
    const path=decodeURIComponent(uri.pathname);
+   state.http.push({method:req.method,path});
    if(req.method==='POST'&&path.startsWith('/rest/v1/rpc/')){
     const chunks=[];for await(const chunk of req)chunks.push(chunk);
     const args=JSON.parse(Buffer.concat(chunks).toString('utf8'));
@@ -168,7 +169,8 @@ const verified=()=>state.events.filter(e=>e==='evidence_verified_for_delivery').
 test('complete PNG is served over HTTP, bytes and SHA-256 match, events occur in order',async()=>{
  reset();
  const response=await download();
- assert.equal(response.status,200);
+ assert.equal(response.status,200,
+  JSON.stringify({events:state.events,http:state.http,body:await response.clone().text()}));
  assert.equal(response.headers.get('content-type'),'image/png');
  assert.match(response.headers.get('content-disposition')||'',/attachment/);
  assert.equal(response.headers.get('cache-control'),'no-store');
@@ -197,7 +199,8 @@ test('missing object after authorization: 503, request-only audit',async()=>{
 });
 test('revocation before final delivery: 403, no evidence released',async()=>{
  reset({revokeOnFinal:true});
- assert.equal((await download()).status,403);
+ const response=await download();
+ assert.equal(response.status,403,JSON.stringify({events:state.events,http:state.http}));
  assert.deepEqual(state.events,['evidence_access_requested']);
 });
 test('case expiry before final delivery: 403, no verified event',async()=>{

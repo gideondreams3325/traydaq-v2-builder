@@ -82,3 +82,5 @@ jobs:
 
 # No Supabase migration, no user-selected UID, no app deployment, no broad delete.
 # Safe to retry: each run creates and destroys its own disabled Firebase test identity.
+
+# Retry the disposable-only provider proof after Firebase console setup.

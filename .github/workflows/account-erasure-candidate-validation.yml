@@ -16,7 +16,7 @@ permissions:
 
 # Immutable owner-approved retention policy candidate. Source validation only; release still disabled.
 env:
-  ERASURE_CANDIDATE_SHA: a2788a3f1b94cf21ebb08f680c55b60b5bade03b
+  ERASURE_CANDIDATE_SHA: 02d6bb88eb4a86aecd64a7e9be59b79a6df69f33
 
 jobs:
   erasure-regression:
@@ -243,7 +243,7 @@ jobs:
            WHERE case_id=cid;
            grant_id:=public.v2_case_grant_investigator(
              'isolatedOwner1','owner@example.invalid',cid,
-             'isolatedAnalyst1','metadata',now()+interval '1 hour');
+             'isolatedAnalyst1','metadata',now()+interval '1 hour','CASE_FRAUD_TEST');
            IF grant_id IS NULL THEN RAISE EXCEPTION 'Cannot create test scoped grant'; END IF;
            auth:=public.v2_case_authorized_access(
              'isolatedAnalyst1','analyst@example.invalid',cid,
@@ -265,7 +265,7 @@ jobs:
              OR has_function_privilege('anon',
               'public.v2_case_authorized_access(text,text,uuid,text,uuid,text)','EXECUTE')
              OR has_function_privilege('authenticated',
-              'public.v2_case_grant_investigator(text,text,uuid,text,text,timestamp with time zone)','EXECUTE')
+              'public.v2_case_grant_investigator(text,text,uuid,text,text,timestamp with time zone,text)','EXECUTE')
            THEN RAISE EXCEPTION 'Client grants are unsafe'; END IF;
           END $test$;
           SELECT traydaq_private.v2_confidential_case_record_due_reviews();

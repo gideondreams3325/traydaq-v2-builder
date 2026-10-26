@@ -12,7 +12,7 @@ permissions:
 
 # Immutable owner-approved retention policy candidate. Source validation only; release still disabled.
 env:
-  ERASURE_CANDIDATE_SHA: 0909762f8ada63033cfa7a33f4bc0492a82c52c0
+  ERASURE_CANDIDATE_SHA: 384bdbb25b4d3da10c147735aaa30b75fb6afb34
 
 jobs:
   erasure-regression:
@@ -47,6 +47,7 @@ jobs:
             tests/account-erasure-worker.test.mjs \
             tests/account-erasure-live-preflight.test.mjs \
             tests/account-firebase-privacy-holds.test.mjs \
+            tests/isolated-firebase-erasure-fixture.test.mjs \
             tests/account-erasure-vault-dispatch.test.mjs \
             tests/account-erasure-readiness-cron.test.mjs \
             tests/account-erasure-release-lock.test.mjs \
@@ -115,6 +116,8 @@ jobs:
           cp -R private-src/supabase/functions/. "$RUNNER_TEMP/traydaq-erasure-edge/"
           npx --yes deno@2.9.6 check --no-config --node-modules-dir=auto --no-lock \
             "$RUNNER_TEMP/traydaq-erasure-edge/firebase-account-erasure/index.ts"
+          npx --yes deno@2.9.6 check --no-config --node-modules-dir=auto --no-lock \
+            "$RUNNER_TEMP/traydaq-erasure-edge/firebase-erasure-isolated-probe/index.ts"
 
 # Source-only validation. Never deploy, enable deletion, build an APK,
 # package secrets, mutate production accounts, or publish private source.

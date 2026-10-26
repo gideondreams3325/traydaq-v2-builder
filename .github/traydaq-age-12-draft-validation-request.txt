@@ -1,0 +1,1 @@
+Validate unmerged TRAYDAQ user PR #54 source branch feat/signup-age-12-checkbox-no-dob-20261026. Web and Android tests and typecheck only. No deployments or Play publication. 2026-10-26.

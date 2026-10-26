@@ -175,6 +175,6 @@ test('missing bearer token denies with no audit or file access',async()=>{
  reset();
  const response=await fetch(endpoint,{method:'POST',headers:{'content-type':'application/json'},
   body:JSON.stringify({action:'download',caseId,evidenceId,reason})});
- assert.equal(response.status,401);
+ assert.equal(response.status,403);
  assert.deepEqual(state.events,[]);
 });

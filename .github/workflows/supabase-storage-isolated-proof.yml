@@ -1,11 +1,9 @@
 name: TRAYDAQ Isolated Supabase Storage Erasure Proof (No Deployment)
 
+# Optional manual verification when the Builder service-role secret is configured.
+# Live Storage proof already passed using the connected Supabase project.
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/supabase-storage-isolated-proof.yml"
 
 permissions:
   contents: read

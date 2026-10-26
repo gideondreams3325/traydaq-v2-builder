@@ -16,7 +16,7 @@ permissions:
 
 # Immutable owner-approved retention policy candidate. Source validation only; release still disabled.
 env:
-  ERASURE_CANDIDATE_SHA: 80410fe726e35984d460e8493272d21413e99d0b
+  ERASURE_CANDIDATE_SHA: 3f6b52164bd16ed65fbc221551e4e758cabbf8aa
 
 jobs:
   erasure-regression:
@@ -71,6 +71,7 @@ jobs:
             tests/confidential-case-retention-contract.test.mjs \
             tests/confidential-case-evidence-staging.test.mjs \
             tests/confidential-case-investigator-access.test.mjs \
+            tests/confidential-evidence-delivery-audit.test.mjs \
             tests/retention-policy-proposal.test.mjs \
             tests/account-closure-confidential-retention-policy.test.mjs \
             tests/account-closure-private-evidence.test.mjs \
@@ -216,6 +217,8 @@ jobs:
           SQL
           psql -h 127.0.0.1 -U postgres -d erasure_validation -v ON_ERROR_STOP=1 \
             -f private-src/supabase/migrations/20261026131600_confidential_case_access_custody_controls.sql
+          psql -h 127.0.0.1 -U postgres -d erasure_validation -v ON_ERROR_STOP=1 \
+            -f private-src/supabase/migrations/20261026133700_confidential_evidence_delivery_audit.sql
           psql -h 127.0.0.1 -U postgres -d erasure_validation -v ON_ERROR_STOP=1 <<'SQL'
           SELECT set_config('request.jwt.claim.role','service_role',false);
           INSERT INTO traydaq_private.v2_confidential_case_staging(
@@ -272,6 +275,59 @@ jobs:
           DO $test$ BEGIN
             IF (SELECT count(*) FROM traydaq_private.v2_confidential_case_review_notices)<>1
             THEN RAISE EXCEPTION 'Review-due notification not recorded once'; END IF;
+          END $test$;
+          SQL
+          psql -h 127.0.0.1 -U postgres -d erasure_validation -v ON_ERROR_STOP=1 <<'SQL'
+          DO $test$
+          DECLARE cid uuid; eid uuid; digest text; receipt jsonb; ok boolean;
+          BEGIN
+           SELECT case_id INTO cid FROM traydaq_private.v2_confidential_case_staging
+            WHERE case_reference='CASE.FRAUD.TEST.002';
+           SELECT evidence_id,content_sha256 INTO eid,digest
+            FROM traydaq_private.v2_confidential_evidence_staging WHERE case_id=cid;
+           INSERT INTO traydaq_private.v2_confidential_case_custody(
+            evidence_id,case_id,object_path,content_sha256,size_bytes,verified_by_uid)
+           VALUES(eid,cid,cid::text||'/'||eid::text||'/'||gen_random_uuid()::text||'.png',
+            digest,68,'isolatedOwner1');
+           PERFORM public.v2_case_grant_investigator(
+            'isolatedOwner1','owner@example.invalid',cid,
+            'isolatedAnalyst1','download',now()+interval '1 hour','CASE_FRAUD_TEST');
+           receipt=public.v2_case_authorized_access(
+            'isolatedAnalyst1','analyst@example.invalid',cid,
+            'download',eid,'CASE_FRAUD_TEST');
+           IF receipt->>'authorized'<>'true'
+             THEN RAISE EXCEPTION 'Synthetic access request not authorized'; END IF;
+           IF (SELECT count(*) FROM traydaq_private.v2_confidential_case_access_audit
+             WHERE case_id=cid AND action='evidence_access_requested' AND evidence_id=eid)<>1
+             THEN RAISE EXCEPTION 'Download request audit missing'; END IF;
+           IF (SELECT count(*) FROM traydaq_private.v2_confidential_case_access_audit
+             WHERE case_id=cid AND action='evidence_verified_for_delivery')<>0
+             THEN RAISE EXCEPTION 'Premature delivery audit'; END IF;
+           ok=public.v2_case_log_verified_delivery('isolatedAnalyst1',
+            'analyst@example.invalid',cid,eid,digest,'CASE_FRAUD_TEST');
+           IF ok IS DISTINCT FROM TRUE
+            THEN RAISE EXCEPTION 'Verified delivery audit rejected'; END IF;
+           IF (SELECT count(*) FROM traydaq_private.v2_confidential_case_access_audit
+             WHERE case_id=cid AND action='evidence_verified_for_delivery'
+             AND evidence_id=eid)<>1
+             THEN RAISE EXCEPTION 'Delivery must reference exact evidence'; END IF;
+           UPDATE traydaq_private.v2_confidential_case_grants SET revoked_at=now()
+            WHERE case_id=cid AND actor_uid='isolatedAnalyst1' AND scope='download';
+           BEGIN
+            PERFORM public.v2_case_log_verified_delivery('isolatedAnalyst1',
+             'analyst@example.invalid',cid,eid,digest,'CASE_FRAUD_TEST');
+            RAISE EXCEPTION 'Revoked investigator still permitted';
+           EXCEPTION WHEN raise_exception THEN
+            IF SQLERRM='Revoked investigator still permitted' THEN RAISE; END IF;
+           END;
+           IF has_function_privilege('anon',
+            'public.v2_case_log_verified_delivery(text,text,uuid,uuid,text,text)','EXECUTE')
+             OR has_function_privilege('authenticated',
+            'public.v2_case_log_verified_delivery(text,text,uuid,uuid,text,text)','EXECUTE')
+             THEN RAISE EXCEPTION 'Client privilege on delivery audit'; END IF;
+           IF (SELECT count(*) FROM traydaq_private.v2_confidential_case_access_audit
+             WHERE case_id=cid AND action='evidence_verified_for_delivery')<>1
+             THEN RAISE EXCEPTION 'Revoked grant produced an audit receipt'; END IF;
           END $test$;
           SQL
           result="$(psql -h 127.0.0.1 -U postgres -d erasure_validation -tAc \

@@ -94,6 +94,11 @@ jobs:
         env:
           TRAYDAQ_SOURCE_ROOT: private-src
         run: node --test builder-control/.github/scripts/evidence-http-delivery.test.mjs
+      - name: Exercise pinned Supabase SDK over isolated PostgREST and Storage protocol
+        env:
+          TRAYDAQ_SOURCE_ROOT: private-src
+          EVIDENCE_HTTP_USE_SUPABASE_SDK: '1'
+        run: node --test builder-control/.github/scripts/evidence-http-delivery.test.mjs
       - name: Verify unattended worker gate and unvalidated policy remain separate
         working-directory: private-src
         run: |

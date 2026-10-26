@@ -16,7 +16,7 @@ permissions:
 
 # Immutable owner-approved retention policy candidate. Source validation only; release still disabled.
 env:
-  ERASURE_CANDIDATE_SHA: c66691d93d1100b7643ed8f9227a1534d200069d
+  ERASURE_CANDIDATE_SHA: 60e285761ac309e7a54538ba9e0e331fbddfd8c7
 
 jobs:
   erasure-regression:
@@ -74,6 +74,7 @@ jobs:
             tests/account-staging-erasure-holds.test.mjs \
             tests/account-storage-ownership.test.mjs \
             tests/cloudinary-account-erasure-coverage.test.mjs \
+            tests/cloudinary-credentials.test.mjs \
             tests/supabase-public-media-cutover.test.mjs \
             tests/cloudinary-admin-erasure-contract.test.mjs \
             tests/release-account-erasure.test.mjs

@@ -1,0 +1,60 @@
+name: TRAYDAQ V2 Merged Web Production Build (No Deployment)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/merged-web-production-build.yml"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/merged-web-production-build.yml"
+
+permissions:
+  contents: read
+
+env:
+  APP_COMMIT_SHA: cca348bdb2c39fa51531a2ebe561480017f546fc
+
+jobs:
+  full-production-web-check:
+    name: Typecheck, full tests, production web bundle
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact merged private V2 commit (read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.APP_COMMIT_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+
+      - name: Confirm immutable merged main commit
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$APP_COMMIT_SHA"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependency-locked V2 packages
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+
+      - name: Run full typecheck, tests, and Vite production build
+        working-directory: private-src
+        run: npm run check
+
+      - name: Verify production entrypoint output exists
+        working-directory: private-src
+        run: |
+          test -s dist/index.html
+          test -d dist/assets
+          echo "PASS: V2 production bundle generated; not uploaded or deployed."
+
+# Do not publish private source, bundled app assets, APK, or credentials.
+# Passing this job proves build readiness, not Vercel production deployment.

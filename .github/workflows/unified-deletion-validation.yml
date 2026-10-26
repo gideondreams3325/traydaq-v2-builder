@@ -1,0 +1,105 @@
+name: TRAYDAQ Unified Staff-reviewed Deletion Candidate (No Deployment)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/unified-deletion-validation.yml"
+permissions:
+  contents: read
+env:
+  PRIVATE_SHA: e9b6162d4094725f0c8379bb01811e12079af103
+jobs:
+  web-and-deletion:
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Check exact immutable source
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install fixed web dependencies
+        working-directory: private-src
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Typecheck, all source tests and production Vite build
+        working-directory: private-src
+        run: npm run check
+  android:
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Typecheck and run user Android deletion tests
+        working-directory: private-src/mobile
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run typecheck
+          node --test tests/unified-deletion-parity.test.mjs
+  database-syntax:
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: local-only
+          POSTGRES_DB: validate
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d validate"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Syntax-check the deny-only database migration without any real data
+        env:
+          PGPASSWORD: local-only
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v psql >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq postgresql-client
+          fi
+          psql -h 127.0.0.1 -U postgres -d validate -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE ROLE anon;
+          CREATE ROLE authenticated;
+          CREATE ROLE service_role;
+          SQL
+          psql -h 127.0.0.1 -U postgres -d validate -v ON_ERROR_STOP=1 -f private-src/supabase/migrations/20261026195000_staff_only_deletion_routing_lock.sql
+          psql -h 127.0.0.1 -U postgres -d validate -v ON_ERROR_STOP=1 <<'SQL'
+          DO $test$
+          BEGIN
+            IF has_function_privilege('anon','public.v2_review_native_deletion(text,text,uuid,text,text)','EXECUTE') OR
+               has_function_privilege('authenticated','public.v2_account_erasure_begin_self_service(text,text)','EXECUTE')
+            THEN RAISE EXCEPTION 'Legacy privileged route exposed'; END IF;
+          END $test$;
+          SQL

@@ -300,6 +300,8 @@ jobs:
             "$RUNNER_TEMP/traydaq-erasure-edge/firebase-account-erasure/index.ts"
           npx --yes deno@2.9.6 check --no-config --node-modules-dir=auto --no-lock \
             "$RUNNER_TEMP/traydaq-erasure-edge/firebase-erasure-isolated-probe/index.ts"
+          npx --yes deno@2.9.6 check --no-config --node-modules-dir=auto --no-lock \
+            "$RUNNER_TEMP/traydaq-erasure-edge/confidential-case-evidence/index.ts"
 
 # Source-only validation. Never deploy, enable deletion, build an APK,
 # package secrets, mutate production accounts, or publish private source.

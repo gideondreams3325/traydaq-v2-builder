@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 28
     env:
-      SOURCE_SHA: 73fd697a7a4474aaf6143f32dc671f86b1776802
+      SOURCE_SHA: fe97c53b1d9de723f8b46095d9691dcdd5f7556e
     steps:
       - name: Checkout exact private source
         uses: actions/checkout@v4

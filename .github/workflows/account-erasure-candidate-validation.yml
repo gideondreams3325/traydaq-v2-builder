@@ -16,7 +16,7 @@ permissions:
 
 # Immutable owner-approved retention policy candidate. Source validation only; release still disabled.
 env:
-  ERASURE_CANDIDATE_SHA: fcd9cfd95c2b3aed0c4d1a3d1204b2e07f8dc594
+  ERASURE_CANDIDATE_SHA: 9b089b87917376f5c06e7f586feeb90e02021820
 
 jobs:
   erasure-regression:
@@ -104,6 +104,54 @@ jobs:
           npm install --no-audit --no-fund
           node --test tests/unified-deletion-parity.test.mjs
           npm run typecheck
+
+
+  erasure-sql:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    name: Compile deletion migration in isolated PostgreSQL 17
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: local-validation-only
+          POSTGRES_DB: erasure_validation
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d erasure_validation"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.ERASURE_CANDIDATE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Verify PostgreSQL parser and function permissions
+        env:
+          PGPASSWORD: local-validation-only
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v psql >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq postgresql-client
+          fi
+          psql -h 127.0.0.1 -U postgres -d erasure_validation -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE ROLE anon;
+          CREATE ROLE authenticated;
+          CREATE ROLE service_role;
+          SQL
+          psql -h 127.0.0.1 -U postgres -d erasure_validation -v ON_ERROR_STOP=1 \
+            -f private-src/supabase/migrations/20261026084953_account_owner_self_service_erasure_claim.sql
+          result="$(psql -h 127.0.0.1 -U postgres -d erasure_validation -tAc \
+            "SELECT has_function_privilege('anon','public.v2_account_erasure_begin_self_service(text,text)','EXECUTE'),has_function_privilege('authenticated','public.v2_account_erasure_begin_self_service(text,text)','EXECUTE'),has_function_privilege('service_role','public.v2_account_erasure_begin_self_service(text,text)','EXECUTE')")"
+          test "$result" = "f|f|t"
 
   erasure-edge:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository

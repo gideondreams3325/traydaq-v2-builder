@@ -8,7 +8,7 @@ on:
 permissions:
   contents: read
 env:
-  PRIVATE_SHA: e9b6162d4094725f0c8379bb01811e12079af103
+  PRIVATE_SHA: f772279eabc9abf627db17584d86b74c73aa2a02
 jobs:
   web-and-deletion:
     if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
@@ -52,7 +52,7 @@ jobs:
       - name: Typecheck and run user Android deletion tests
         working-directory: private-src/mobile
         run: |
-          npm ci --ignore-scripts --no-audit --no-fund
+          npm install --ignore-scripts --no-audit --no-fund
           npm run typecheck
           node --test tests/unified-deletion-parity.test.mjs
   database-syntax:

@@ -4,6 +4,10 @@ name: TRAYDAQ Isolated Supabase Storage Erasure Proof (No Deployment)
 # Live Storage proof already passed using the connected Supabase project.
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/supabase-storage-isolated-proof.yml"
 
 permissions:
   contents: read
@@ -37,7 +41,7 @@ jobs:
         run: node --check tests/supabase-storage-erasure-live-ci-fixture.mjs
       - name: Check isolated proof credentials without exposing secrets
         env:
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.TRAYDAQ_SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SECRET_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SECRET_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.TRAYDAQ_SUPABASE_SERVICE_ROLE_KEY }}
         shell: bash
         run: |
           if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
@@ -45,11 +49,45 @@ jobs:
             exit 1
           fi
           echo "Supabase Storage fixture credential configured."
+      - name: Verify selected credential has service-role privileges (no writes)
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SECRET_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.TRAYDAQ_SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          node --input-type=module <<'NODE'
+          const key = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+          let type = 'invalid';
+          if (key.startsWith('sb_secret_')) type = 'secret';
+          else if (key.startsWith('sb_publishable_')) type = 'publishable';
+          else if (key.split('.').length === 3) {
+            try {
+              const p=JSON.parse(Buffer.from(key.split('.')[1], 'base64url').toString('utf8'));
+              type=p.role==='service_role'?'legacy-service-role':'legacy-unprivileged';
+            } catch {}
+          }
+          if (!['secret','legacy-service-role'].includes(type)) {
+            console.error('Credential type cannot bypass RLS: ' + type + '. Configure SUPABASE_SECRET_KEY using the secret key from this same project.');
+            process.exit(1);
+          }
+          console.log('Credential format recognized: ' + type);
+          const url='https://qpcsruhwqhniprakpoox.supabase.co/rest/v1/rpc/v2_case_staff_verified';
+          const headers={'apikey':key,'Content-Type':'application/json'};
+          if(type==='legacy-service-role') headers.Authorization='Bearer '+key;
+          const res=await fetch(url,{
+            method:'POST',headers,
+            body:JSON.stringify({p_uid:'nonexistentCiProbe2026',p_email:'nobody@example.invalid',p_require_owner:false}),
+            signal:AbortSignal.timeout(15000),redirect:'error'
+          });
+          if(res.status!==200 || (await res.json().catch(()=>null))!==false) {
+            console.error('Live service-role RPC privilege proof failed, status '+res.status+'. Storage writes will not be attempted.');
+            process.exit(1);
+          }
+          console.log('PASS: live Supabase service-role RPC is callable; synthetic Storage fixture may proceed.');
+          NODE
       - name: Test real Storage API and SQL ownership inventory on disposable PNG
         id: storage_proof
         working-directory: private-src
         env:
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.TRAYDAQ_SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SECRET_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SECRET_KEY || secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.TRAYDAQ_SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           npm install --no-audit --no-fund
           node tests/supabase-storage-erasure-live-ci-fixture.mjs

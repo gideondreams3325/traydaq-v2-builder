@@ -12,11 +12,11 @@ permissions:
 
 # Immutable owner-approved retention policy candidate. Source validation only; release still disabled.
 env:
-  ERASURE_CANDIDATE_SHA: 5d805a61e172ce81d3b36e97d0923d647362af11
+  ERASURE_CANDIDATE_SHA: 0238c0dccb50b5da6a4b9e70f2fc995a5538534d
 
 jobs:
   erasure-regression:
-    name: Reviewed-deletion + retention regression tests
+    name: Self-service deletion + selective retention regression tests
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -45,6 +45,7 @@ jobs:
         run: |
           node --test \
             tests/account-erasure-worker.test.mjs \
+            tests/account-owner-self-service-erasure.test.mjs \
             tests/account-erasure-live-preflight.test.mjs \
             tests/account-firebase-privacy-holds.test.mjs \
             tests/isolated-firebase-erasure-fixture.test.mjs \
@@ -65,7 +66,7 @@ jobs:
             tests/supabase-public-media-cutover.test.mjs \
             tests/cloudinary-admin-erasure-contract.test.mjs \
             tests/release-account-erasure.test.mjs
-      - name: Verify gates are still locked (no production erasure)
+      - name: Verify unattended worker gate and unvalidated policy remain separate
         working-directory: private-src
         run: |
           node --input-type=module -e "

@@ -8,7 +8,7 @@ on:
 permissions:
   contents: read
 env:
-  PRIVATE_SHA: f772279eabc9abf627db17584d86b74c73aa2a02
+  PRIVATE_SHA: ce9808f01d4741f38a5d391fcadca3e7c747aaa7
 jobs:
   web-and-deletion:
     if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'

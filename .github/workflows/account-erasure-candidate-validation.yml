@@ -16,7 +16,7 @@ permissions:
 
 # Immutable owner-approved retention policy candidate. Source validation only; release still disabled.
 env:
-  ERASURE_CANDIDATE_SHA: 1646462c7cfbc0eb8e29a6e3afbe50949c2e3817
+  ERASURE_CANDIDATE_SHA: 78a7b9caa8da8a61f7b04702f7b04315f1cfd2c9
 
 jobs:
   erasure-regression:
@@ -69,6 +69,7 @@ jobs:
             tests/account-retention-state.test.mjs \
             tests/account-investigation-retention.test.mjs \
             tests/confidential-case-retention-contract.test.mjs \
+            tests/confidential-case-evidence-staging.test.mjs \
             tests/retention-policy-proposal.test.mjs \
             tests/account-closure-confidential-retention-policy.test.mjs \
             tests/account-closure-private-evidence.test.mjs \
@@ -158,6 +159,45 @@ jobs:
           SQL
           psql -h 127.0.0.1 -U postgres -d erasure_validation -v ON_ERROR_STOP=1 \
             -f private-src/supabase/migrations/20261026084953_account_owner_self_service_erasure_claim.sql
+          psql -h 127.0.0.1 -U postgres -d erasure_validation -v ON_ERROR_STOP=1 \
+            -f private-src/supabase/migrations/20261026121100_confidential_case_evidence_staging.sql
+          psql -h 127.0.0.1 -U postgres -d erasure_validation -v ON_ERROR_STOP=1 <<'SQL'
+          DO $test$
+          DECLARE item text; result jsonb;
+          BEGIN
+            FOREACH item IN ARRAY ARRAY[
+              'v2_confidential_case_staging','v2_confidential_evidence_staging',
+              'v2_confidential_case_access_audit'
+            ] LOOP
+              IF has_table_privilege('anon','traydaq_private.'||item,'SELECT') OR
+                 has_table_privilege('authenticated','traydaq_private.'||item,'SELECT') OR
+                 has_table_privilege('anon','traydaq_private.'||item,'INSERT') OR
+                 has_table_privilege('authenticated','traydaq_private.'||item,'INSERT') OR
+                 NOT has_table_privilege('service_role','traydaq_private.'||item,'SELECT')
+              THEN RAISE EXCEPTION 'Confidential case access isolation failed: %',item; END IF;
+            END LOOP;
+            IF has_table_privilege('service_role','traydaq_private.v2_confidential_case_access_audit','DELETE')
+             OR has_table_privilege('service_role','traydaq_private.v2_confidential_case_access_audit','UPDATE')
+             OR has_function_privilege('anon','traydaq_private.v2_confidential_case_reviews_due()','EXECUTE')
+             OR has_function_privilege('authenticated','traydaq_private.v2_confidential_case_reviews_due()','EXECUTE')
+             OR NOT has_function_privilege('service_role','traydaq_private.v2_confidential_case_reviews_due()','EXECUTE')
+            THEN RAISE EXCEPTION 'Staging audit or function grants are unsafe'; END IF;
+          END $test$;
+          INSERT INTO traydaq_private.v2_confidential_case_staging(
+            case_reference,subject_uid_sha256,basis_reference,purpose,review_owner_uid,
+            created_at,review_due_at,retain_until
+          ) VALUES(
+            'CASE.TEST.2026:0001',repeat('a',64),'BASIS.TEST.2026:0001',
+            'fraud_investigation','isolated_reviewer',
+            now()-interval '2 days',now()-interval '1 day',now()+interval '1 day'
+          );
+          DO $test$ BEGIN
+            IF (SELECT count(*) FROM traydaq_private.v2_confidential_case_reviews_due()) <> 1
+            THEN RAISE EXCEPTION 'Retention-review inventory did not list due test case'; END IF;
+            IF (SELECT count(*) FROM traydaq_private.v2_confidential_evidence_staging) <> 0
+            THEN RAISE EXCEPTION 'Staging must contain no media'; END IF;
+          END $test$;
+          SQL
           result="$(psql -h 127.0.0.1 -U postgres -d erasure_validation -tAc \
             "SELECT has_function_privilege('anon','public.v2_account_erasure_begin_self_service(text,text)','EXECUTE'),has_function_privilege('authenticated','public.v2_account_erasure_begin_self_service(text,text)','EXECUTE'),has_function_privilege('service_role','public.v2_account_erasure_begin_self_service(text,text)','EXECUTE')")"
           test "$result" = "f|f|t"

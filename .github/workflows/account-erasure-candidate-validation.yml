@@ -12,7 +12,7 @@ permissions:
 
 # Immutable owner-approved retention policy candidate. Source validation only; release still disabled.
 env:
-  ERASURE_CANDIDATE_SHA: 542f8c3705e1c8a25b46284c2b363aa8c2ba174b
+  ERASURE_CANDIDATE_SHA: 0efc757b12bada52aa71fcae0f757de25915810e
 
 jobs:
   erasure-regression:
@@ -43,6 +43,7 @@ jobs:
           node --test \
             tests/account-erasure-worker.test.mjs \
             tests/account-erasure-live-preflight.test.mjs \
+            tests/account-firebase-privacy-holds.test.mjs \
             tests/account-erasure-vault-dispatch.test.mjs \
             tests/account-erasure-readiness-cron.test.mjs \
             tests/account-erasure-release-lock.test.mjs \

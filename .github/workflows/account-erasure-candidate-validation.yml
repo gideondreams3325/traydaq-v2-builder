@@ -37,7 +37,10 @@ jobs:
       - name: Install private V2 test dependencies
         working-directory: private-src
         run: npm install --no-audit --no-fund
-      - name: Typecheck web app\n        working-directory: private-src\n        run: npm run typecheck\n      - name: Run deletion and provider erasure regressions
+      - name: Typecheck web app
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Run deletion and provider erasure regressions
         working-directory: private-src
         run: |
           node --test \
@@ -90,7 +93,8 @@ jobs:
         working-directory: private-src/mobile
         run: |
           npm install --no-audit --no-fund
-          node --test tests/unified-deletion-parity.test.mjs\n          npm run typecheck
+          node --test tests/unified-deletion-parity.test.mjs
+          npm run typecheck
 
   erasure-edge:
     name: Deno Edge account erasure static typecheck

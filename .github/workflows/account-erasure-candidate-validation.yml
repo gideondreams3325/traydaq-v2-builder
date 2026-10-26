@@ -16,7 +16,7 @@ permissions:
 
 # Immutable owner-approved retention policy candidate. Source validation only; release still disabled.
 env:
-  ERASURE_CANDIDATE_SHA: b4fcfe55bb6fd24470b89dc21a1fcfce47445146
+  ERASURE_CANDIDATE_SHA: eeb1664926ed49d9fac7a74d98f156e8329e81c0
 
 jobs:
   erasure-regression:

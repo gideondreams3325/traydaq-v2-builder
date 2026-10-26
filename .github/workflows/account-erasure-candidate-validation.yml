@@ -25,6 +25,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - name: Checkout Builder synthetic HTTP harness (public)
+        uses: actions/checkout@v4
+        with:
+          path: builder-control
+          persist-credentials: false
       - name: Checkout exact private erasure candidate (read-only)
         uses: actions/checkout@v4
         with:
@@ -83,6 +88,10 @@ jobs:
             tests/supabase-public-media-cutover.test.mjs \
             tests/cloudinary-admin-erasure-contract.test.mjs \
             tests/release-account-erasure.test.mjs
+      - name: Exercise synthetic evidence HTTP delivery and audit failures
+        env:
+          TRAYDAQ_SOURCE_ROOT: private-src
+        run: node --test builder-control/.github/scripts/evidence-http-delivery.test.mjs
       - name: Verify unattended worker gate and unvalidated policy remain separate
         working-directory: private-src
         run: |

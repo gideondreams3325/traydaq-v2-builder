@@ -16,7 +16,7 @@ permissions:
 
 # Immutable owner-approved retention policy candidate. Source validation only; release still disabled.
 env:
-  ERASURE_CANDIDATE_SHA: 78a7b9caa8da8a61f7b04702f7b04315f1cfd2c9
+  ERASURE_CANDIDATE_SHA: a2788a3f1b94cf21ebb08f680c55b60b5bade03b
 
 jobs:
   erasure-regression:
@@ -70,6 +70,7 @@ jobs:
             tests/account-investigation-retention.test.mjs \
             tests/confidential-case-retention-contract.test.mjs \
             tests/confidential-case-evidence-staging.test.mjs \
+            tests/confidential-case-investigator-access.test.mjs \
             tests/retention-policy-proposal.test.mjs \
             tests/account-closure-confidential-retention-policy.test.mjs \
             tests/account-closure-private-evidence.test.mjs \
@@ -196,6 +197,81 @@ jobs:
             THEN RAISE EXCEPTION 'Retention-review inventory did not list due test case'; END IF;
             IF (SELECT count(*) FROM traydaq_private.v2_confidential_evidence_staging) <> 0
             THEN RAISE EXCEPTION 'Staging must contain no media'; END IF;
+          END $test$;
+          SQL
+          psql -h 127.0.0.1 -U postgres -d erasure_validation -v ON_ERROR_STOP=1 <<'SQL'
+          CREATE SCHEMA auth;
+          CREATE FUNCTION auth.jwt() RETURNS jsonb
+          LANGUAGE sql STABLE AS $fn$
+            SELECT jsonb_build_object('role',coalesce(current_setting('request.jwt.claim.role',true),'service_role'))
+          $fn$;
+          CREATE TABLE public.v2_security_staff(
+            firebase_uid text PRIMARY KEY,verified_email text NOT NULL,
+            role text NOT NULL,active boolean NOT NULL
+          );
+          INSERT INTO public.v2_security_staff VALUES
+            ('isolatedOwner1','owner@example.invalid','owner',true),
+            ('isolatedAnalyst1','analyst@example.invalid','analyst',true),
+            ('revokedAnalyst1','revoked@example.invalid','analyst',false);
+          SQL
+          psql -h 127.0.0.1 -U postgres -d erasure_validation -v ON_ERROR_STOP=1 \
+            -f private-src/supabase/migrations/20261026131600_confidential_case_access_custody_controls.sql
+          psql -h 127.0.0.1 -U postgres -d erasure_validation -v ON_ERROR_STOP=1 <<'SQL'
+          SELECT set_config('request.jwt.claim.role','service_role',false);
+          INSERT INTO traydaq_private.v2_confidential_case_staging(
+            case_reference,subject_uid_sha256,basis_reference,purpose,review_owner_uid,
+            review_due_at,retain_until
+          ) VALUES(
+            'CASE.FRAUD.TEST.002',
+            encode(sha256(convert_to('syntheticUser1','UTF8')),'hex'),
+            'BASIS.FRAUD.TEST.002','fraud_investigation','isolatedOwner1',
+            now()+interval '2 days',now()+interval '20 days'
+          );
+          INSERT INTO traydaq_private.v2_confidential_evidence_staging(
+            case_id,kind,source_reference_sha256,content_sha256)
+          SELECT case_id,'identity_verification_photo',
+            encode(sha256(convert_to('v2-identity-review-selfies:syntheticUser1/fixture.png','UTF8')),'hex'),
+            encode(sha256(convert_to('fixture-png-content','UTF8')),'hex')
+          FROM traydaq_private.v2_confidential_case_staging
+          WHERE case_reference='CASE.FRAUD.TEST.002';
+          DO $test$
+          DECLARE cid uuid; eid uuid; grant_id uuid; auth jsonb; prepared jsonb;
+          BEGIN
+           SELECT case_id INTO cid FROM traydaq_private.v2_confidential_case_staging
+           WHERE case_reference='CASE.FRAUD.TEST.002';
+           SELECT evidence_id INTO eid FROM traydaq_private.v2_confidential_evidence_staging
+           WHERE case_id=cid;
+           grant_id:=public.v2_case_grant_investigator(
+             'isolatedOwner1','owner@example.invalid',cid,
+             'isolatedAnalyst1','metadata',now()+interval '1 hour');
+           IF grant_id IS NULL THEN RAISE EXCEPTION 'Cannot create test scoped grant'; END IF;
+           auth:=public.v2_case_authorized_access(
+             'isolatedAnalyst1','analyst@example.invalid',cid,
+             'metadata',NULL,'CASE_FRAUD_TEST');
+           IF auth->>'authorized'<>'true' THEN RAISE EXCEPTION 'Metadata grant did not authorize'; END IF;
+           auth:=public.v2_case_authorized_access(
+             'isolatedAnalyst1','analyst@example.invalid',cid,
+             'download',eid,'CASE_FRAUD_TEST');
+           IF auth->>'authorized'<>'false' THEN RAISE EXCEPTION 'Download was not denied'; END IF;
+           prepared:=public.v2_case_preservation_authorize(
+             'isolatedOwner1','owner@example.invalid',cid,eid,'syntheticUser1',
+             'v2-identity-review-selfies','syntheticUser1/fixture.png');
+           IF prepared->>'kind'<>'identity_verification_photo'
+           THEN RAISE EXCEPTION 'Case-to-subject source preflight failed'; END IF;
+           IF (SELECT count(*) FROM traydaq_private.v2_confidential_case_access_audit WHERE case_id=cid)<>3
+           THEN RAISE EXCEPTION 'Access audit event count mismatch'; END IF;
+           IF has_table_privilege('anon','traydaq_private.v2_confidential_case_grants','SELECT')
+             OR has_table_privilege('authenticated','traydaq_private.v2_confidential_case_custody','SELECT')
+             OR has_function_privilege('anon',
+              'public.v2_case_authorized_access(text,text,uuid,text,uuid,text)','EXECUTE')
+             OR has_function_privilege('authenticated',
+              'public.v2_case_grant_investigator(text,text,uuid,text,text,timestamp with time zone)','EXECUTE')
+           THEN RAISE EXCEPTION 'Client grants are unsafe'; END IF;
+          END $test$;
+          SELECT traydaq_private.v2_confidential_case_record_due_reviews();
+          DO $test$ BEGIN
+            IF (SELECT count(*) FROM traydaq_private.v2_confidential_case_review_notices)<>1
+            THEN RAISE EXCEPTION 'Review-due notification not recorded once'; END IF;
           END $test$;
           SQL
           result="$(psql -h 127.0.0.1 -U postgres -d erasure_validation -tAc \

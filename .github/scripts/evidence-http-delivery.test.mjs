@@ -53,7 +53,7 @@ if(useSDK){
     res.writeHead(result.error?403:200,{'Content-Type':'application/json'});
     res.end(JSON.stringify(result.error||result.data));return;
    }
-   const prefix='/storage/v1/object/authenticated/traydaq-confidential-case-evidence/';
+   const prefix='/storage/v1/object/traydaq-confidential-case-evidence/';
    if(req.method==='GET'&&path.startsWith(prefix)){
     assert.equal(path.slice(prefix.length),filePath,'SDK storage path must be exact');
     if(state.missingFile){

@@ -1,0 +1,63 @@
+name: TRAYDAQ Unified Staff Deletion Review Validation
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/unified-staff-deletion-review.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-regression:
+    name: Website and Android staff-reviewed deletion parity
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    env:
+      SOURCE_SHA: 73fd697a7a4474aaf6143f32dc671f86b1776802
+    steps:
+      - name: Checkout exact private source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Verify source
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install private source dependencies
+        working-directory: private-src
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Full source tests
+        working-directory: private-src
+        run: npm test
+      - name: Web TypeScript
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Web production build without deployment
+        working-directory: private-src
+        run: npm run build
+      - name: Android dependencies
+        working-directory: private-src/mobile
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Android deletion parity tests
+        working-directory: private-src/mobile
+        run: node --test tests/unified-deletion-parity.test.mjs
+      - name: Android TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Verify disabled release flags
+        working-directory: private-src
+        run: |
+          node --input-type=module -e "
+            import assert from 'node:assert/strict';
+            import {ACCOUNT_ERASURE_RELEASE_VALIDATED} from './supabase/functions/_shared/accountErasureReleaseGate.mjs';
+            import {RETENTION_SCHEDULE_VALIDATED} from './supabase/functions/_shared/accountRetentionPolicy.mjs';
+            assert.equal(ACCOUNT_ERASURE_RELEASE_VALIDATED,false);
+            assert.equal(RETENTION_SCHEDULE_VALIDATED,false);
+          "

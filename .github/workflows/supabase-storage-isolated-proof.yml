@@ -1,0 +1,76 @@
+name: TRAYDAQ Isolated Supabase Storage Erasure Proof (No Deployment)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/supabase-storage-isolated-proof.yml"
+
+permissions:
+  contents: read
+  statuses: write
+
+env:
+  ERASURE_FIXTURE_SHA: cb48d50bd804a8c4a4eddb5b42b2b412c501f345
+
+jobs:
+  isolated-storage:
+    name: Prove isolated Storage ownership inventory and removal
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.ERASURE_FIXTURE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Verify immutable source
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$ERASURE_FIXTURE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify fixture syntax
+        working-directory: private-src
+        run: node --check tests/supabase-storage-erasure-live-ci-fixture.mjs
+      - name: Check isolated proof credentials without exposing secrets
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.TRAYDAQ_SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SECRET_KEY }}
+        shell: bash
+        run: |
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "::error::No Supabase service-role credential is available in the V2 Builder GitHub Actions secrets."
+            exit 1
+          fi
+          echo "Supabase Storage fixture credential configured."
+      - name: Test real Storage API and SQL ownership inventory on disposable PNG
+        id: storage_proof
+        working-directory: private-src
+        env:
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY || secrets.TRAYDAQ_SUPABASE_SERVICE_ROLE_KEY || secrets.SUPABASE_SECRET_KEY }}
+        run: |
+          npm install --no-audit --no-fund
+          node tests/supabase-storage-erasure-live-ci-fixture.mjs
+      - name: Publish safe, queryable proof outcome
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PROOF_OUTCOME: ${{ steps.storage_proof.outcome }}
+        run: |
+          if [ "$PROOF_OUTCOME" = "success" ]; then
+            STATE=success
+            DESCRIPTION="PASS: isolated Supabase Storage object erased and read back"
+          else
+            STATE=failure
+            DESCRIPTION="NOT VERIFIED: Storage fixture unavailable or failed"
+          fi
+          gh api -X POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            -f state="$STATE" -f context="traydaq/supabase-storage-proof" \
+            -f description="$DESCRIPTION" \
+            -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+
+# Never accepts existing account identifiers and never deploys application code.

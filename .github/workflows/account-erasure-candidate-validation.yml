@@ -16,7 +16,7 @@ permissions:
 
 # Immutable owner-approved retention policy candidate. Source validation only; release still disabled.
 env:
-  ERASURE_CANDIDATE_SHA: 8fc8997ffb5d20f3fbc72ce560249f3dd2d2d48a
+  ERASURE_CANDIDATE_SHA: c66691d93d1100b7643ed8f9227a1534d200069d
 
 jobs:
   erasure-regression:
@@ -48,6 +48,9 @@ jobs:
       - name: Syntax-check isolated Firebase-only deletion proof (without credentials)
         working-directory: private-src
         run: node --check tests/firebase-erasure-live-ci-fixture.mjs
+      - name: Syntax-check isolated Supabase Storage erasure fixture
+        working-directory: private-src
+        run: node --check tests/supabase-storage-erasure-live-ci-fixture.mjs
       - name: Run deletion and provider erasure regressions
         working-directory: private-src
         run: |

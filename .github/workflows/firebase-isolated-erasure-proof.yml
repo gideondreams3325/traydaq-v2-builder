@@ -59,3 +59,4 @@ jobs:
         run: node tests/firebase-erasure-live-ci-fixture.mjs
 
 # No Supabase migration, no user-selected UID, no app deployment, no broad delete.
+# Safe to retry: each run creates and destroys its own disabled Firebase test identity.

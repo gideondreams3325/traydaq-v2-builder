@@ -1,0 +1,55 @@
+name: TRAYDAQ Confidential Evidence Private Bucket Proof (Disposable Only)
+
+# Only the owner-controlled main branch can access a real Supabase secret.
+# Never accepts inputs, paths or existing user/case IDs.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/confidential-evidence-storage-proof.yml"
+      - ".github/scripts/confidential-evidence-storage-live-proof.mjs"
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-private-bucket:
+    name: Upload, download, verify and remove one synthetic private evidence PNG
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      SOURCE_SHA: 6931ba0cd52f756b0984bbe6b9fd1f28eb65aa7d
+    steps:
+      - name: Checkout trusted Builder fixture
+        uses: actions/checkout@v4
+        with:
+          path: builder-control
+          persist-credentials: false
+      - name: Checkout pinned private package lock (read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Confirm immutable private dependency source
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install locked dependencies without lifecycle scripts
+        working-directory: private-src
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify harmless Builder script syntax
+        run: node --check builder-control/.github/scripts/confidential-evidence-storage-live-proof.mjs
+      - name: Live private evidence bucket synthetic PNG proof (and forced cleanup)
+        env:
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: node builder-control/.github/scripts/confidential-evidence-storage-live-proof.mjs
+
+# NEVER enables case intake, deletion, erasure, or release flags.
+# Only a randomly generated path in the existing private evidence bucket is touched.

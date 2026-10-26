@@ -40,12 +40,12 @@ jobs:
           node-version: '22'
       - name: Check Firebase credential availability without exposing secret
         env:
-          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON || secrets.FIREBASE_SERVICE_ACCOUNT || secrets.FIREBASE_ADMIN_SDK_JSON || secrets.FIREBASE_ADMIN_JSON || secrets.GOOGLE_SERVICE_ACCOUNT_JSON || secrets.GOOGLE_CLOUD_SERVICE_ACCOUNT_JSON || secrets.TRAYDAQ_FIREBASE_SERVICE_ACCOUNT_JSON }}
           FIREBASE_RTD_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_RTD_SERVICE_ACCOUNT_JSON }}
         shell: bash
         run: |
           if [ -z "${FIREBASE_SERVICE_ACCOUNT_JSON}" ] && [ -z "${FIREBASE_RTD_SERVICE_ACCOUNT_JSON}" ]; then
-            echo "::error::Firebase service-account JSON is not available in this Builder repository's GitHub Actions secrets (expected FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_RTD_SERVICE_ACCOUNT_JSON)."
+            echo "::error::No supported Firebase Admin JSON credential is available as a GitHub Actions secret in the V2 Builder repository. Only disabled test data would be modified if configured."
             exit 1
           fi
           echo "Firebase credential configured; content not printed."
@@ -56,7 +56,7 @@ jobs:
         id: firebase_proof
         working-directory: private-src
         env:
-          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON || secrets.FIREBASE_SERVICE_ACCOUNT || secrets.FIREBASE_ADMIN_SDK_JSON || secrets.FIREBASE_ADMIN_JSON || secrets.GOOGLE_SERVICE_ACCOUNT_JSON || secrets.GOOGLE_CLOUD_SERVICE_ACCOUNT_JSON || secrets.TRAYDAQ_FIREBASE_SERVICE_ACCOUNT_JSON }}
           FIREBASE_RTD_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_RTD_SERVICE_ACCOUNT_JSON }}
         run: node tests/firebase-erasure-live-ci-fixture.mjs
 

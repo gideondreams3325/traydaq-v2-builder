@@ -6,3 +6,5 @@ Web client accepts verified Supabase Storage profile/store URLs and invokes the 
 The Supabase upload backend is already ACTIVE; no Cloudinary write path should be reenabled.
 Validate ALL web tests, TypeScript and Vite build, then deploy only to the existing authorized Cloudflare Pages project with the existing configured credentials.
 Do not change DNS, Firebase rules, identities, retention policy, account erasure release gates, Android binaries, or unrelated backend services.
+
+2026-10-26 STAFF PORTAL WEB DEPLOYMENT: user explicitly requested an operational staff web interface, not further manual CI/credential work. Deploy existing Cloudflare Pages project only, after complete suite and TypeScript/build checks, from private TRAYDAQ main SHA 8f8fe4f4204fb77483eafafa7ea12db41c4aef35 (merged PR #49). Safe route: /staff; server-verified Firebase Security Team role required. Do not enable confidential case intake/purge or held-account erasure gates. No DNS changes, no new cloud project, no APK or customer data writes.

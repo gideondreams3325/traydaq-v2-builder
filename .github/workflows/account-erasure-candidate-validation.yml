@@ -12,7 +12,7 @@ permissions:
 
 # Immutable owner-approved retention policy candidate. Source validation only; release still disabled.
 env:
-  ERASURE_CANDIDATE_SHA: fec7b39e3ba21936c02d59f26837bbe44c3aba7b
+  ERASURE_CANDIDATE_SHA: 5d805a61e172ce81d3b36e97d0923d647362af11
 
 jobs:
   erasure-regression:
@@ -57,6 +57,7 @@ jobs:
             tests/account-retention-state.test.mjs \
             tests/retention-policy-proposal.test.mjs \
             tests/account-closure-confidential-retention-policy.test.mjs \
+            tests/account-closure-private-evidence.test.mjs \
             tests/account-recovery-media-holds.test.mjs \
             tests/account-staging-erasure-holds.test.mjs \
             tests/account-storage-ownership.test.mjs \

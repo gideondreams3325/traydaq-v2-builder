@@ -18,7 +18,10 @@ import {createHash, webcrypto} from 'node:crypto';
 
 const sourceRoot=resolve(process.env.TRAYDAQ_SOURCE_ROOT||'.');
 const source=readFileSync(resolve(sourceRoot,'supabase/functions/confidential-case-evidence/index.ts'),'utf8');
-const ts=createRequire(pathToFileURL(resolve(sourceRoot,'package.json')))('typescript');
+const requireFromSource=createRequire(pathToFileURL(resolve(sourceRoot,'package.json')));
+const ts=requireFromSource('typescript');
+const useSDK=process.env.EVIDENCE_HTTP_USE_SUPABASE_SDK==='1';
+const sdkCreateClient=useSDK?requireFromSource('@supabase/supabase-js').createClient:null;
 const caseId='11111111-1111-4111-8111-111111111111';
 const evidenceId='22222222-2222-4222-8222-222222222222';
 const filePath=`${caseId}/${evidenceId}/synthetic.png`;
@@ -32,6 +35,44 @@ function reset(changes={}) {
   missingFile:false,events:[],...changes};
 }
 reset();
+// In SDK mode only, a loopback PostgREST/Storage gateway exercises the
+// published supabase-js HTTP protocol with no real network or credentials.
+let gatewayUrl='https://example.invalid';
+let gatewayServer;
+if(useSDK){
+ gatewayServer=createServer(async(req,res)=>{
+  try{
+   const uri=new URL(req.url,'http://127.0.0.1');
+   const path=decodeURIComponent(uri.pathname);
+   if(req.method==='POST'&&path.startsWith('/rest/v1/rpc/')){
+    const chunks=[];for await(const chunk of req)chunks.push(chunk);
+    const args=JSON.parse(Buffer.concat(chunks).toString('utf8'));
+    const name=path.slice('/rest/v1/rpc/'.length);
+    const result=await client().rpc(name,args);
+    res.writeHead(result.error?403:200,{'Content-Type':'application/json'});
+    res.end(JSON.stringify(result.error||result.data));return;
+   }
+   const prefix='/storage/v1/object/authenticated/traydaq-confidential-case-evidence/';
+   if(req.method==='GET'&&path.startsWith(prefix)){
+    assert.equal(path.slice(prefix.length),filePath,'SDK storage path must be exact');
+    if(state.missingFile){
+     res.writeHead(404,{'Content-Type':'application/json'});
+     res.end(JSON.stringify({statusCode:'404',error:'not_found',message:'missing'}));
+     return;
+    }
+    res.writeHead(200,{'Content-Type':'image/png'});
+    res.end(state.bytes);return;
+   }
+   res.writeHead(404,{'Content-Type':'application/json'});
+   res.end(JSON.stringify({error:'unexpected_api',path}));
+  }catch(e){
+   res.writeHead(500,{'Content-Type':'application/json'});
+   res.end(JSON.stringify({error:'isolated test gateway error'}));
+  }
+ });
+ await new Promise(resolve=>gatewayServer.listen(0,'127.0.0.1',resolve));
+ gatewayUrl=`http://127.0.0.1:${gatewayServer.address().port}`;
+}
 function client(){
  return {
   rpc:async(name,args)=>{
@@ -78,7 +119,7 @@ const transpiled=ts.transpileModule(sourceWithoutImports,{
 });
 assert.equal(transpiled.diagnostics?.length||0,0,'TypeScript parse diagnostics');
 const sandbox={
- Deno:{env:{get:name=>name==='SUPABASE_URL'?'https://example.invalid':
+ Deno:{env:{get:name=>name==='SUPABASE_URL'?gatewayUrl:
     name==='SUPABASE_SERVICE_ROLE_KEY'?'synthetic-key':undefined},
   serve:callback=>{edgeHandler=callback;}},
  createRemoteJWKSet:()=>({}),
@@ -86,7 +127,7 @@ const sandbox={
   if(jwt!==token)throw Error('Bad test JWT');
   return {payload:{sub:'isolatedAnalyst1',email:'analyst@example.invalid',auth_time:Date.now()/1000}};
  },
- createClient:()=>client(),
+ createClient:useSDK?sdkCreateClient:()=>client(),
  firebaseAdminToken:async()=>'synthetic-admin-token',
  firebaseAccount:async(_token,_action,{localId})=>({
   users:[{localId:localId[0],email:'analyst@example.invalid',disabled:false}]
@@ -113,7 +154,10 @@ const server=createServer(async(req,res)=>{
 });
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const endpoint=`http://127.0.0.1:${server.address().port}/`;
-after(()=>new Promise((resolve,reject)=>server.close(e=>e?reject(e):resolve())));
+after(async()=>{
+ await new Promise((resolve,reject)=>server.close(e=>e?reject(e):resolve()));
+ if(gatewayServer)await new Promise((resolve,reject)=>gatewayServer.close(e=>e?reject(e):resolve()));
+});
 function download(extra={}){
  return fetch(endpoint,{method:'POST',
   headers:{authorization:`Bearer ${token}`,'content-type':'application/json'},

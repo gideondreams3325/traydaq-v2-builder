@@ -12,7 +12,7 @@ permissions:
 
 # Immutable owner-approved retention policy candidate. Source validation only; release still disabled.
 env:
-  ERASURE_CANDIDATE_SHA: 8ca9b3074f70a8fb8f88da5ce4f4fec571eb09be
+  ERASURE_CANDIDATE_SHA: ed13c64fb68c6ac859f578f95dbfbf4f2a4186ae
 
 jobs:
   erasure-regression:
@@ -37,7 +37,7 @@ jobs:
       - name: Install private V2 test dependencies
         working-directory: private-src
         run: npm install --no-audit --no-fund
-      - name: Run deletion and provider erasure regressions
+      - name: Typecheck web app\n        working-directory: private-src\n        run: npm run typecheck\n      - name: Run deletion and provider erasure regressions
         working-directory: private-src
         run: |
           node --test \
@@ -49,6 +49,7 @@ jobs:
             tests/account-erasure-release-lock.test.mjs \
             tests/account-erasure-session.test.mjs \
             tests/account-deletion-review-routing.test.mjs \
+            tests/member-block-account-deletion-ui.test.mjs \
             tests/account-retention-state.test.mjs \
             tests/retention-policy-proposal.test.mjs \
             tests/account-closure-confidential-retention-policy.test.mjs \
@@ -89,7 +90,7 @@ jobs:
         working-directory: private-src/mobile
         run: |
           npm install --no-audit --no-fund
-          node --test tests/unified-deletion-parity.test.mjs
+          node --test tests/unified-deletion-parity.test.mjs\n          npm run typecheck
 
   erasure-edge:
     name: Deno Edge account erasure static typecheck

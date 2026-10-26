@@ -1,0 +1,61 @@
+name: TRAYDAQ Isolated Firebase Account Erasure Proof (No Deployment)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/firebase-isolated-erasure-proof.yml"
+
+permissions:
+  contents: read
+
+# Production service credentials are ONLY passed to this trusted main workflow.
+# The private candidate is locked to a single reviewed commit and cannot select
+# or delete an existing account; it creates one random disabled test identity.
+env:
+  ERASURE_FIXTURE_SHA: 8fc8997ffb5d20f3fbc72ce560249f3dd2d2d48a
+
+jobs:
+  firebase-disposable-identity:
+    name: Create, delete, and read back one disabled Firebase test identity
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout immutable private Firebase fixture implementation
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.ERASURE_FIXTURE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Verify immutable candidate
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$ERASURE_FIXTURE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check Firebase credential availability without exposing secret
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          FIREBASE_RTD_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_RTD_SERVICE_ACCOUNT_JSON }}
+        shell: bash
+        run: |
+          if [ -z "${FIREBASE_SERVICE_ACCOUNT_JSON}" ] && [ -z "${FIREBASE_RTD_SERVICE_ACCOUNT_JSON}" ]; then
+            echo "::error::Firebase service-account JSON is not available in this Builder repository's GitHub Actions secrets (expected FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_RTD_SERVICE_ACCOUNT_JSON)."
+            exit 1
+          fi
+          echo "Firebase credential configured; content not printed."
+      - name: Verify fixed fixture script syntax
+        working-directory: private-src
+        run: node --check tests/firebase-erasure-live-ci-fixture.mjs
+      - name: Prove disabled Firebase Auth and isolated RTDB erasure with readback
+        working-directory: private-src
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          FIREBASE_RTD_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_RTD_SERVICE_ACCOUNT_JSON }}
+        run: node tests/firebase-erasure-live-ci-fixture.mjs
+
+# No Supabase migration, no user-selected UID, no app deployment, no broad delete.

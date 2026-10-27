@@ -74,3 +74,13 @@ Firebase/Google login until the migration and native redirect tests pass.
   development. A generated APK alone cannot make them ready.
 - Old public `gideondreams3325/traydaq` and legacy `sellerflow`
   repositories and backends remain untouched.
+
+## Validation of the private TRAYDAQ app (PR #66)
+
+**Canonical source:** private `gideondreams3325/traydaq-v2`. **Public build controller:** this repository, `gideondreams3325/traydaq-v2-builder`. **Web deployment platform: Cloudflare Workers** (the private source's `wrangler.jsonc`, using `./dist` assets). Do not treat Vercel checks as TRAYDAQ deployment requirements.
+
+Use **Actions → TRAYDAQ V2 Private Source Validation (Cloudflare + Android)** to verify the currently staged deletion branch `feat/restore-owner-deletion-without-recovery-20261027` in the private repository. This separate workflow runs the private web test suite, web TypeScript check, Cloudflare-targeted web build, native tests and native TypeScript check, without committing private source to this public repo.
+
+The `TRAYDAQ_V2_SOURCE_READ_TOKEN` secret must have read-only access to the private repository. Diagnostics from tests, installation, and compilation stay on the temporary runner; the public workflow displays pass/fail and test counts only. **It does not deploy to Cloudflare, sign an APK, erase accounts, change the database, or publish a source artifact.** Failed checks must be fixed in the private repository and then rerun here before any release.
+
+The separate `build.yml` workflow still builds signed Android releases from **private main** only. Do not substitute it for PR #66 validation or mistake a successful APK compile for certified account/content erasure.

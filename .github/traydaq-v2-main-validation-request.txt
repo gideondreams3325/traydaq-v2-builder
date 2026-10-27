@@ -10,3 +10,7 @@ No private source, logs, credentials or APK artifacts are made public.
 
 Validation request, 2026-10-27, private main SHA e0c31febddbf701f04d6441a3ef48886d62b6b44:
 Check Security Department age appeals: explicit type labels, prevent generic proposal or generic finalization, Security-only notifications, and dedicated independent DOB review. Validate full web tests, Android tests, both TypeScript checks and Cloudflare asset build. Never expose private source or age evidence in public artifacts.
+
+2026-10-27 Security Department appeal classification validation:
+Private main SHA: ef7b824954ed4280b2c1df51b4139e224d93e1d2
+Check explicit AGE / DOB correction type in Staff display fallback, Security Department notification and dedicated review queue, block generic recommend/approval in database, preserve private DOB, and validate Android staff UI labels. No real appeal review/approval should be performed.

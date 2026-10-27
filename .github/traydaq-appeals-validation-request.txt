@@ -6,3 +6,5 @@ Validation: web tests/typecheck/build; React Native tests/typecheck/Expo Android
 No deployment, signed APK, production credentials or source export.
 
 Validation rerun: split TypeScript, web tests and build diagnostics (source SHA unchanged).
+
+Rerun: show only sanitized failing test labels and validate web build independently.

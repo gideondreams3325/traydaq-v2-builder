@@ -19,7 +19,7 @@ concurrency:
 
 env:
   CI: '1'
-  AGE_SOURCE_SHA: 'f813cb9e04db822723b6aa92da8b4563496b5c8f'
+  AGE_SOURCE_SHA: 'c5688e24c36b3cdcf17c96a08394b573f5960876'
 
 jobs:
   web:

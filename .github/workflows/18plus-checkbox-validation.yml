@@ -1,0 +1,70 @@
+name: TRAYDAQ V2 18+ Checkbox No-DOB Validation (No Deployment)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/18plus-checkbox-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-18plus-checkbox-validation
+  cancel-in-progress: false
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ba3ebdb8c7d4d38b2183eabd384c97e7f3b8df14
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Tests
+        working-directory: private-src
+        run: npm test
+      - name: TypeScript
+        working-directory: private-src
+        if: always()
+        run: npm run typecheck
+      - name: Web build
+        working-directory: private-src
+        if: always()
+        run: npm run build
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ba3ebdb8c7d4d38b2183eabd384c97e7f3b8df14
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install native
+        working-directory: private-src/mobile
+        run: npm install --no-audit --no-fund
+      - name: Native tests
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Native TypeScript
+        working-directory: private-src/mobile
+        if: always()
+        run: npm run typecheck
+      - name: Expo doctor
+        working-directory: private-src/mobile
+        if: always()
+        run: npx expo-doctor
+# No deployments, APK/AAB uploads, or copies of private source.

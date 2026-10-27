@@ -1,0 +1,73 @@
+name: TRAYDAQ V2 Permanent Erasure Readiness Validation (No Deletion)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/permanent-erasure-readiness-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-v2-permanent-erasure-readiness
+  cancel-in-progress: false
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 62daf0be3e47cc004c528f5e728f67e3046999be
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Non-destructive erasure readiness tests
+        working-directory: private-src
+        run: node --test tests/account-erasure-preflight-integrity.test.mjs tests/account-erasure-live-preflight.test.mjs tests/account-erasure-release-lock.test.mjs tests/account-erasure-worker.test.mjs tests/account-owner-self-service-erasure.test.mjs
+      - name: Complete web regression suite
+        working-directory: private-src
+        run: npm test
+      - name: Web TypeScript
+        working-directory: private-src
+        if: always()
+        run: npm run typecheck
+      - name: Web production build
+        working-directory: private-src
+        if: always()
+        run: npm run build
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 62daf0be3e47cc004c528f5e728f67e3046999be
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install native dependencies
+        working-directory: private-src/mobile
+        run: npm install --no-audit --no-fund
+      - name: Native regression tests
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Native TypeScript
+        working-directory: private-src/mobile
+        if: always()
+        run: npm run typecheck
+      - name: Expo health
+        working-directory: private-src/mobile
+        if: always()
+        run: npx expo-doctor
+# No erasure worker calls, no Supabase deployment, no Firebase deletion, no AAB.

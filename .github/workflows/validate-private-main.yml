@@ -1,0 +1,435 @@
+name: TRAYDAQ V2 Main Source Validation (Cloudflare + Android)
+
+# This public controller reads the private TRAYDAQ source at a fixed feature
+# branch. It never pushes or publishes the app and never bundles private source
+# files into public workflow artifacts.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/validate-private-main.yml"
+      - ".github/traydaq-v2-main-validation-request.txt"
+
+permissions:
+  contents: read
+  statuses: write
+
+concurrency:
+  group: traydaq-v2-main-source-validation
+  cancel-in-progress: true
+
+jobs:
+  web-cloudflare:
+    name: Private web tests and Cloudflare asset build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "1"
+    steps:
+      - name: Verify read-only private-source token is configured
+        id: web_auth
+        env:
+          SOURCE_TOKEN_CONFIGURED: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: |
+          if [ "$SOURCE_TOKEN_CONFIGURED" != "true" ]; then
+            echo "::error::Private-source read token is not configured for the public builder."
+            exit 1
+          fi
+      - name: Check out private feature source without persisting credentials
+        id: web_checkout
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: main
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Verify Cloudflare configuration and source commit
+        id: web_config
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f wrangler.jsonc
+          test -f package-lock.json
+          node --input-type=module -e "
+            import {readFileSync} from 'node:fs';
+            const c=JSON.parse(readFileSync('wrangler.jsonc','utf8'));
+            if(c.name!=='traydaq-v2'||c.assets?.directory!=='./dist')
+              throw Error('Unexpected Cloudflare Workers assets configuration');
+          "
+          echo "Private source ref: main"
+          echo "Private source SHA: $(git rev-parse HEAD)"
+          echo "Hosting validation target: Cloudflare Workers, not Vercel"
+      - name: Install private web dependencies with protected logs
+        id: web_install
+        working-directory: private-src
+        shell: bash
+        run: |
+          if npm ci --no-audit --no-fund > "$RUNNER_TEMP/traydaq-web-install.log" 2>&1; then
+            echo "PASS: private web dependencies installed"
+          else
+            echo "::error::FAIL: private web dependency installation. Full diagnostics were not exposed in this public log."
+            exit 1
+          fi
+      - name: Run focused owner deletion safety tests
+        id: web_deletion
+        working-directory: private-src
+        shell: bash
+        run: |
+          if node --test \
+            tests/account-erasure-release-lock.test.mjs \
+            tests/account-erasure-session.test.mjs \
+            tests/account-erasure-worker.test.mjs \
+            tests/account-erasure-live-preflight.test.mjs \
+            tests/account-owner-self-service-erasure.test.mjs \
+            tests/member-block-account-deletion-ui.test.mjs \
+            tests/self-service-content-and-privacy-minimization.test.mjs \
+            tests/unified-deletion-parity.test.mjs \
+            tests/owner-content-media-ownership.test.mjs \
+            tests/account-staging-erasure-holds.test.mjs \
+            tests/release-account-erasure.test.mjs > "$RUNNER_TEMP/traydaq-erasure-tests.log" 2>&1; then
+            echo "PASS: private deletion-specific tests"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-erasure-tests.log" | tail -3 || true
+          else
+            echo "::error::FAIL: private deletion-specific tests. No code/logs published."
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-erasure-tests.log" | tail -3 || true
+            exit 1
+          fi
+      - name: Run private web tests
+        id: web_tests
+        if: always() && steps.web_install.outcome == 'success'
+        working-directory: private-src
+        shell: bash
+        run: |
+          if npm test > "$RUNNER_TEMP/traydaq-web-tests.log" 2>&1; then
+            echo "PASS: private web tests"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-web-tests.log" | tail -3 || true
+          else
+            echo "::error::FAIL: private web tests. Source-level test diagnostics remain private."
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-web-tests.log" | tail -3 || true
+            exit 1
+          fi
+      - name: Typecheck private web app
+        id: web_tsc
+        if: always() && steps.web_install.outcome == 'success'
+        working-directory: private-src
+        shell: bash
+        run: |
+          if npm run typecheck > "$RUNNER_TEMP/traydaq-web-tsc.log" 2>&1; then
+            echo "PASS: web TypeScript"
+          else
+            echo "::error::FAIL: web TypeScript. Private code diagnostics were not published."
+            exit 1
+          fi
+      - name: Validate Cloudflare web build
+        id: web_build
+        if: always() && steps.web_install.outcome == 'success'
+        working-directory: private-src
+        shell: bash
+        run: |
+          if npm run build > "$RUNNER_TEMP/traydaq-web-build.log" 2>&1 && test -f dist/index.html; then
+            echo "PASS: Cloudflare web asset build and policy-output verification"
+          else
+            echo "::error::FAIL: Cloudflare-targeted web build. No deployment was attempted."
+            exit 1
+          fi
+      - name: Publish sanitized validation result
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JOB_RESULT: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          if [ "$JOB_RESULT" = "success" ]; then STATE=success; else STATE=failure; fi
+          PAYLOAD="$(jq -n --arg state "$STATE" --arg context "traydaq-v2/validate-web-cloudflare" --arg description "Private web tests, TypeScript and Cloudflare build" \
+            '{state:$state,context:$context,description:$description}')"
+          curl --fail --silent --show-error --retry 2 -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            -d "$PAYLOAD" > /dev/null || echo "::warning::Public builder could not record sanitized status."
+
+      - name: Report safe stage-level validation outcomes
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AUTH: ${{ steps.web_auth.outcome }}
+          CHECKOUT: ${{ steps.web_checkout.outcome }}
+          CONFIG: ${{ steps.web_config.outcome }}
+          INSTALL: ${{ steps.web_install.outcome }}
+          DELETION: ${{ steps.web_deletion.outcome }}
+          TESTS: ${{ steps.web_tests.outcome }}
+          TYPESCRIPT: ${{ steps.web_tsc.outcome }}
+          BUILD: ${{ steps.web_build.outcome }}
+        run: |
+          set -euo pipefail
+          report() {
+            local step="$1" outcome="$2" state
+            case "$outcome" in success) state=success;; failure) state=failure;; *) state=error;; esac
+            payload="$(jq -n --arg state "$state" --arg context "traydaq-v2/web/$step" --arg description "$step: $outcome" '{state:$state,context:$context,description:$description}')"
+            curl --fail --silent --show-error --retry 2 -X POST \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+              -d "$payload" > /dev/null || echo "::warning::Could not publish validation stage status."
+          }
+          report auth "$AUTH"
+          report checkout "$CHECKOUT"
+          report config "$CONFIG"
+          report install "$INSTALL"
+          report deletion "$DELETION"
+          report tests "$TESTS"
+          report typescript "$TYPESCRIPT"
+          report build "$BUILD"
+
+      - name: Report sanitized test-failure identifiers
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs');
+          const path=require('node:path');
+          const repo=process.env.GITHUB_REPOSITORY,sha=process.env.GITHUB_SHA;
+          const token=process.env.GH_TOKEN;
+          const scope='web';
+          const seen=new Set();
+          async function publish(key) {
+            const context='traydaq-v2/'+scope+'/'+key;
+            if(seen.has(context))return;
+            seen.add(context);
+            const payload={state:'failure',context,description:'Sanitized test or diagnostic identifier only'};
+            try {
+              await fetch('https://api.github.com/repos/'+repo+'/statuses/'+sha,{
+                method:'POST',headers:{Authorization:'Bearer '+token,
+                  Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',
+                  'Content-Type':'application/json'},
+                body:JSON.stringify(payload)
+              });
+            }catch{/* No raw logs or source paths are exposed on errors. */}
+          }
+          async function main(){
+            const folder=process.env.RUNNER_TEMP;
+            const testLog=path.join(folder,'traydaq-web-tests.log');
+            if(fs.existsSync(testLog)){
+              const log=fs.readFileSync(testLog,'utf8');
+              const names=[...log.matchAll(/^\s*not ok \d+ - (.+)$/gm)].map(m=>m[1]).slice(0,12);
+              for(const name of names){
+                const safe=name.replace(/[^A-Za-z0-9-]/g,'-').replace(/-+/g,'-').slice(0,64);
+                if(safe)await publish('test-fail-'+safe);
+              }
+              if(names.length===0&&/not ok|# fail [1-9]/.test(log))await publish('test-fail-unclassified');
+              const entries=log.split(/\r?\n/);
+              let listed=0;
+              for(let i=0;i<entries.length&&listed<12;i++){
+                if(!/^\s*not ok \d+ - /.test(entries[i]))continue;
+                const context=entries.slice(i,i+18).join('\n');
+                const pathMatch=context.match(/(?:location:.*?\/|not ok \d+ - .*?\/)([A-Za-z0-9._-]+\.test\.mjs)(?::\d+)?/);
+                if(!pathMatch)continue;
+                await publish('testfile-'+pathMatch[1].replace(/[^A-Za-z0-9._-]/g,'-'));
+                listed++;
+              }
+
+            }
+          }
+          main().catch(()=>{/* Failures stay classified without revealing private files. */});
+          NODE
+
+  android-source:
+    name: Private Android tests and TypeScript validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - name: Verify private source token
+        id: android_auth
+        env:
+          SOURCE_TOKEN_CONFIGURED: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: |
+          if [ "$SOURCE_TOKEN_CONFIGURED" != "true" ]; then
+            echo "::error::Private-source read token is missing."
+            exit 1
+          fi
+      - name: Check out private feature source without persisting credentials
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: main
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Confirm native source location and revision
+        id: android_source
+        working-directory: private-src/mobile
+        run: |
+          test -f src/App.tsx
+          test -f package.json
+          echo "Private native source SHA: $(git rev-parse HEAD)"
+      - name: Install private Android dependencies with protected logs
+        id: android_install
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          if npm install --no-audit --no-fund > "$RUNNER_TEMP/traydaq-native-install.log" 2>&1; then
+            echo "PASS: private native dependencies installed"
+          else
+            echo "::error::FAIL: native dependency installation. Private logs were not published."
+            exit 1
+          fi
+      - name: Run private native test suite
+        id: android_tests
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          if node --test tests/*.test.mjs > "$RUNNER_TEMP/traydaq-native-tests.log" 2>&1; then
+            echo "PASS: private native tests"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-native-tests.log" | tail -3 || true
+          else
+            echo "::error::FAIL: private native tests. Private failure details were not exposed."
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-native-tests.log" | tail -3 || true
+            exit 1
+          fi
+      - name: Typecheck private React Native app
+        id: android_tsc
+        if: always() && steps.android_install.outcome == 'success'
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          if npm run typecheck > "$RUNNER_TEMP/traydaq-native-tsc.log" 2>&1; then
+            echo "PASS: Android TypeScript"
+          else
+            echo "::error::FAIL: Android TypeScript. Private source errors were not published."
+            exit 1
+          fi
+      - name: Publish sanitized validation result
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JOB_RESULT: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          if [ "$JOB_RESULT" = "success" ]; then STATE=success; else STATE=failure; fi
+          PAYLOAD="$(jq -n --arg state "$STATE" --arg context "traydaq-v2/validate-android-source" --arg description "Private Android tests and TypeScript" \
+            '{state:$state,context:$context,description:$description}')"
+          curl --fail --silent --show-error --retry 2 -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            -d "$PAYLOAD" > /dev/null || echo "::warning::Public builder could not record sanitized status."
+      - name: Report safe stage-level validation outcomes
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AUTH: ${{ steps.android_auth.outcome }}
+          SOURCE: ${{ steps.android_source.outcome }}
+          INSTALL: ${{ steps.android_install.outcome }}
+          TESTS: ${{ steps.android_tests.outcome }}
+          TYPESCRIPT: ${{ steps.android_tsc.outcome }}
+        run: |
+          set -euo pipefail
+          report() {
+            local step="$1" outcome="$2" state
+            case "$outcome" in success) state=success;; failure) state=failure;; *) state=error;; esac
+            payload="$(jq -n --arg state "$state" --arg context "traydaq-v2/android/$step" --arg description "$step: $outcome" '{state:$state,context:$context,description:$description}')"
+            curl --fail --silent --show-error --retry 2 -X POST \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+              -d "$payload" > /dev/null || echo "::warning::Could not publish validation stage status."
+          }
+          report auth "$AUTH"
+          report source "$SOURCE"
+          report install "$INSTALL"
+          report tests "$TESTS"
+          report typescript "$TYPESCRIPT"
+
+      - name: Report sanitized test-failure identifiers
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs');
+          const path=require('node:path');
+          const repo=process.env.GITHUB_REPOSITORY,sha=process.env.GITHUB_SHA;
+          const token=process.env.GH_TOKEN;
+          const scope='android';
+          const seen=new Set();
+          async function publish(key) {
+            const context='traydaq-v2/'+scope+'/'+key;
+            if(seen.has(context))return;
+            seen.add(context);
+            const payload={state:'failure',context,description:'Sanitized test or diagnostic identifier only'};
+            try {
+              await fetch('https://api.github.com/repos/'+repo+'/statuses/'+sha,{
+                method:'POST',headers:{Authorization:'Bearer '+token,
+                  Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',
+                  'Content-Type':'application/json'},
+                body:JSON.stringify(payload)
+              });
+            }catch{/* No raw logs or source paths are exposed on errors. */}
+          }
+          async function main(){
+            const folder=process.env.RUNNER_TEMP;
+            const testLog=path.join(folder,'traydaq-native-tests.log');
+            if(fs.existsSync(testLog)){
+              const log=fs.readFileSync(testLog,'utf8');
+              const names=[...log.matchAll(/^\s*not ok \d+ - (.+)$/gm)].map(m=>m[1]).slice(0,12);
+              for(const name of names){
+                const safe=name.replace(/[^A-Za-z0-9-]/g,'-').replace(/-+/g,'-').slice(0,64);
+                if(safe)await publish('test-fail-'+safe);
+              }
+              if(names.length===0&&/not ok|# fail [1-9]/.test(log))await publish('test-fail-unclassified');
+              const entries=log.split(/\r?\n/);
+              let listed=0;
+              for(let i=0;i<entries.length&&listed<12;i++){
+                if(!/^\s*not ok \d+ - /.test(entries[i]))continue;
+                const context=entries.slice(i,i+18).join('\n');
+                const pathMatch=context.match(/(?:location:.*?\/|not ok \d+ - .*?\/)([A-Za-z0-9._-]+\.test\.mjs)(?::\d+)?/);
+                if(!pathMatch)continue;
+                await publish('testfile-'+pathMatch[1].replace(/[^A-Za-z0-9._-]/g,'-'));
+                listed++;
+              }
+
+            }
+            const typeLog=path.join(folder,'traydaq-native-tsc.log');
+            if(fs.existsSync(typeLog)){
+              const errors=fs.readFileSync(typeLog,'utf8').split(/\r?\n/);
+              let n=0;
+              for(const line of errors){
+                const m=line.match(/^([^\s():]+)\((\d+),\d+\): error (TS\d+):/)||
+                  line.match(/^([^\s():]+):(\d+):\d+ - error (TS\d+):/);
+                if(!m)continue;
+                const basename=path.basename(m[1]).replace(/[^A-Za-z0-9._-]/g,'-').slice(0,45);
+                await publish('tsc-fail-'+basename+'-'+m[2]+'-'+m[3]);
+                if(++n>=15)break;
+              }
+              if(n===0&&/error TS\d+/.test(errors.join('\n')))await publish('tsc-fail-unclassified');
+            }
+          }
+          main().catch(()=>{/* Failures stay classified without revealing private files. */});
+          NODE

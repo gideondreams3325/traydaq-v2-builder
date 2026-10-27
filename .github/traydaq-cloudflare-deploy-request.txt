@@ -15,3 +15,7 @@ Validated source (private main): 2ccf72081413a27ba954f1a46fadc0cbc3790204
 Private PR #69 merged after all four public builder validations PASS: https://github.com/gideondreams3325/traydaq-v2-builder/actions/runs/40569256572
 Publish only the current TRAYDAQ V2 user web app to its existing authorized Cloudflare Pages project.
 User-requested change: replace unavailable, government-ID-only age recheck with usable two-photo face + age-proof intake, only for Security-flagged pending age appeals. Preserve independent adult-approval lock and unchanged ID Verification. No APK, identity database mutation or unsafe approval.
+
+
+2026-10-27 RETRY AFTER OWNER CONFIRMED CLOUDFLARE PAGES READY
+Retry the existing Cloudflare Pages production deployment workflow for private main SHA 2ccf72081413a27ba954f1a46fadc0cbc3790204. The previous attempt passed web tests, TypeScript, and asset bundling but stopped at the missing Cloudflare API token check. Deploy ONLY to existing Pages project using configured credentials; do not change DNS, account policy, age approval gate, ID Verification, or Android APK.

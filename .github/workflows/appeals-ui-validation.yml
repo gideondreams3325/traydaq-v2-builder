@@ -70,11 +70,24 @@ jobs:
               echo "::notice::$label PASSED"
             else
               echo "::error::$label FAILED. Private diagnostic log is retained only on this runner."
+              if [[ "$label" == "web-typecheck" || "$label" == "native-typecheck" ]]; then
+                python3 - "$RUNNER_TEMP/traydaq-$label.log" <<'PY'
+import os,re,sys
+text=open(sys.argv[1],errors='replace').read()
+found=re.findall(r'([^\\s:()]+)\\((\\d+),(\\d+)\\): error (TS\\d+):',text)
+for path,line,col,code in found[:20]:
+    print("::notice::TypeScript",os.path.basename(path),"line",line,"column",col,code)
+if not found:
+    print("::notice::No structured TypeScript diagnostic found.")
+PY
+              fi
               exit 1
             fi
           }
           run_private web-install npm ci --no-audit --no-fund
-          run_private web-check npm run check
+          run_private web-typecheck npm run typecheck
+          run_private web-tests npm test
+          run_private web-build npm run build
           echo "Web TypeScript, tests and production build passed."
 
   native:
@@ -126,6 +139,17 @@ jobs:
               echo "::notice::$label PASSED"
             else
               echo "::error::$label FAILED. Private diagnostic log is retained only on this runner."
+              if [[ "$label" == "web-typecheck" || "$label" == "native-typecheck" ]]; then
+                python3 - "$RUNNER_TEMP/traydaq-$label.log" <<'PY'
+import os,re,sys
+text=open(sys.argv[1],errors='replace').read()
+found=re.findall(r'([^\\s:()]+)\\((\\d+),(\\d+)\\): error (TS\\d+):',text)
+for path,line,col,code in found[:20]:
+    print("::notice::TypeScript",os.path.basename(path),"line",line,"column",col,code)
+if not found:
+    print("::notice::No structured TypeScript diagnostic found.")
+PY
+              fi
               exit 1
             fi
           }

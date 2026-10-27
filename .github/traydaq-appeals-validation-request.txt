@@ -1,0 +1,6 @@
+TRAYDAQ V2 Appeals and Age Verification UI validation request
+Source repository: gideondreams3325/traydaq-v2 (private)
+Pull request: #70
+Source commit: cf18af78b96709f33f81d1df7acd68d0755ae3eb
+Validation: web tests/typecheck/build; React Native tests/typecheck/Expo Android bundle.
+No deployment, signed APK, production credentials or source export.

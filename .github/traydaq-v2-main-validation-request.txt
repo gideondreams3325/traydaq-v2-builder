@@ -1,0 +1,9 @@
+TRAYDAQ V2 Private Main Validation Request
+Date: 2026-10-27
+Source repository: gideondreams3325/traydaq-v2 (private)
+Source ref: main
+Private source SHA: c599818327daf04a67ec4880781386e0ce4bc47f
+Web hosting target: Cloudflare Workers
+Reason: Fix age appeal ISO birth-date validation and 18+ confirmation/appeal screens
+Checks: complete web and Android tests, TypeScript, focused deletion tests, Cloudflare asset build
+No private source, logs, credentials or APK artifacts are made public.

@@ -28,6 +28,7 @@ jobs:
       CI: "1"
     steps:
       - name: Verify read-only private-source token is configured
+        id: web_auth
         env:
           SOURCE_TOKEN_CONFIGURED: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
         run: |
@@ -36,6 +37,7 @@ jobs:
             exit 1
           fi
       - name: Check out private feature source without persisting credentials
+        id: web_checkout
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
@@ -50,6 +52,7 @@ jobs:
           cache: npm
           cache-dependency-path: private-src/package-lock.json
       - name: Verify Cloudflare configuration and source commit
+        id: web_config
         working-directory: private-src
         shell: bash
         run: |
@@ -66,6 +69,7 @@ jobs:
           echo "Private source SHA: $(git rev-parse HEAD)"
           echo "Hosting validation target: Cloudflare Workers, not Vercel"
       - name: Install private web dependencies with protected logs
+        id: web_install
         working-directory: private-src
         shell: bash
         run: |
@@ -76,6 +80,7 @@ jobs:
             exit 1
           fi
       - name: Run private web tests
+        id: web_tests
         working-directory: private-src
         shell: bash
         run: |
@@ -88,6 +93,7 @@ jobs:
             exit 1
           fi
       - name: Typecheck private web app
+        id: web_tsc
         working-directory: private-src
         shell: bash
         run: |
@@ -98,6 +104,7 @@ jobs:
             exit 1
           fi
       - name: Validate Cloudflare web build
+        id: web_build
         working-directory: private-src
         shell: bash
         run: |
@@ -125,6 +132,39 @@ jobs:
             "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
             -d "$PAYLOAD" > /dev/null || echo "::warning::Public builder could not record sanitized status."
 
+      - name: Report safe stage-level validation outcomes
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AUTH: ${{ steps.web_auth.outcome }}
+          CHECKOUT: ${{ steps.web_checkout.outcome }}
+          CONFIG: ${{ steps.web_config.outcome }}
+          INSTALL: ${{ steps.web_install.outcome }}
+          TESTS: ${{ steps.web_tests.outcome }}
+          TYPESCRIPT: ${{ steps.web_tsc.outcome }}
+          BUILD: ${{ steps.web_build.outcome }}
+        run: |
+          set -euo pipefail
+          report() {
+            local step="$1" outcome="$2" state
+            case "$outcome" in success) state=success;; failure) state=failure;; *) state=error;; esac
+            payload="$(jq -n --arg state "$state" --arg context "traydaq-v2/web/$step" --arg description "$step: $outcome" '{state:$state,context:$context,description:$description}')"
+            curl --fail --silent --show-error --retry 2 -X POST \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+              -d "$payload" > /dev/null || echo "::warning::Could not publish validation stage status."
+          }
+          report auth "$AUTH"
+          report checkout "$CHECKOUT"
+          report config "$CONFIG"
+          report install "$INSTALL"
+          report tests "$TESTS"
+          report typescript "$TYPESCRIPT"
+          report build "$BUILD"
+
   android-source:
     name: Private Android tests and TypeScript validation
     runs-on: ubuntu-latest
@@ -134,6 +174,7 @@ jobs:
       EXPO_NO_TELEMETRY: "1"
     steps:
       - name: Verify private source token
+        id: android_auth
         env:
           SOURCE_TOKEN_CONFIGURED: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
         run: |
@@ -154,12 +195,14 @@ jobs:
         with:
           node-version: "22"
       - name: Confirm native source location and revision
+        id: android_source
         working-directory: private-src/mobile
         run: |
           test -f src/App.tsx
           test -f package.json
           echo "Private native source SHA: $(git rev-parse HEAD)"
       - name: Install private Android dependencies with protected logs
+        id: android_install
         working-directory: private-src/mobile
         shell: bash
         run: |
@@ -170,6 +213,7 @@ jobs:
             exit 1
           fi
       - name: Run private native test suite
+        id: android_tests
         working-directory: private-src/mobile
         shell: bash
         run: |
@@ -182,6 +226,7 @@ jobs:
             exit 1
           fi
       - name: Typecheck private React Native app
+        id: android_tsc
         working-directory: private-src/mobile
         shell: bash
         run: |
@@ -208,3 +253,32 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
             -d "$PAYLOAD" > /dev/null || echo "::warning::Public builder could not record sanitized status."
+      - name: Report safe stage-level validation outcomes
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AUTH: ${{ steps.android_auth.outcome }}
+          SOURCE: ${{ steps.android_source.outcome }}
+          INSTALL: ${{ steps.android_install.outcome }}
+          TESTS: ${{ steps.android_tests.outcome }}
+          TYPESCRIPT: ${{ steps.android_tsc.outcome }}
+        run: |
+          set -euo pipefail
+          report() {
+            local step="$1" outcome="$2" state
+            case "$outcome" in success) state=success;; failure) state=failure;; *) state=error;; esac
+            payload="$(jq -n --arg state "$state" --arg context "traydaq-v2/android/$step" --arg description "$step: $outcome" '{state:$state,context:$context,description:$description}')"
+            curl --fail --silent --show-error --retry 2 -X POST \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+              -d "$payload" > /dev/null || echo "::warning::Could not publish validation stage status."
+          }
+          report auth "$AUTH"
+          report source "$SOURCE"
+          report install "$INSTALL"
+          report tests "$TESTS"
+          report typescript "$TYPESCRIPT"
+

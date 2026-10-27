@@ -1,0 +1,224 @@
+name: TRAYDAQ V2 PR68 Age Verification Public Source Builder
+
+# Public controller validates an immutable SHA from the PRIVATE source repo.
+# The private source and raw logs are never uploaded or committed to public.
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/validate-private-age-pr68.yml'
+      - '.github/traydaq-age-pr68-validation-request.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: traydaq-private-age-pr68-source-check
+  cancel-in-progress: true
+
+env:
+  CI: '1'
+  AGE_SOURCE_SHA: '8848ba6040eb9a1ae9309c77edc1ecb03545237a'
+
+jobs:
+  web:
+    name: Private web typecheck, tests, Cloudflare bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Confirm private repository read token
+        env:
+          TOKEN_READY: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$TOKEN_READY" = 'true'
+      - name: Checkout pinned private age-verification commit
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.AGE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Verify source SHA and install dependencies
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$AGE_SOURCE_SHA"
+          if npm ci --no-audit --no-fund > "$RUNNER_TEMP/age-web-install.log" 2>&1; then
+            echo "PASS: private web dependencies installed"
+          else
+            echo "::error::FAIL: private web dependencies; logs withheld"
+            exit 1
+          fi
+      - name: Run focused age-verification regression tests
+        working-directory: private-src
+        shell: bash
+        run: |
+          if node --test tests/member-appeals-parity.test.mjs > "$RUNNER_TEMP/age-focus.log" 2>&1; then
+            echo "PASS: dedicated age camera, retention and review source tests"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/age-focus.log" | tail -3 || true
+          else
+            echo "::error::FAIL: dedicated age source tests; source logs withheld"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/age-focus.log" | tail -3 || true
+            exit 1
+          fi
+      - name: Run entire private web regression suite
+        working-directory: private-src
+        shell: bash
+        run: |
+          if npm test > "$RUNNER_TEMP/age-web-tests.log" 2>&1; then
+            echo "PASS: private web regression suite"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/age-web-tests.log" | tail -3 || true
+          else
+            echo "::error::FAIL: private web tests; source logs withheld"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/age-web-tests.log" | tail -3 || true
+            exit 1
+          fi
+      - name: Check web TypeScript and Cloudflare production bundle
+        working-directory: private-src
+        shell: bash
+        run: |
+          if npm run typecheck > "$RUNNER_TEMP/age-web-types.log" 2>&1; then
+            echo "PASS: private web TypeScript"
+          else
+            echo "::error::FAIL: private web TypeScript; source logs withheld"
+            exit 1
+          fi
+          if npm run build > "$RUNNER_TEMP/age-web-build.log" 2>&1 && test -f dist/index.html; then
+            echo "PASS: Cloudflare web bundle; no deployment"
+          else
+            echo "::error::FAIL: private Cloudflare web bundle; source logs withheld"
+            exit 1
+          fi
+
+  android:
+    name: Native React Android tests and TypeScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout pinned private age-verification commit
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.AGE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install private native dependencies
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$AGE_SOURCE_SHA"
+          if npm install --no-audit --no-fund > "$RUNNER_TEMP/age-native-install.log" 2>&1; then
+            echo "PASS: private native dependencies installed"
+          else
+            echo "::error::FAIL: private native dependency installation; logs withheld"
+            exit 1
+          fi
+      - name: Run private Android tests and TypeScript
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          if node --test tests/*.test.mjs > "$RUNNER_TEMP/age-native-tests.log" 2>&1; then
+            echo "PASS: native regression tests"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/age-native-tests.log" | tail -3 || true
+          else
+            echo "::error::FAIL: native regression tests; logs withheld"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/age-native-tests.log" | tail -3 || true
+            exit 1
+          fi
+          if npm run typecheck > "$RUNNER_TEMP/age-native-types.log" 2>&1; then
+            echo "PASS: Android TypeScript"
+          else
+            echo "::error::FAIL: Android TypeScript; source diagnostics withheld"
+            exit 1
+          fi
+      - name: Bundle actual Android JavaScript (no APK)
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          if npm run export:android > "$RUNNER_TEMP/age-native-bundle.log" 2>&1; then
+            echo "PASS: Expo Android JavaScript bundle"
+          else
+            echo "::error::FAIL: Expo Android bundle; source diagnostics withheld"
+            exit 1
+          fi
+
+  edge:
+    name: Private Supabase age APIs Deno typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout pinned private age-verification commit
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.AGE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Typecheck private member, reviewer and retention endpoints
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C private-src rev-parse HEAD)" = "$AGE_SOURCE_SHA"
+          if npx --yes deno@2.9.6 check --no-config --node-modules-dir=auto --no-lock \
+            private-src/supabase/functions/firebase-age-verification/index.ts \
+            private-src/supabase/functions/firebase-age-verification-review/index.ts \
+            private-src/supabase/functions/firebase-age-evidence-retention/index.ts \
+            > "$RUNNER_TEMP/age-edge-deno.log" 2>&1; then
+            echo "PASS: all three separate age Edge Function Deno checks"
+          else
+            echo "::error::FAIL: separate age Edge Function Deno typecheck; logs withheld"
+            exit 1
+          fi
+
+  firebase:
+    name: Private Firebase rules emulator regressions
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout pinned private age-verification commit
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.AGE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Run protected Firebase rule tests
+        working-directory: private-src/firebase
+        shell: bash
+        run: |
+          set -euo pipefail
+          if npm install --no-audit --no-fund > "$RUNNER_TEMP/age-firebase-install.log" 2>&1 &&
+             npm run test:rules > "$RUNNER_TEMP/age-firebase-tests.log" 2>&1; then
+            echo "PASS: private Firebase rule tests"
+          else
+            echo "::error::FAIL: private Firebase rule emulator checks; logs withheld"
+            exit 1
+          fi

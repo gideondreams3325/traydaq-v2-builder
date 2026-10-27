@@ -7,3 +7,9 @@ Web hosting target: Cloudflare Workers, configured by private wrangler.jsonc
 Validation: web tests, web TypeScript, Cloudflare-targeted build, React Native tests, React Native TypeScript
 Not permitted by this validation request: production deployment, Android signing, private source publishing, database migration, deleting customer data
 Source secret: TRAYDAQ_V2_SOURCE_READ_TOKEN (read-only GitHub Actions secret; never stored in this marker)
+
+Validation rerun 2026-10-27:
+- Private deletion source updated: 26def8f1f0254df519e960f5dc7618601b41a922
+- Corrected historical account-status regression assertions to verify direct owner erasure and fail-closed receipts
+- Public builder independently runs deletion-specific, full web/native tests, web/native TypeScript, and Cloudflare asset build
+- Keep source, test logs, secrets, cloud deployment and signed APK out of public artifacts

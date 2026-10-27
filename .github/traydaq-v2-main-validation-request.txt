@@ -16,3 +16,5 @@ Private main SHA: ef7b824954ed4280b2c1df51b4139e224d93e1d2
 Check explicit AGE / DOB correction type in Staff display fallback, Security Department notification and dedicated review queue, block generic recommend/approval in database, preserve private DOB, and validate Android staff UI labels. No real appeal review/approval should be performed.
 
 2026-10-27 FINAL age appeal route check: private main a1347807caa3f23f8f0c458398b5d600c2571ca0. Confirm newly typed staff queue, legacy visible type prefix, notifications, Security-only independent age review, 7 source regression checks, all web/native tests, web/native TypeScript, Cloudflare build. No real decisions or private DOB in logs.
+
+2026-10-27 Isolated PostgreSQL regression test run: private main fda58e4535f6bc1b2bae4fad712fcb26c8f42f6c. Execute all web/native tests and Cloudflare build; critical new test verifies typed Security age case, generic recommendation rejection, no old generic finalization, Security notification, and permitted ordinary appeal on disposable PGlite rows only.

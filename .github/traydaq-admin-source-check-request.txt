@@ -1,1 +1,4 @@
 TRAYDAQ STAFF C.E.O live legacy cutover status validation. Check five/eleven roles and reversible production flags. No APK.
+
+STAFF 1.0.2 / Android versionCode 5 · source a10227e5292fe98f0e0d301e069954254bbe48dc
+Run independent Security age appeal native source checks, all STAFF security contracts, and React Native TypeScript. Do not build APK until source checks pass.

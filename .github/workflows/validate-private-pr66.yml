@@ -13,6 +13,7 @@ on:
 
 permissions:
   contents: read
+  statuses: write
 
 concurrency:
   group: traydaq-v2-pr66-source-validation
@@ -106,6 +107,23 @@ jobs:
             echo "::error::FAIL: Cloudflare-targeted web build. No deployment was attempted."
             exit 1
           fi
+      - name: Publish sanitized validation result
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JOB_RESULT: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          if [ "$JOB_RESULT" = "success" ]; then STATE=success; else STATE=failure; fi
+          PAYLOAD="$(jq -n --arg state "$STATE" --arg context "traydaq-v2/validate-web-cloudflare" --arg description "Private web tests, TypeScript and Cloudflare build" \
+            '{state:$state,context:$context,description:$description}')"
+          curl --fail --silent --show-error --retry 2 -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            -d "$PAYLOAD" > /dev/null || echo "::warning::Public builder could not record sanitized status."
 
   android-source:
     name: Private Android tests and TypeScript validation
@@ -173,3 +191,20 @@ jobs:
             echo "::error::FAIL: Android TypeScript. Private source errors were not published."
             exit 1
           fi
+      - name: Publish sanitized validation result
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JOB_RESULT: ${{ job.status }}
+        run: |
+          set -euo pipefail
+          if [ "$JOB_RESULT" = "success" ]; then STATE=success; else STATE=failure; fi
+          PAYLOAD="$(jq -n --arg state "$STATE" --arg context "traydaq-v2/validate-android-source" --arg description "Private Android tests and TypeScript" \
+            '{state:$state,context:$context,description:$description}')"
+          curl --fail --silent --show-error --retry 2 -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            -d "$PAYLOAD" > /dev/null || echo "::warning::Public builder could not record sanitized status."

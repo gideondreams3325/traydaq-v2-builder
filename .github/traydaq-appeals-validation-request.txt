@@ -10,3 +10,5 @@ Validation rerun: split TypeScript, web tests and build diagnostics (source SHA 
 Rerun: show only sanitized failing test labels and validate web build independently.
 
 Validation request: rerun after restoring original age-review labels and account navigation selector.
+
+Rerun: locate final private age-review test by filename and line only.

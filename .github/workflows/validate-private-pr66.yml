@@ -194,6 +194,49 @@ jobs:
           report typescript "$TYPESCRIPT"
           report build "$BUILD"
 
+      - name: Report sanitized test-failure identifiers
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs');
+          const path=require('node:path');
+          const repo=process.env.GITHUB_REPOSITORY,sha=process.env.GITHUB_SHA;
+          const token=process.env.GH_TOKEN;
+          const scope='web';
+          const seen=new Set();
+          async function publish(key) {
+            const context='traydaq-v2/'+scope+'/'+key;
+            if(seen.has(context))return;
+            seen.add(context);
+            const payload={state:'failure',context,description:'Sanitized test or diagnostic identifier only'};
+            try {
+              await fetch('https://api.github.com/repos/'+repo+'/statuses/'+sha,{
+                method:'POST',headers:{Authorization:'Bearer '+token,
+                  Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',
+                  'Content-Type':'application/json'},
+                body:JSON.stringify(payload)
+              });
+            }catch{/* No raw logs or source paths are exposed on errors. */}
+          }
+          async function main(){
+            const folder=process.env.RUNNER_TEMP;
+            const testLog=path.join(folder,'traydaq-web-tests.log');
+            if(fs.existsSync(testLog)){
+              const log=fs.readFileSync(testLog,'utf8');
+              const names=[...log.matchAll(/^\s*not ok \d+ - (.+)$/gm)].map(m=>m[1]).slice(0,12);
+              for(const name of names){
+                const safe=name.replace(/[^A-Za-z0-9-]/g,'-').replace(/-+/g,'-').slice(0,64);
+                if(safe)await publish('test-fail-'+safe);
+              }
+              if(names.length===0&&/not ok|# fail [1-9]/.test(log))await publish('test-fail-unclassified');
+            }
+          }
+          main().catch(()=>{/* Failures stay classified without revealing private files. */});
+          NODE
+
   android-source:
     name: Private Android tests and TypeScript validation
     runs-on: ubuntu-latest
@@ -312,3 +355,59 @@ jobs:
           report tests "$TESTS"
           report typescript "$TYPESCRIPT"
 
+      - name: Report sanitized test-failure identifiers
+        if: always()
+        shell: bash
+        env:
+          GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node <<'NODE'
+          const fs=require('node:fs');
+          const path=require('node:path');
+          const repo=process.env.GITHUB_REPOSITORY,sha=process.env.GITHUB_SHA;
+          const token=process.env.GH_TOKEN;
+          const scope='android';
+          const seen=new Set();
+          async function publish(key) {
+            const context='traydaq-v2/'+scope+'/'+key;
+            if(seen.has(context))return;
+            seen.add(context);
+            const payload={state:'failure',context,description:'Sanitized test or diagnostic identifier only'};
+            try {
+              await fetch('https://api.github.com/repos/'+repo+'/statuses/'+sha,{
+                method:'POST',headers:{Authorization:'Bearer '+token,
+                  Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',
+                  'Content-Type':'application/json'},
+                body:JSON.stringify(payload)
+              });
+            }catch{/* No raw logs or source paths are exposed on errors. */}
+          }
+          async function main(){
+            const folder=process.env.RUNNER_TEMP;
+            const testLog=path.join(folder,'traydaq-native-tests.log');
+            if(fs.existsSync(testLog)){
+              const log=fs.readFileSync(testLog,'utf8');
+              const names=[...log.matchAll(/^\s*not ok \d+ - (.+)$/gm)].map(m=>m[1]).slice(0,12);
+              for(const name of names){
+                const safe=name.replace(/[^A-Za-z0-9-]/g,'-').replace(/-+/g,'-').slice(0,64);
+                if(safe)await publish('test-fail-'+safe);
+              }
+              if(names.length===0&&/not ok|# fail [1-9]/.test(log))await publish('test-fail-unclassified');
+            }
+            const typeLog=path.join(folder,'traydaq-native-tsc.log');
+            if(fs.existsSync(typeLog)){
+              const errors=fs.readFileSync(typeLog,'utf8').split(/\r?\n/);
+              let n=0;
+              for(const line of errors){
+                const m=line.match(/^([^\s():]+)\((\d+),\d+\): error (TS\d+):/)||
+                  line.match(/^([^\s():]+):(\d+):\d+ - error (TS\d+):/);
+                if(!m)continue;
+                const basename=path.basename(m[1]).replace(/[^A-Za-z0-9._-]/g,'-').slice(0,45);
+                await publish('tsc-fail-'+basename+'-'+m[2]+'-'+m[3]);
+                if(++n>=15)break;
+              }
+              if(n===0&&/error TS\d+/.test(errors.join('\n')))await publish('tsc-fail-unclassified');
+            }
+          }
+          main().catch(()=>{/* Failures stay classified without revealing private files. */});
+          NODE

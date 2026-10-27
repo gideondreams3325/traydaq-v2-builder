@@ -232,6 +232,17 @@ jobs:
                 if(safe)await publish('test-fail-'+safe);
               }
               if(names.length===0&&/not ok|# fail [1-9]/.test(log))await publish('test-fail-unclassified');
+              const entries=log.split(/\r?\n/);
+              let listed=0;
+              for(let i=0;i<entries.length&&listed<12;i++){
+                if(!/^\s*not ok \d+ - /.test(entries[i]))continue;
+                const context=entries.slice(i,i+18).join('\n');
+                const pathMatch=context.match(/(?:location:.*?\/|not ok \d+ - .*?\/)([A-Za-z0-9._-]+\.test\.mjs)(?::\d+)?/);
+                if(!pathMatch)continue;
+                await publish('testfile-'+pathMatch[1].replace(/[^A-Za-z0-9._-]/g,'-'));
+                listed++;
+              }
+
             }
           }
           main().catch(()=>{/* Failures stay classified without revealing private files. */});
@@ -393,6 +404,17 @@ jobs:
                 if(safe)await publish('test-fail-'+safe);
               }
               if(names.length===0&&/not ok|# fail [1-9]/.test(log))await publish('test-fail-unclassified');
+              const entries=log.split(/\r?\n/);
+              let listed=0;
+              for(let i=0;i<entries.length&&listed<12;i++){
+                if(!/^\s*not ok \d+ - /.test(entries[i]))continue;
+                const context=entries.slice(i,i+18).join('\n');
+                const pathMatch=context.match(/(?:location:.*?\/|not ok \d+ - .*?\/)([A-Za-z0-9._-]+\.test\.mjs)(?::\d+)?/);
+                if(!pathMatch)continue;
+                await publish('testfile-'+pathMatch[1].replace(/[^A-Za-z0-9._-]/g,'-'));
+                listed++;
+              }
+
             }
             const typeLog=path.join(folder,'traydaq-native-tsc.log');
             if(fs.existsSync(typeLog)){

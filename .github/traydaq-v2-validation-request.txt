@@ -1,0 +1,9 @@
+TRAYDAQ V2 public builder validation request
+Requested date: 2026-10-27
+Source repository: gideondreams3325/traydaq-v2 (private)
+Source ref: feat/restore-owner-deletion-without-recovery-20261027
+Source change: draft PR #66, owner-directed account and content deletion without staff approval
+Web hosting target: Cloudflare Workers, configured by private wrangler.jsonc
+Validation: web tests, web TypeScript, Cloudflare-targeted build, React Native tests, React Native TypeScript
+Not permitted by this validation request: production deployment, Android signing, private source publishing, database migration, deleting customer data
+Source secret: TRAYDAQ_V2_SOURCE_READ_TOKEN (read-only GitHub Actions secret; never stored in this marker)

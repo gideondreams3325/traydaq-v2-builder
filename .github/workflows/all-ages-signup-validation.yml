@@ -1,0 +1,82 @@
+name: TRAYDAQ V2 Age-Neutral Signup Validation (No Deployment)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/all-ages-signup-validation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: traydaq-age-neutral-signup-validation
+  cancel-in-progress: false
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out private V2 feature source (read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 8498cf85fb2b6200b41c01236ae08b14e0202436
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Test registration flows without age checkbox
+        working-directory: private-src
+        run: node --test tests/release-adult-attestation.test.mjs
+      - name: Run complete web regression suite
+        working-directory: private-src
+        run: npm test
+      - name: Verify web TypeScript
+        working-directory: private-src
+        if: always()
+        run: npm run typecheck
+      - name: Compile web assets (no deployment)
+        working-directory: private-src
+        if: always()
+        run: npm run build
+
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out private V2 feature source (read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 8498cf85fb2b6200b41c01236ae08b14e0202436
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install native dependencies
+        working-directory: private-src/mobile
+        run: npm install --no-audit --no-fund
+      - name: Native regression tests
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Native TypeScript
+        working-directory: private-src/mobile
+        if: always()
+        run: npm run typecheck
+      - name: Expo dependency validation
+        working-directory: private-src/mobile
+        if: always()
+        run: npx expo-doctor
+# Source validation only: no APK/AAB, publication, backend changes, or web deployment.

@@ -1,8 +1,10 @@
 TRAYDAQ V2 public builder validation request — private age PR #68
 Requested UTC date: 2026-10-27
 Private repository: gideondreams3325/traydaq-v2
-Immutable source commit: 16972fdb5996a4cb6f01a0ce4b41b3fbf6992899
+Immutable source commit: 4c2d6e960b43770c5095b9994ae346a7d331385f
 Expected tests: actual web source, dedicated age tests, Android app source/bundle, age Edge Functions, Firebase rules.
 Private code, identifying images, API keys, raw logs, APKs and build assets must never be made public.
 No merge/deploy/release gate change performed by this build.
 Public validation rerun after repairing obsolete Security appeal source assertion and SHA-256 digest buffer typing.
+
+27 Oct 2026 follow-up: validate two-camera age proof (no mandatory government ID), private intake, reviewer and retention; adult approval remains locked.

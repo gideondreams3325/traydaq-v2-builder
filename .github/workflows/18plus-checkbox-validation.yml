@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: e3ca22725086bf7fbd4d941af8da185ce17178e5
+          ref: 3535b9dd30ff262304ebbc9378d8cd1060999353
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -46,7 +46,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: e3ca22725086bf7fbd4d941af8da185ce17178e5
+          ref: 3535b9dd30ff262304ebbc9378d8cd1060999353
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false

@@ -84,11 +84,15 @@ jobs:
                 python3 - "$RUNNER_TEMP/traydaq-$label.log" <<'PY'
           import re,sys
           log=open(sys.argv[1],errors='replace').read()
-          cases=re.findall(r'^not ok \d+ - (.+)$',log,re.M)
+          cases=list(re.finditer(r'^not ok \d+ - (.+)$',log,re.M))
           print("::notice::Web test failures:",len(cases))
-          for name in cases[:14]:
-              safe=re.sub(r'[^a-zA-Z0-9 ._/-]','',name)[:95]
-              print("::notice::Failing test:",safe)
+          for m in cases[:14]:
+              name=re.sub(r'[^a-zA-Z0-9 ._/-]','',m.group(1))[:95]
+              print("::notice::Failing test:",name)
+              block=log[m.end():m.end()+3500]
+              loc=re.search(r'location: [^\n]*?/tests/([a-zA-Z0-9_.-]+\.test\.mjs):(\d+):(\d+)',block)
+              if loc:
+                  print("::notice::Failing test file:",loc.group(1),"line",loc.group(2))
           PY
               fi
               failures=$((failures+1))

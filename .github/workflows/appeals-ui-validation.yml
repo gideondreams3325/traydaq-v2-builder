@@ -1,0 +1,132 @@
+name: TRAYDAQ V2 Appeals UI Validation (Private Branch)
+
+# Validation only. The source stays private; no release, deployment, signed APK or source artifacts.
+# User-requested validation of PR #70, including both web/Capacitor and native Expo source.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/appeals-ui-validation.yml"
+      - ".github/traydaq-appeals-validation-request.txt"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: traydaq-appeals-ui-validation
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: Web, TypeScript and Capacitor validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: "1"
+    steps:
+      - name: Check private source read token
+        shell: bash
+        env:
+          TOKEN_PRESENT: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: |
+          if [[ "$TOKEN_PRESENT" != "true" ]]; then
+            echo "::error::Read-only TRAYDAQ_V2_SOURCE_READ_TOKEN is missing."
+            exit 1
+          fi
+      - name: Checkout exact private appeals UI commit
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: cf18af78b96709f33f81d1df7acd68d0755ae3eb
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Confirm expected private source commit
+        shell: bash
+        run: |
+          test "$(git -C private-src rev-parse HEAD)" = "cf18af78b96709f33f81d1df7acd68d0755ae3eb"
+          test -f private-src/src/native-parity/AgeVerification.tsx
+          test -f private-src/src/native-parity/MemberAppeals.tsx
+          test -f private-src/src/native-parity/appeal-modern.css
+          echo "Expected TRAYDAQ web source revision confirmed."
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run web install, tests, TypeScript and production build without public source logs
+        shell: bash
+        working-directory: private-src
+        run: |
+          set -euo pipefail
+          run_private() {
+            label="$1"; shift
+            if "$@" > "$RUNNER_TEMP/traydaq-$label.log" 2>&1; then
+              echo "::notice::$label PASSED"
+            else
+              echo "::error::$label FAILED. Private diagnostic log is retained only on this runner."
+              exit 1
+            fi
+          }
+          run_private web-install npm ci --no-audit --no-fund
+          run_private web-check npm run check
+          echo "Web TypeScript, tests and production build passed."
+
+  native:
+    name: Native Android source, tests and bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+      NODE_OPTIONS: "--max-old-space-size=6144"
+    steps:
+      - name: Check private source read token
+        shell: bash
+        env:
+          TOKEN_PRESENT: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: |
+          if [[ "$TOKEN_PRESENT" != "true" ]]; then
+            echo "::error::Read-only TRAYDAQ_V2_SOURCE_READ_TOKEN is missing."
+            exit 1
+          fi
+      - name: Checkout exact private appeals UI commit
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: cf18af78b96709f33f81d1df7acd68d0755ae3eb
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Confirm native appeal and age-review screens
+        shell: bash
+        run: |
+          test "$(git -C private-src rev-parse HEAD)" = "cf18af78b96709f33f81d1df7acd68d0755ae3eb"
+          test -f private-src/mobile/src/new-design/MemberAppealsScreen.tsx
+          test -f private-src/mobile/src/new-design/AgeVerificationScreen.tsx
+          echo "Expected TRAYDAQ native source revision confirmed."
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install, test, typecheck and export Android bundle privately
+        shell: bash
+        working-directory: private-src/mobile
+        run: |
+          set -euo pipefail
+          run_private() {
+            label="$1"; shift
+            if "$@" > "$RUNNER_TEMP/traydaq-$label.log" 2>&1; then
+              echo "::notice::$label PASSED"
+            else
+              echo "::error::$label FAILED. Private diagnostic log is retained only on this runner."
+              exit 1
+            fi
+          }
+          run_private native-install npm install --no-audit --no-fund
+          run_private native-tests bash -c 'node --test tests/*.test.mjs'
+          run_private native-typecheck npm run typecheck
+          run_private native-android-bundle npx expo export --platform android
+          echo "Native Android tests, TypeScript and Expo bundle passed. No APK was published."

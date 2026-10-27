@@ -1,0 +1,73 @@
+name: TRAYDAQ V2 Recoverable Account Closure Tests (No Deployment)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/recoverable-account-closure-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-recoverable-account-closure-tests
+  cancel-in-progress: false
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 003d4136832835a53aa979aabfd84444c729f1f2
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install source
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Test recoverable 90-day closure in isolated PostgreSQL
+        working-directory: private-src
+        run: node --test tests/recoverable-account-closure-database.test.mjs
+      - name: All source regressions
+        working-directory: private-src
+        run: npm test
+      - name: Web types
+        working-directory: private-src
+        if: always()
+        run: npm run typecheck
+      - name: Web bundle
+        working-directory: private-src
+        if: always()
+        run: npm run build
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 003d4136832835a53aa979aabfd84444c729f1f2
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Android source
+        working-directory: private-src/mobile
+        run: npm install --no-audit --no-fund
+      - name: Native regressions
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Native types
+        working-directory: private-src/mobile
+        if: always()
+        run: npm run typecheck
+      - name: Expo verification
+        working-directory: private-src/mobile
+        if: always()
+        run: npx expo-doctor
+# Validation only: no real accounts, migration apply, Supabase deploy, APK or AAB publication.

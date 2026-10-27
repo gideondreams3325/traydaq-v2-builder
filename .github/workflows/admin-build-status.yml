@@ -2,7 +2,7 @@ name: TRAYDAQ STAFF APK result reporter
 on:
   workflow_run:
     workflows:
-      - TRAYDAQ V2 Native Android Admin APK Builder
+      - TRAYDAQ V2 Staff Android Production Release
     types: [completed]
   push:
     branches: [main]

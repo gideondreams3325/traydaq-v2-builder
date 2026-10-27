@@ -53,3 +53,12 @@ USER CORRECTION 2026-10-25: C.E.O. CAN RECOMMEND AND APPROVE SAME PROPOSAL
 Rebuild only standalone TRAYDAQ STAFF Android 1.0.1 code 4 (com.traydaq.admin) after PR #25, source feat/standalone-admin-native 55be979e21ba8c0b99fec6bb42b26cf10817e081.
 Includes restored audited C.E.O. self-proposal review (no review of own member account/content) and repaired typed API contract regex from prior failing build 40207471814.
 Live Supabase owner audit migration applied and staff Edge v63 active. Run full security tests, typecheck, Expo checks, Gradle release, dedicated Staff signing and SHA verification, and upload TRAYDAQ-V2-Admin-Native-Android-APK. No customer app build.
+
+USER-AUTHORIZED STAFF PRODUCTION RELEASE — 2026-10-27
+App: TRAYDAQ STAFF 1.0.2, Android versionCode 5, com.traydaq.admin.
+Private source: gideondreams3325/traydaq-v2 feat/standalone-admin-native commit c89d1baec15c51db7d8632cdb6e2cb0bfa875519.
+Reason: release dedicated Security Department age eligibility/DOB correction review screens, explicit general appeal types and server-side generic approval blocking.
+Source-only Admin access/department security tests, age routing regression and native TypeScript validated before build.
+Supabase firebase-admin-workspace Edge v69 ACTIVE: restricted staff DOB queue and verified age-review RPC.
+Build solely using admin-native.yml in this public builder with dedicated Admin Firebase client and original signing key; verify signed APK, Google Firebase SHA-1, app version metadata, self-contained JS bundle and upload signed TRAYDAQ-V2-Admin-Native-Android-APK artifact.
+Do not modify customer APK, approve any real age appeal, expose private source or keys, or deploy to Google Play.

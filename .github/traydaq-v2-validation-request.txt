@@ -13,3 +13,8 @@ Validation rerun 2026-10-27:
 - Corrected historical account-status regression assertions to verify direct owner erasure and fail-closed receipts
 - Public builder independently runs deletion-specific, full web/native tests, web/native TypeScript, and Cloudflare asset build
 - Keep source, test logs, secrets, cloud deployment and signed APK out of public artifacts
+
+Public builder PR66 validation rerun 2026-10-27T14:04:16Z
+Private source SHA: e04e19e05772277c88d8ec54ad1a024d31627b78
+Fixes: three archived blanket-retention regression assertions, owner-confirmation safety tests, and obsolete Android deletion request form assertions.
+Run Cloudflare web tests/typecheck/build, focused erasure checks, Android tests/typecheck. No deployment or APK signing.

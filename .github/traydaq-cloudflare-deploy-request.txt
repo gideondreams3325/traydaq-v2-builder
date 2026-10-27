@@ -8,3 +8,10 @@ Validate ALL web tests, TypeScript and Vite build, then deploy only to the exist
 Do not change DNS, Firebase rules, identities, retention policy, account erasure release gates, Android binaries, or unrelated backend services.
 
 2026-10-26 CLOUDFLARE-ONLY WEB RELEASE: publish the staff-reviewed deletion request flow to the EXISTING TRAYDAQ V2 user website, never to Vercel or a new project. Source private main commit 74437d306a34c957a3048bf832f2b81fa459f1a4 is the verified unified deletion change. Builder CI 40395520383 success. Publish only after tests/typecheck/build. Do not deploy any Staff web app or APK, enable erasure dispatch, delete accounts, modify member data, or change credentials/DNS. Two previously approved account erasure requests remain pending.
+
+
+OWNER-REQUESTED AGE PROOF WEB FIX — 2026-10-27
+Validated source (private main): 2ccf72081413a27ba954f1a46fadc0cbc3790204
+Private PR #69 merged after all four public builder validations PASS: https://github.com/gideondreams3325/traydaq-v2-builder/actions/runs/40569256572
+Publish only the current TRAYDAQ V2 user web app to its existing authorized Cloudflare Pages project.
+User-requested change: replace unavailable, government-ID-only age recheck with usable two-photo face + age-proof intake, only for Security-flagged pending age appeals. Preserve independent adult-approval lock and unchanged ID Verification. No APK, identity database mutation or unsafe approval.

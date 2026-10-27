@@ -72,14 +72,14 @@ jobs:
               echo "::error::$label FAILED. Private diagnostic log is retained only on this runner."
               if [[ "$label" == "web-typecheck" || "$label" == "native-typecheck" ]]; then
                 python3 - "$RUNNER_TEMP/traydaq-$label.log" <<'PY'
-import os,re,sys
-text=open(sys.argv[1],errors='replace').read()
-found=re.findall(r'([^\\s:()]+)\\((\\d+),(\\d+)\\): error (TS\\d+):',text)
-for path,line,col,code in found[:20]:
-    print("::notice::TypeScript",os.path.basename(path),"line",line,"column",col,code)
-if not found:
-    print("::notice::No structured TypeScript diagnostic found.")
-PY
+          import os,re,sys
+          text=open(sys.argv[1],errors='replace').read()
+          found=re.findall(r'([^\s:()]+)\((\d+),(\d+)\): error (TS\d+):',text)
+          for path,line,col,code in found[:20]:
+              print("::notice::TypeScript",os.path.basename(path),"line",line,"column",col,code)
+          if not found:
+              print("::notice::No structured TypeScript diagnostic found.")
+          PY
               fi
               exit 1
             fi
@@ -141,14 +141,14 @@ PY
               echo "::error::$label FAILED. Private diagnostic log is retained only on this runner."
               if [[ "$label" == "web-typecheck" || "$label" == "native-typecheck" ]]; then
                 python3 - "$RUNNER_TEMP/traydaq-$label.log" <<'PY'
-import os,re,sys
-text=open(sys.argv[1],errors='replace').read()
-found=re.findall(r'([^\\s:()]+)\\((\\d+),(\\d+)\\): error (TS\\d+):',text)
-for path,line,col,code in found[:20]:
-    print("::notice::TypeScript",os.path.basename(path),"line",line,"column",col,code)
-if not found:
-    print("::notice::No structured TypeScript diagnostic found.")
-PY
+          import os,re,sys
+          text=open(sys.argv[1],errors='replace').read()
+          found=re.findall(r'([^\s:()]+)\((\d+),(\d+)\): error (TS\d+):',text)
+          for path,line,col,code in found[:20]:
+              print("::notice::TypeScript",os.path.basename(path),"line",line,"column",col,code)
+          if not found:
+              print("::notice::No structured TypeScript diagnostic found.")
+          PY
               fi
               exit 1
             fi

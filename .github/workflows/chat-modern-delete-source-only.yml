@@ -1,0 +1,77 @@
+name: TRAYDAQ Modern Chat and Owner Delete - Source Validation Only
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/chat-modern-delete-source-only.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/chat-modern-owner-delete-20261028
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Private web checks; no publishing
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          check(){
+            local name="$1"; shift
+            if "$@" > "$RUNNER_TEMP/$name.log" 2>&1; then
+              echo "::notice::$name passed"
+            else
+              echo "::error::$name failed"
+              grep -E '^not ok [0-9]+ - |error TS[0-9]+' "$RUNNER_TEMP/$name.log" | head -12 | sed -E 's/[^a-zA-Z0-9 ._:/-]//g' || true
+              grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/$name.log" | tail -3 || true
+              exit 1
+            fi
+          }
+          check web-install npm ci --no-audit --no-fund
+          check web-tests npm test
+          check web-types npm run typecheck
+          check web-assets npm run build
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/chat-modern-owner-delete-20261028
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Native tests and TypeScript only; no APK, AAB, Gradle or Expo export
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          check(){
+            local name="$1"; shift
+            if "$@" > "$RUNNER_TEMP/$name.log" 2>&1; then
+              echo "::notice::$name passed"
+            else
+              echo "::error::$name failed"
+              grep -E '^not ok [0-9]+ - |error TS[0-9]+' "$RUNNER_TEMP/$name.log" | head -12 | sed -E 's/[^a-zA-Z0-9 ._:/-]//g' || true
+              grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/$name.log" | tail -3 || true
+              exit 1
+            fi
+          }
+          check native-install npm install --no-audit --no-fund
+          check native-tests bash -c 'node --test tests/*.test.mjs'
+          check native-types npm run typecheck

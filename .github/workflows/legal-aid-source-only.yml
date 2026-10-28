@@ -1,5 +1,5 @@
 name: TRAYDAQ Legal Aid - Private PDF and STAFF Source Validation Only
-# Revalidate merged TRAYDAQ V2 ID consent, legacy opt-in and sticky age appeals after PR #99.
+# Revalidate TRAYDAQ V2 case-specific ID deletion safeguards after PR #102; source only.
 # Final source check includes Legal Aid staff appointment UI limits.
 # Validate Edge SDK type alignment and signed staff case access.
 on:

@@ -130,7 +130,7 @@ jobs:
       - name: Check private checkout credential
         shell: bash
         env:
-          TOKEN_PRESENT: \${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+          TOKEN_PRESENT: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
         run: test "$TOKEN_PRESENT" = true
       - name: Fetch exact private source
         uses: actions/checkout@v4
@@ -138,7 +138,7 @@ jobs:
           repository: gideondreams3325/traydaq-v2
           ref: 7246aff7fb0f6f76970401e343721f9640ba3b74
           path: src
-          token: \${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
       - uses: denoland/setup-deno@v2
         with:

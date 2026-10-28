@@ -74,7 +74,19 @@ jobs:
         run: |
           set -euo pipefail
           npm install --no-audit --no-fund > "$RUNNER_TEMP/native-install.log" 2>&1 || { echo "::error::Private native install failed"; exit 1; }
-          node --test tests/*.test.mjs > "$RUNNER_TEMP/native-tests.log" 2>&1 || { echo "::error::Private native regression tests failed"; exit 1; }
+          if node --test tests/*.test.mjs > "$RUNNER_TEMP/native-tests.log" 2>&1; then
+            echo "PASS: native regression tests"
+          else
+            echo "::error::Private native regression tests failed; sanitized failing test names follow"
+            grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/native-tests.log" | sed -E 's/^not ok [0-9]+ - /FAIL: /' | cut -c1-190 | head -25 || true
+            grep -E '^# (tests|pass|fail) [0-9]+
+          npm run typecheck > "$RUNNER_TEMP/native-typecheck.log" 2>&1 || { echo "::error::Private native TypeScript failed"; exit 1; }
+          npx expo export --platform android > "$RUNNER_TEMP/native-export.log" 2>&1 || { echo "::error::Private Android JavaScript bundling failed"; exit 1; }
+          echo "PASS: private native tests, TypeScript and Android bundle"
+# No deployment, APK publishing, credentials, or private source artifacts.
+ "$RUNNER_TEMP/native-tests.log" | tail -3 || true
+            exit 1
+          fi
           npm run typecheck > "$RUNNER_TEMP/native-typecheck.log" 2>&1 || { echo "::error::Private native TypeScript failed"; exit 1; }
           npx expo export --platform android > "$RUNNER_TEMP/native-export.log" 2>&1 || { echo "::error::Private Android JavaScript bundling failed"; exit 1; }
           echo "PASS: private native tests, TypeScript and Android bundle"

@@ -1,0 +1,7 @@
+OWNER-REQUESTED TRAYDAQ V2 MULTIMEDIA CHAT ANDROID TEST BUILD — 2026-10-28
+Private repository: gideondreams3325/traydaq-v2
+Pinned merged main source: 36273afab59ae8ee9a277cc26a8262baea93ea29
+Builder source validation: https://github.com/gideondreams3325/traydaq-v2-builder/actions/runs/40693342794
+Expected signed test release: com.traydaq.app 1.0.7 (9), APK + AAB, original verified upload signing key.
+Authorized purpose: installable Android testing for user-requested photos, emoji stickers, and voice notes in private direct, business and Gossips conversations.
+Do not upload to Play Store or roll out updates without explicit release request. Never publish private source code or account secrets.

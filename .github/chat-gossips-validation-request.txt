@@ -1,0 +1,1 @@
+Private TRAYDAQ v2 chat feature source PR #71 validation; pinned e0433b8c23b5141ae52dcb2b5dfb1ebc6f240be5. Web and React Native source tests only. Do not build or sign any APK.

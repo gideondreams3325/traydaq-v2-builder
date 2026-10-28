@@ -1,1 +1,1 @@
-FINAL UI source validation for TRAYDAQ V2 responsive Messages and Gossips PR #72, commit e1ffe277d88ba5b95f967b506600d4db1d765034. Verify web build/tests, Android TypeScript/unit tests, Deno, Firebase emulator. No APK, signing or deployment.
+FINAL validation of TRAYDAQ V2 PR #72 professional responsive messaging source 00a0a4f569271787eca337fc6b30c9601ce14a3b. Includes Gossips Add people cancellation handling. Web TypeScript/tests/build, Android source typecheck/tests, Deno and Firebase local emulator. Strictly NO APK build, release or deployment.

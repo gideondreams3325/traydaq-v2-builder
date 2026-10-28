@@ -1,25 +1,25 @@
-name: TRAYDAQ V2 - Erasure PR 103 Source-only Validation
+name: TRAYDAQ V2 - Erasure PR 104 Source-only Validation
 on:
   push:
     branches: [main]
-    paths: [".github/workflows/account-erasure-pr103-source-only.yml"]
+    paths: [".github/workflows/account-erasure-pr104-source-only.yml"]
   workflow_dispatch:
   pull_request:
     branches: [main]
-    paths: [".github/workflows/account-erasure-pr103-source-only.yml"]
+    paths: [".github/workflows/account-erasure-pr104-source-only.yml"]
 permissions:
   contents: read
 jobs:
-  pr103-source-test:
-    name: Validate PR 103 code only (no erasure or deploy)
+  pr104-source-test:
+    name: Validate PR 104 code only (no erasure or deploy)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - name: Checkout exact PR 103 commit from source repository
+      - name: Checkout exact PR 104 commit from source repository
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: f6f10b418664b5ec4eb52da06e603ef518e17631
+          ref: ce1b2d19ec1aa8d4eee86ba68ea965f4e24966e9
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -31,8 +31,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "f6f10b418664b5ec4eb52da06e603ef518e17631"
-          echo "::notice::Validated pinned PR 103 commit"
+          test "$(git rev-parse HEAD)" = "ce1b2d19ec1aa8d4eee86ba68ea965f4e24966e9"
+          echo "::notice::Validated pinned PR 104 commit"
       - name: Run release safety, identity and account deletion suites
         working-directory: private-src
         shell: bash
@@ -42,6 +42,7 @@ jobs:
             tests/account-erasure-release-lock.test.mjs \
             tests/account-erasure-session.test.mjs \
             tests/account-erasure-worker.test.mjs \
+            tests/account-erasure-request-targeting.test.mjs \
             tests/account-erasure-live-preflight.test.mjs \
             tests/account-owner-self-service-erasure.test.mjs \
             tests/member-block-account-deletion-ui.test.mjs \
@@ -54,11 +55,11 @@ jobs:
             tests/account-investigation-retention.test.mjs \
             tests/ordinary-identity-erasure-policy.test.mjs \
             tests/identity-fraud-consent-age-policy.test.mjs \
-            > "$RUNNER_TEMP/erasure-pr103.log" 2>&1; then
-            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/erasure-pr103.log" | tail -3 || true
-            echo "::notice::PR103 deletion and fraud identity source regression tests passed"
+            > "$RUNNER_TEMP/erasure-pr104.log" 2>&1; then
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/erasure-pr104.log" | tail -3 || true
+            echo "::notice::PR104 deletion and fraud identity source regression tests passed"
           else
-            grep -E '^not ok [0-9]+ - |^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/erasure-pr103.log" | head -18 || true
+            grep -E '^not ok [0-9]+ - |^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/erasure-pr104.log" | head -18 || true
             echo "::error::Source tests failed; do not merge or deploy"
             exit 1
           fi

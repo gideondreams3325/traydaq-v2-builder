@@ -23,9 +23,9 @@ jobs:
       CI: "1"
       EXPO_NO_TELEMETRY: "1"
       NODE_OPTIONS: "--max-old-space-size=6144"
-      TRAYDAQ_RELEASE_VERSION: "1.0.2"
-      TRAYDAQ_RELEASE_CODE: "4"
-      TRAYDAQ_SOURCE_SHA: "644e0b2c2349ca9b400dc9b46a1f84a7a75968d3"
+      TRAYDAQ_RELEASE_VERSION: "1.0.4"
+      TRAYDAQ_RELEASE_CODE: "6"
+      TRAYDAQ_SOURCE_SHA: "b46e2b1e7962cd30386999e79a4809161c543b3f"
       # Public certificate from signed User APK run 40043905049 (v1.0.1/code 3).
       TRAYDAQ_EXPECTED_SIGNING_SHA256: "716a68f5734545bc9d9700f045d2bfb1b1087ffe732021f216b32a575f03f83d"
     defaults:
@@ -36,7 +36,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: "644e0b2c2349ca9b400dc9b46a1f84a7a75968d3"
+          ref: "b46e2b1e7962cd30386999e79a4809161c543b3f"
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -48,8 +48,9 @@ jobs:
           node - <<'NODE'
           const a=require('./app.json').expo;
           if(a.android?.package!=='com.traydaq.app')throw Error('Only com.traydaq.app may be published.');
-          if(!Number.isInteger(a.android.versionCode)||a.android.versionCode<3||a.android.versionCode>Number(process.env.TRAYDAQ_RELEASE_CODE))
-            throw Error('Expected current source code 3 or candidate code 4, newer than installed APK code 3.');
+          if(!Number.isInteger(a.android.versionCode)||a.android.versionCode!==Number(process.env.TRAYDAQ_RELEASE_CODE)||
+             a.version!==process.env.TRAYDAQ_RELEASE_VERSION)
+            throw Error('The immutable source version does not match the intended Google Play update.');
           console.log('Package:',a.android.package,'version:',a.version,'code:',a.android.versionCode);
           NODE
           test "$(git -C .. rev-parse HEAD)" = "$TRAYDAQ_SOURCE_SHA"
@@ -143,7 +144,7 @@ jobs:
           c.expo.version=process.env.TRAYDAQ_RELEASE_VERSION;
           c.expo.android.versionCode=Number(process.env.TRAYDAQ_RELEASE_CODE);
           c.expo.android.blockedPermissions=[...new Set([...(c.expo.android.blockedPermissions||[]),'android.permission.SYSTEM_ALERT_WINDOW'])];
-          if(c.expo.android.package!=='com.traydaq.app'||c.expo.android.versionCode<=3)throw Error('Invalid user release identity');
+          if(c.expo.android.package!=='com.traydaq.app'||c.expo.android.versionCode<=4)throw Error('Invalid user release identity');
           fs.writeFileSync(p,JSON.stringify(c,null,2)+'\n');
           console.log('Play candidate version set to',c.expo.version,'code',c.expo.android.versionCode);
           NODE
@@ -224,17 +225,17 @@ jobs:
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$APK"
           APK_CERT=$("$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -1)
           [[ "${APK_CERT,,}" == "$TRAYDAQ_EXPECTED_SIGNING_SHA256" ]]
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.traydaq.app' versionCode='4' versionName='1.0.2'"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.traydaq.app' versionCode='6' versionName='1.0.4'"
           mkdir -p play-release
           java -jar "$TOOL" dump manifest --bundle="$AAB" > play-release/AndroidManifest.xml
           keytool -exportcert -rfc -keystore "$TRAYDAQ_UPLOAD_KEYSTORE" -storepass:env STORE_PASS -alias "$TRAYDAQ_UPLOAD_ALIAS" > play-release/TRAYDAQ-public-signing-certificate.pem
-          cp "$AAB" play-release/TRAYDAQ-1.0.2-4.aab
-          cp "$APK" play-release/TRAYDAQ-1.0.2-4.apk
+          cp "$AAB" play-release/TRAYDAQ-1.0.4-6.aab
+          cp "$APK" play-release/TRAYDAQ-1.0.4-6.apk
           python3 - <<'PY'
           import zipfile,struct,hashlib,json,os,xml.etree.ElementTree as ET
           root=ET.parse('play-release/AndroidManifest.xml').getroot();ns='{http://schemas.android.com/apk/res/android}'
           assert root.attrib.get('package')=='com.traydaq.app'
-          assert root.attrib.get(ns+'versionCode')=='4'
+          assert root.attrib.get(ns+'versionCode')=='6'
           assert root.find('uses-sdk').attrib.get(ns+'targetSdkVersion')=='36'
           permissions=[x.attrib.get(ns+'name') for x in root.findall('uses-permission')]
           assert 'android.permission.SYSTEM_ALERT_WINDOW' not in permissions
@@ -244,7 +245,7 @@ jobs:
           assert 'android.permission.READ_MEDIA_IMAGES' not in permissions
           assert 'android.permission.READ_MEDIA_VIDEO' not in permissions
           checked=[]
-          with zipfile.ZipFile('play-release/TRAYDAQ-1.0.2-4.aab') as z:
+          with zipfile.ZipFile('play-release/TRAYDAQ-1.0.4-6.aab') as z:
               for name in z.namelist():
                   if name.endswith('.so') and ('/arm64-v8a/' in name or '/x86_64/' in name):
                       b=z.read(name);phoff=struct.unpack_from('<Q',b,32)[0];esz,count=struct.unpack_from('<HH',b,54)
@@ -254,7 +255,7 @@ jobs:
                               assert struct.unpack_from('<Q',b,p+48)[0]>=16384, '16KiB alignment failure: '+name
                       checked.append(name)
           assert checked,'No 64-bit native libraries were verified'
-          info={'package':'com.traydaq.app','versionName':'1.0.2','versionCode':4,'targetSdk':36,
+          info={'package':'com.traydaq.app','versionName':'1.0.4','versionCode':6,'targetSdk':36,
                 'minSdk':int(root.find('uses-sdk').attrib[ns+'minSdkVersion']),
                 'privateSourceCommit':os.environ['TRAYDAQ_SOURCE_SHA'],
                 'signingCertificateSha256':os.environ['TRAYDAQ_EXPECTED_SIGNING_SHA256'],
@@ -262,7 +263,7 @@ jobs:
                 'native64BitLibraries16KiBVerified':len(checked),'permissions':permissions,
                 'playAppSigningConfigured':False,'uploadedToGooglePlay':False,'staffBuilt':False,
                 'files':{}}
-          for f in ['TRAYDAQ-1.0.2-4.aab','TRAYDAQ-1.0.2-4.apk']:
+          for f in ['TRAYDAQ-1.0.4-6.aab','TRAYDAQ-1.0.4-6.apk']:
               b=open('play-release/'+f,'rb').read();info['files'][f]={'size':len(b),'sha256':hashlib.sha256(b).hexdigest()}
           json.dump(info,open('play-release/release-verification.json','w'),indent=2)
           print('Verified same-certificate AAB/APK, target 36, permissions and',len(checked),'16KiB ELF libraries.')

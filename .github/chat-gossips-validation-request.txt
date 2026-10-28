@@ -13,3 +13,5 @@ New source 4bfe88d5cbe613971d63d75db041656f916a6e85; diagnose Deno and validate 
 Deno source recheck: npm dependency auto-install per Deno 2, with no APK/deployment.
 
 Pinned ed4687e0ab34ad51340ac9bef8e144b6df038fdd. Final Deno diagnostics and Gossips rejoin safety, no APK.
+
+Deno typing fix source 9fc828ecddb7f6b1ea5d0455a7d1d5bdcc63e9e2; no APK build.

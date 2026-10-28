@@ -19,3 +19,15 @@ Release: 1.0.4, versionCode 6 (greater than active code 4 and unpublished code 5
 Scope: build signed Android App Bundle with the original verified TRAYDAQ upload key and matching APK for verification, retain version/package, run native tests, verify bundle manifest/certificate and 16KiB alignment.
 Never upload private signing secrets or source to artifacts. No STAFF build. No automatic Play upload, public rollout or changes to review answers.
 Intended next step: upload verified AAB to existing Google Play internal testing track through Play Console and share tester opt-in URL.
+
+Play testing release request — 2026-10-28
+Authorized purpose: prepare signed Google Play internal-testing release candidate, not production rollout.
+TRAYDAQ user app: com.traydaq.app
+Version: 1.0.5 / versionCode 7
+Source: gideondreams3325/traydaq-v2 main 6562712194642826effc3dcadb108630ad643e3e
+Included verified fixes: For You chat/Gossips entry, blank feed states, retry, profile identity recovery.
+Validation: TRAYDAQ V2 Builder PR78 run 40659925553 passed web, Android tests, and TypeScript.
+Keep existing upload key and target Android API 36; verify AAB, APK, permissions and signing.
+Deliver AAB/APK and verification evidence as Actions artifact only.
+Do NOT upload to Google Play, configure Play App Signing, publish to testers, change tester lists,
+start production rollout, release STAFF APK, or change any account data.

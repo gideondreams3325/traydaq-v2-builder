@@ -1,0 +1,202 @@
+name: TRAYDAQ V2 - Member and STAFF source-only validation
+
+# The app repository must remain private. This controller checks immutable Git
+# objects without changing any app branch, publishing a preview, or deploying.
+# This trusted Builder PR pins both private candidate commits. Manual runs may
+# provide other full commit SHAs; branch names and placeholders fail closed.
+on:
+  workflow_dispatch:
+    inputs:
+      MEMBER_SOURCE_SHA:
+        description: Exact 40-character private member candidate commit SHA
+        required: true
+        type: string
+      STAFF_SOURCE_SHA:
+        description: Exact 40-character private standalone STAFF candidate commit SHA
+        required: true
+        type: string
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/maintenance-source-only.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: traydaq-maintenance-source-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+  EXPO_NO_DOTENV: '1'
+
+jobs:
+  validate-inputs:
+    name: Require immutable member and STAFF candidates
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      member_sha: ${{ steps.validate.outputs.member_sha }}
+      staff_sha: ${{ steps.validate.outputs.staff_sha }}
+    steps:
+      - name: Reject branch names, missing SHAs, and unfilled placeholders
+        id: validate
+        shell: bash
+        env:
+          MEMBER_SOURCE_SHA: ${{ inputs.MEMBER_SOURCE_SHA || 'b8cf919268adb2b72e1e05d453f771f72a7bcd05' }}
+          STAFF_SOURCE_SHA: ${{ inputs.STAFF_SOURCE_SHA || '1efca351f6f0c24145f21822986b86bdebebe926' }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$MEMBER_SOURCE_SHA" =~ ^[[:xdigit:]]{40}$ ]] ||
+             [[ ! "$STAFF_SOURCE_SHA" =~ ^[[:xdigit:]]{40}$ ]]; then
+            echo '::error::Both candidates must be full 40-character Git commit SHAs. Branches and placeholders are rejected.'
+            exit 1
+          fi
+          echo "member_sha=${MEMBER_SOURCE_SHA,,}" >> "$GITHUB_OUTPUT"
+          echo "staff_sha=${STAFF_SOURCE_SHA,,}" >> "$GITHUB_OUTPUT"
+          echo '::notice::Immutable candidate inputs accepted; no app refs changed.'
+
+  member-web:
+    name: Member web, privacy, and isolated PostgreSQL tests
+    needs: validate-inputs
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Read exact private member candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ needs.validate-inputs.outputs.member_sha }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22.23.4'
+      - name: Verify candidate and run source-only web checks
+        working-directory: private-src
+        shell: bash
+        env:
+          EXPECTED_SOURCE_SHA: ${{ needs.validate-inputs.outputs.member_sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE_SHA"
+          check() {
+            local label="$1"; shift
+            local logfile="$RUNNER_TEMP/traydaq-member-$label.log"
+            if "$@" > "$logfile" 2>&1; then
+              echo "::notice::Member $label passed"
+              grep -E '^# (tests|pass|fail|skipped) [0-9]+$' "$logfile" || true
+            else
+              echo "::error::Member $label failed; private diagnostics remain on the runner."
+              grep -E '^# (tests|pass|fail|skipped) [0-9]+$' "$logfile" || true
+              exit 1
+            fi
+          }
+          check dependencies npm ci --no-audit --no-fund
+          check pglite-test-present test -f tests/identity-fraud-archive-database.test.mjs
+          check pglite node --test tests/identity-fraud-archive-database.test.mjs
+          check tests npm test
+          check types npm run typecheck
+          check assets npm run build
+          echo '::notice::Member source checks passed. No hosting command or account processing was invoked.'
+
+  member-edge:
+    name: Signed Edge consumers and synthetic PDF
+    needs: validate-inputs
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Read exact private member candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ needs.validate-inputs.outputs.member_sha }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22.23.4'
+      - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2
+        with:
+          deno-version: 'v2.9.8'
+      - name: Typecheck protected consumers without invoking live services
+        working-directory: private-src
+        shell: bash
+        env:
+          EXPECTED_SOURCE_SHA: ${{ needs.validate-inputs.outputs.member_sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SOURCE_SHA"
+          check() {
+            local label="$1"; shift
+            local logfile="$RUNNER_TEMP/traydaq-edge-$label.log"
+            if "$@" > "$logfile" 2>&1; then
+              echo "::notice::Edge $label passed"
+            else
+              echo "::error::Edge $label failed; private diagnostics remain on the runner."
+              exit 1
+            fi
+          }
+          check types deno check --node-modules-dir=auto \
+            supabase/functions/firebase-identity-review/index.ts \
+            supabase/functions/firebase-session/index.ts \
+            supabase/functions/firebase-member-eligibility/index.ts \
+            supabase/functions/firebase-account-erasure/index.ts \
+            supabase/functions/firebase-legal-aid/index.ts \
+            supabase/functions/firebase-legal-aid-live-archive/index.ts \
+            supabase/functions/firebase-legal-aid-owner-expiry/index.ts
+          check synthetic-pdf deno test --node-modules-dir=auto tests/legal-aid-synthetic-pdf.deno.test.ts
+          echo '::notice::Edge source and fictional PDF checks passed. No function, migration, or live archive was deployed.'
+
+  standalone-staff:
+    name: Separate STAFF permissions and Expo source compatibility
+    needs: validate-inputs
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Read exact private standalone STAFF candidate
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ needs.validate-inputs.outputs.staff_sha }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22.23.4'
+      - name: Verify independent STAFF source, permissions, and dependency compatibility
+        working-directory: private-src/admin-native
+        shell: bash
+        env:
+          EXPECTED_SOURCE_SHA: ${{ needs.validate-inputs.outputs.staff_sha }}
+          REQUIRE_NATIVE_CONFIG: '0'
+        run: |
+          set -euo pipefail
+          test "$(git -C .. rev-parse HEAD)" = "$EXPECTED_SOURCE_SHA"
+          check() {
+            local label="$1"; shift
+            local logfile="$RUNNER_TEMP/traydaq-staff-$label.log"
+            if "$@" > "$logfile" 2>&1; then
+              echo "::notice::STAFF $label passed"
+              grep -E '^# (tests|pass|fail|skipped) [0-9]+$' "$logfile" || true
+            else
+              echo "::error::STAFF $label failed; private diagnostics remain on the runner."
+              grep -E '^# (tests|pass|fail|skipped) [0-9]+$' "$logfile" || true
+              exit 1
+            fi
+          }
+          check dependencies npm install --package-lock=false --no-audit --no-fund
+          check security npm run test:security
+          check types npm run typecheck
+          check preflight npm run preflight
+          check expo-compatibility npx --no-install expo install --check
+          echo '::notice::Separate STAFF source checks passed. No Expo prebuild, Gradle, APK, signing, or release was invoked.'

@@ -14,13 +14,27 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: feat/legal-aid-evidence-safeguards-20261028
+          ref: feat/legal-aid-case-access-20261028
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Validate signed Legal Aid metadata Edge API
+        working-directory: private-src
+        shell: bash
+        run: |
+          if deno check --node-modules-dir=auto supabase/functions/firebase-legal-aid/index.ts > "$RUNNER_TEMP/legal-aid-edge.log" 2>&1; then
+            echo "::notice::Legal Aid Edge TypeScript passed"
+          else
+            echo "::error::Legal Aid Edge TypeScript failed"
+            grep -o 'TS[0-9]\\{4\\}' "$RUNNER_TEMP/legal-aid-edge.log" | sort -u | head -8 || true
+            exit 1
+          fi
       - name: Validate web, private Legal Aid engine and 30-day cooldown (no deploy)
         working-directory: private-src
         shell: bash
@@ -49,7 +63,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: feat/staff-legal-aid-department-20261028
+          ref: feat/staff-legal-aid-case-register-20261028
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false

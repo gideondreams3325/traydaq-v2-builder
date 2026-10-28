@@ -1,0 +1,3 @@
+Validation request: private TRAYDAQ V2 PR #71
+Source SHA: 924e820fdc96b2d4064c3f56586dbf01fbcae8e1
+Scope: web tests/typecheck/build and native tests/typecheck/Expo JS export. No APK, no deploy, no artifacts.

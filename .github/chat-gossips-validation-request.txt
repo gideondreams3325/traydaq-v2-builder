@@ -7,3 +7,5 @@ Validation: updated server-owned message tests, group feature assertions; no APK
 Final server Deno check for source commit 7246aff7fb0f6f76970401e343721f9640ba3b74, with no APK or deployment.
 
 Deno recheck: report only sanitized dependency/TypeScript diagnostic classes.
+
+New source 4bfe88d5cbe613971d63d75db041656f916a6e85; diagnose Deno and validate auth config. No APK.

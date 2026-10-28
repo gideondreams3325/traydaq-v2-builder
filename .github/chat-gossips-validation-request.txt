@@ -1,1 +1,1 @@
-Validation request for private source 006378cb7ee36e5ceaf1524fb4aee5dfd04fa4c1. Web tests/build, native tests/typecheck, Deno check ONLY. No APK or deployment.
+Final validation of TRAYDAQ V2 chat/Gossips PR #71 source d8e91a6b727fd38d56e5b199550d985893e652ee. Check web TypeScript/tests/build, Android JS TypeScript/tests, and server Deno. Do not assemble, sign, publish or build any APK; do not deploy.

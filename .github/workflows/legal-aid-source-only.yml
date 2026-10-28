@@ -94,6 +94,25 @@ jobs:
             grep -E 'error TS[0-9]+|npm ERR' "$RUNNER_TEMP/mobile-identity-types.log" | head -14 || true
             exit 1
           fi
+      - name: Validate ID fraud consent and sticky 18-plus eligibility
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          if deno check --node-modules-dir=auto supabase/functions/firebase-identity-review/index.ts > "$RUNNER_TEMP/identity-review-check.log" 2>&1; then
+            echo "::notice::Identity review signed Edge TypeScript passed"
+          else
+            echo "::error::Identity review Edge TypeScript failed"
+            grep -E 'TS[0-9]+|error:' "$RUNNER_TEMP/identity-review-check.log" | head -12 | sed -E 's/[^a-zA-Z0-9 ._:/-]//g' || true
+            exit 1
+          fi
+          if node --test tests/identity-fraud-consent-age-policy.test.mjs > "$RUNNER_TEMP/identity-consent-age.log" 2>&1; then
+            echo "::notice::ID fraud notice, age restriction and legacy consent tests passed"
+          else
+            echo "::error::ID consent and underage regression tests failed"
+            grep -E '^not ok [0-9]+ - |^# (tests|pass|fail) ' "$RUNNER_TEMP/identity-consent-age.log" | head -12 || true
+            exit 1
+          fi
       - name: Typecheck guarded account-erasure source interlock
         working-directory: private-src
         shell: bash

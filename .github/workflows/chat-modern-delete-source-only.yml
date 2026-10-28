@@ -1,4 +1,5 @@
 name: TRAYDAQ Modern Chat and Owner Delete - Source Validation Only
+# Source-only rerun after TypeScript repairs.
 # Rerun after updated direct Delete labels, source regressions and voice-note rendering.
 on:
   push:

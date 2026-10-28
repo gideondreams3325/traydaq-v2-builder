@@ -19,3 +19,10 @@ User-requested change: replace unavailable, government-ID-only age recheck with 
 
 2026-10-27 RETRY AFTER OWNER CONFIRMED CLOUDFLARE PAGES READY
 Retry the existing Cloudflare Pages production deployment workflow for private main SHA 2ccf72081413a27ba954f1a46fadc0cbc3790204. The previous attempt passed web tests, TypeScript, and asset bundling but stopped at the missing Cloudflare API token check. Deploy ONLY to existing Pages project using configured credentials; do not change DNS, account policy, age approval gate, ID Verification, or Android APK.
+
+
+2026-10-28 OWNER-REQUESTED MULTIMEDIA CHAT WEB TEST RELEASE
+Private main SHA: 36273afab59ae8ee9a277cc26a8262baea93ea29
+PR #81 merged; validation all four jobs passed: https://github.com/gideondreams3325/traydaq-v2-builder/actions/runs/40693342794
+Private chat storage migration and both authenticated Edge Functions are ACTIVE.
+Deploy only TRAYDAQ V2 user web to the EXISTING Cloudflare Pages project after tests, TypeScript and production build. Do not change DNS, secrets, staff tools, data, or Android binaries.

@@ -32,7 +32,8 @@ jobs:
             echo "::notice::Legal Aid Edge TypeScript passed"
           else
             echo "::error::Legal Aid Edge TypeScript failed"
-            grep -o 'TS[0-9]\\{4\\}' "$RUNNER_TEMP/legal-aid-edge.log" | sort -u | head -8 || true
+            grep -E '^error:|^error TS[0-9]+|TS[0-9]+' "$RUNNER_TEMP/legal-aid-edge.log" | head -12 | sed -E 's/\x1B\[[0-9;]*[[:alpha:]]//g; s#(file:///|/home/runner/work/)[^ :]+#private-source#g' || true
+            echo "::notice::Diagnostics limited to type error descriptions; private source not uploaded"
             exit 1
           fi
       - name: Validate web, private Legal Aid engine and 30-day cooldown (no deploy)

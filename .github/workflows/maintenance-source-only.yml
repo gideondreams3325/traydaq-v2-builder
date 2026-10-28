@@ -46,7 +46,7 @@ jobs:
         id: validate
         shell: bash
         env:
-          MEMBER_SOURCE_SHA: ${{ inputs.MEMBER_SOURCE_SHA || 'b8cf919268adb2b72e1e05d453f771f72a7bcd05' }}
+          MEMBER_SOURCE_SHA: ${{ inputs.MEMBER_SOURCE_SHA || 'a785346d2dde4ecc01d4df0d187011341f2c3fe1' }}
           STAFF_SOURCE_SHA: ${{ inputs.STAFF_SOURCE_SHA || '1efca351f6f0c24145f21822986b86bdebebe926' }}
         run: |
           set -euo pipefail

@@ -28,13 +28,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 567f8000981388725131f6e1d07a9f05d1a79ed7
+          ref: d1ad1a740f6d24f448afaae0249245c9d06e48b5
           path: src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
       - name: Validate private source SHA
         shell: bash
-        run: test "$(git -C src rev-parse HEAD)" = "567f8000981388725131f6e1d07a9f05d1a79ed7"
+        run: test "$(git -C src rev-parse HEAD)" = "d1ad1a740f6d24f448afaae0249245c9d06e48b5"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -82,13 +82,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 567f8000981388725131f6e1d07a9f05d1a79ed7
+          ref: d1ad1a740f6d24f448afaae0249245c9d06e48b5
           path: src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
       - name: Validate private source SHA
         shell: bash
-        run: test "$(git -C src rev-parse HEAD)" = "567f8000981388725131f6e1d07a9f05d1a79ed7"
+        run: test "$(git -C src rev-parse HEAD)" = "d1ad1a740f6d24f448afaae0249245c9d06e48b5"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -136,7 +136,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 567f8000981388725131f6e1d07a9f05d1a79ed7
+          ref: d1ad1a740f6d24f448afaae0249245c9d06e48b5
           path: src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -193,7 +193,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 567f8000981388725131f6e1d07a9f05d1a79ed7
+          ref: d1ad1a740f6d24f448afaae0249245c9d06e48b5
           path: src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false

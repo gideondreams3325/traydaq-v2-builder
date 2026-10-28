@@ -28,13 +28,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: e0433b8c23b5141ae52dcb2b5dfb1ebc6f240be5
+          ref: fc4528e43965e1b17002da814fcf5dea689b1ea2
           path: src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
       - name: Validate private source SHA
         shell: bash
-        run: test "$(git -C src rev-parse HEAD)" = "e0433b8c23b5141ae52dcb2b5dfb1ebc6f240be5"
+        run: test "$(git -C src rev-parse HEAD)" = "fc4528e43965e1b17002da814fcf5dea689b1ea2"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -55,8 +55,11 @@ jobs:
           t=open(sys.argv[1],errors='replace').read()
           for path,line,col,code in re.findall(r'([^\s:()]+)\((\d+),(\d+)\): error (TS\d+):',t)[:25]:
               print("::notice::TypeScript",os.path.basename(path),line,col,code)
-          for name in re.findall(r'^not ok \d+ - (.+)$',t,re.M)[:12]:
-              print("::notice::Test:",re.sub('[^a-zA-Z0-9 ._/-]','',name)[:95])
+          for m in list(re.finditer(r'^not ok \d+ - (.+)$',t,re.M))[:14]:
+              print("::notice::Test:",re.sub('[^a-zA-Z0-9 ._/-]','',m.group(1))[:95])
+              context=t[m.end():m.end()+2200]
+              loc=re.search(r'location:.*?/tests/([a-zA-Z0-9_.-]+\.test\.mjs):(\d+):',context)
+              if loc: print("::notice::Test location:",loc.group(1),"line",loc.group(2))
           PY
               failed=$((failed+1))
             fi
@@ -79,13 +82,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: e0433b8c23b5141ae52dcb2b5dfb1ebc6f240be5
+          ref: fc4528e43965e1b17002da814fcf5dea689b1ea2
           path: src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
       - name: Validate private source SHA
         shell: bash
-        run: test "$(git -C src rev-parse HEAD)" = "e0433b8c23b5141ae52dcb2b5dfb1ebc6f240be5"
+        run: test "$(git -C src rev-parse HEAD)" = "fc4528e43965e1b17002da814fcf5dea689b1ea2"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -106,8 +109,11 @@ jobs:
           t=open(sys.argv[1],errors='replace').read()
           for path,line,col,code in re.findall(r'([^\s:()]+)\((\d+),(\d+)\): error (TS\d+):',t)[:30]:
               print("::notice::TypeScript",os.path.basename(path),line,col,code)
-          for name in re.findall(r'^not ok \d+ - (.+)$',t,re.M)[:12]:
-              print("::notice::Test:",re.sub('[^a-zA-Z0-9 ._/-]','',name)[:95])
+          for m in list(re.finditer(r'^not ok \d+ - (.+)$',t,re.M))[:14]:
+              print("::notice::Test:",re.sub('[^a-zA-Z0-9 ._/-]','',m.group(1))[:95])
+              context=t[m.end():m.end()+2200]
+              loc=re.search(r'location:.*?/tests/([a-zA-Z0-9_.-]+\.test\.mjs):(\d+):',context)
+              if loc: print("::notice::Test location:",loc.group(1),"line",loc.group(2))
           PY
               failed=$((failed+1))
             fi

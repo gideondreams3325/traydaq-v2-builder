@@ -153,11 +153,17 @@ jobs:
             echo "::error::Chat server Deno typecheck failed; private source logs were not uploaded"
             python3 - "$RUNNER_TEMP/deno-chat-check.log" <<'PY'
           import os,re,sys
-          text=open(sys.argv[1],errors='replace').read()
-          for path,line,col in re.findall(r'file://[^\s]+/([^/\s]+\.ts):(\d+):(\d+)',text)[:20]:
-              print('::notice::Diagnostic',os.path.basename(path),'line',line,'column',col)
-          for code in sorted(set(re.findall(r'\bTS\d{4}\b',text)))[:12]:
-              print('::notice::TypeScript',code)
+          t=open(sys.argv[1],errors='replace').read()
+          for code in sorted(set(re.findall(r'\bTS\d{4}\b',t)))[:20]:
+              print('::notice::Deno TypeScript',code)
+          for path,line,col in re.findall(r'(?:file:///|(?:\s|/))([A-Za-z0-9._/-]+\.ts):(\d+):(\d+)',t)[:15]:
+              print('::notice::Deno location',os.path.basename(path),'line',line,'column',col)
+          errors=[x.strip() for x in t.splitlines() if x.strip().lower().startswith('error:')]
+          for e in errors[:8]:
+              safe=re.sub(r'(?:file|https?)://[^\s]+','<path>',e)
+              safe=re.sub(r'[/\\][A-Za-z0-9_./\\-]{12,}','<path>',safe)
+              safe=re.sub(r'[^a-zA-Z0-9 .:,_()<>-]','',safe)
+              print('::notice::Deno error class:',safe[:135])
           PY
             exit 1
           fi

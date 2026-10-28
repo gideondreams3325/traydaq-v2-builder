@@ -1,4 +1,5 @@
 name: TRAYDAQ V2 - Erasure PR 103 Source-only Validation
+# Validate the pinned PR103 SHA on a Builder pull request; never deploy or erase accounts.
 on:
   push:
     branches: [main]

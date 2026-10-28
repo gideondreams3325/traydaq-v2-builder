@@ -48,7 +48,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 5f1676e8472a36e663dcf2e82d7d531734be3c8b
+          ref: 1353a0a3dc446eb48ddebb9e2526cfb2d031107d
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -60,7 +60,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git -C .. rev-parse HEAD)" = "5f1676e8472a36e663dcf2e82d7d531734be3c8b"
+          test "$(git -C .. rev-parse HEAD)" = "1353a0a3dc446eb48ddebb9e2526cfb2d031107d"
           node --test tests/legal-aid-readiness.test.mjs
           npm install --no-audit --no-fund > "$RUNNER_TEMP/legal-aid-staff-install.log" 2>&1 || {
             echo "::error::STAFF dependency installation failed"

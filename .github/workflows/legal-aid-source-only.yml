@@ -1,4 +1,5 @@
 name: TRAYDAQ Legal Aid - Private PDF and STAFF Source Validation Only
+# Final source check includes Legal Aid staff appointment UI limits.
 # Validate Edge SDK type alignment and signed staff case access.
 on:
   push:

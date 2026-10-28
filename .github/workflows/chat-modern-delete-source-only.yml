@@ -1,4 +1,5 @@
 name: TRAYDAQ Modern Chat and Owner Delete - Source Validation Only
+# Final pinned feature head under validation: 80bc26c857011625e20a3de7876f1bd00f6f30fe
 # Final source-only QA includes new modern chat and self-service delete regression tests.
 # Source-only rerun after TypeScript repairs.
 # Rerun after updated direct Delete labels, source regressions and voice-note rendering.

@@ -28,13 +28,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: d8e91a6b727fd38d56e5b199550d985893e652ee
+          ref: 866cae3926112dc0b2409d632a9f1a0b1650588b
           path: src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
       - name: Validate private source SHA
         shell: bash
-        run: test "$(git -C src rev-parse HEAD)" = "d8e91a6b727fd38d56e5b199550d985893e652ee"
+        run: test "$(git -C src rev-parse HEAD)" = "866cae3926112dc0b2409d632a9f1a0b1650588b"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -82,13 +82,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: d8e91a6b727fd38d56e5b199550d985893e652ee
+          ref: 866cae3926112dc0b2409d632a9f1a0b1650588b
           path: src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
       - name: Validate private source SHA
         shell: bash
-        run: test "$(git -C src rev-parse HEAD)" = "d8e91a6b727fd38d56e5b199550d985893e652ee"
+        run: test "$(git -C src rev-parse HEAD)" = "866cae3926112dc0b2409d632a9f1a0b1650588b"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -136,7 +136,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: d8e91a6b727fd38d56e5b199550d985893e652ee
+          ref: 866cae3926112dc0b2409d632a9f1a0b1650588b
           path: src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -177,6 +177,53 @@ jobs:
               line=re.sub(r'/home/[^\s]+','<path>',line)
               line=re.sub(r'[^a-zA-Z0-9 .:_()<>,-]','',line)
               print('::notice::Deno final:',line[:140])
+          PY
+            exit 1
+          fi
+  firebase:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Confirm private checkout credential
+        shell: bash
+        env:
+          TOKEN_PRESENT: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$TOKEN_PRESENT" = true
+      - name: Fetch exact private source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 866cae3926112dc0b2409d632a9f1a0b1650588b
+          path: src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test Firebase RTDB rules with local emulator (no APK)
+        working-directory: src/firebase
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! npm install --no-audit --no-fund > "$RUNNER_TEMP/firebase-install.log" 2>&1; then
+            echo "::error::Firebase emulator package installation failed"
+            exit 1
+          fi
+          echo "::notice::Firebase emulator dependencies installed"
+          if npm run test:rules > "$RUNNER_TEMP/firebase-rules.log" 2>&1; then
+            echo "::notice::Firebase emulator authorization tests passed"
+          else
+            echo "::error::Firebase emulator authorization tests failed"
+            python3 - "$RUNNER_TEMP/firebase-rules.log" <<'PY'
+          import re,sys
+          t=open(sys.argv[1],errors='replace').read()
+          for name in re.findall(r'^not ok \d+ - (.*)$',t,re.M)[:20]:
+              print('::notice::Firebase failed test:',re.sub('[^A-Za-z0-9 .,()/:-]','',name)[:105])
+          print('::notice::Emulator failing test count:',len(re.findall(r'^not ok \d+',t,re.M)))
           PY
             exit 1
           fi

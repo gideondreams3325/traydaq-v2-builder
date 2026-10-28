@@ -1,0 +1,78 @@
+name: TRAYDAQ Legal Aid - Private PDF and STAFF Source Validation Only
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/legal-aid-source-only.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  user-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/legal-aid-evidence-safeguards-20261028
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate web, private Legal Aid engine and 30-day cooldown (no deploy)
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          check() {
+            local name="$1"; shift
+            if "$@" > "$RUNNER_TEMP/$name.log" 2>&1; then
+              echo "::notice::$name passed"
+            else
+              echo "::error::$name failed"
+              grep -E '^not ok [0-9]+ - |error TS[0-9]+' "$RUNNER_TEMP/$name.log" | head -10 | sed -E 's/[^a-zA-Z0-9 ._:/-]//g' || true
+              grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/$name.log" | tail -3 || true
+              exit 1
+            fi
+          }
+          check web-install npm ci --no-audit --no-fund
+          check legal-aid-tests node --test tests/legal-aid-evidence-pdf.test.mjs tests/account-reuse-cooldown.test.mjs
+          check web-tests npm test
+          check web-types npm run typecheck
+          check web-assets npm run build
+  standalone-staff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/staff-legal-aid-department-20261028
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate STAFF Legal Aid department and strict TypeScript (no Android build)
+        working-directory: private-src/admin-native
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! npm run test:security > "$RUNNER_TEMP/staff-tests.log" 2>&1; then
+            echo "::error::STAFF tests failed"
+            grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/staff-tests.log" | head -10 | sed -E 's/[^a-zA-Z0-9 ._:/-]//g' || true
+            exit 1
+          fi
+          echo "::notice::STAFF tests passed"
+          if ! npm install --no-audit --no-fund > "$RUNNER_TEMP/staff-install.log" 2>&1; then
+            echo "::error::STAFF dependencies failed";exit 1
+          fi
+          if ! npm run typecheck > "$RUNNER_TEMP/staff-types.log" 2>&1; then
+            echo "::error::STAFF TypeScript failed"
+            grep -E 'error TS[0-9]+' "$RUNNER_TEMP/staff-types.log" | head -10 | sed -E 's/[^a-zA-Z0-9 ._:/-]//g' || true
+            exit 1
+          fi
+          echo "::notice::STAFF TypeScript passed; no APK, AAB, prebuild, Gradle, signing or release"

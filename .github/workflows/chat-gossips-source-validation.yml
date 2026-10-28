@@ -1,0 +1,118 @@
+name: TRAYDAQ Chat and Gossips Source Validation
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/chat-gossips-source-validation.yml"
+      - ".github/chat-gossips-validation-request.txt"
+  pull_request:
+    paths:
+      - ".github/chat-gossips-validation-request.txt"
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-chat-source-validation
+  cancel-in-progress: true
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check private checkout credential
+        shell: bash
+        env:
+          TOKEN_PRESENT: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$TOKEN_PRESENT" = true
+      - name: Fetch exact private source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: e0433b8c23b5141ae52dcb2b5dfb1ebc6f240be5
+          path: src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Validate private source SHA
+        shell: bash
+        run: test "$(git -C src rev-parse HEAD)" = "e0433b8c23b5141ae52dcb2b5dfb1ebc6f240be5"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Web install, TypeScript, tests and build (private logs)
+        shell: bash
+        working-directory: src
+        run: |
+          set -euo pipefail
+          failed=0
+          run_check(){
+            label="$1"; shift
+            if "$@" > "$RUNNER_TEMP/traydaq-$label.log" 2>&1; then
+              echo "::notice::$label passed"
+            else
+              echo "::error::$label failed. Private diagnostic content remains on the runner only."
+              python3 - "$RUNNER_TEMP/traydaq-$label.log" <<'PY'
+          import re,sys,os
+          t=open(sys.argv[1],errors='replace').read()
+          for path,line,col,code in re.findall(r'([^\s:()]+)\((\d+),(\d+)\): error (TS\d+):',t)[:25]:
+              print("::notice::TypeScript",os.path.basename(path),line,col,code)
+          for name in re.findall(r'^not ok \d+ - (.+)$',t,re.M)[:12]:
+              print("::notice::Test:",re.sub('[^a-zA-Z0-9 ._/-]','',name)[:95])
+          PY
+              failed=$((failed+1))
+            fi
+          }
+          run_check web-install npm ci --no-audit --no-fund
+          run_check web-typecheck npm run typecheck
+          run_check web-tests npm test
+          run_check web-build npm run build
+          test "$failed" -eq 0
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check private checkout credential
+        shell: bash
+        env:
+          TOKEN_PRESENT: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$TOKEN_PRESENT" = true
+      - name: Fetch exact private source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: e0433b8c23b5141ae52dcb2b5dfb1ebc6f240be5
+          path: src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Validate private source SHA
+        shell: bash
+        run: test "$(git -C src rev-parse HEAD)" = "e0433b8c23b5141ae52dcb2b5dfb1ebc6f240be5"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Android React Native tests and types (no APK build)
+        shell: bash
+        working-directory: src/mobile
+        run: |
+          set -euo pipefail
+          failed=0
+          run_check(){
+            label="$1"; shift
+            if "$@" > "$RUNNER_TEMP/traydaq-$label.log" 2>&1; then
+              echo "::notice::$label passed"
+            else
+              echo "::error::$label failed. Private diagnostic content remains on the runner only."
+              python3 - "$RUNNER_TEMP/traydaq-$label.log" <<'PY'
+          import re,sys,os
+          t=open(sys.argv[1],errors='replace').read()
+          for path,line,col,code in re.findall(r'([^\s:()]+)\((\d+),(\d+)\): error (TS\d+):',t)[:30]:
+              print("::notice::TypeScript",os.path.basename(path),line,col,code)
+          for name in re.findall(r'^not ok \d+ - (.+)$',t,re.M)[:12]:
+              print("::notice::Test:",re.sub('[^a-zA-Z0-9 ._/-]','',name)[:95])
+          PY
+              failed=$((failed+1))
+            fi
+          }
+          run_check native-install npm install --no-audit --no-fund
+          run_check native-tests bash -c 'node --test tests/*.test.mjs'
+          run_check native-typecheck npm run typecheck
+          test "$failed" -eq 0

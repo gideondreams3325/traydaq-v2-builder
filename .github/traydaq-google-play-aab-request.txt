@@ -39,3 +39,13 @@ Retry version 1.0.5 (code 7) from immutable source 6562712194642826effc3dcadb108
 Use same registered TRAYDAQ upload key, package com.traydaq.app and target API 36.
 Output only signed internal-testing AAB, compatible APK and verification evidence.
 No Google Play upload, release to testers, production rollout, or admin APK.
+
+User-requested screenshot fix — 2026-10-28
+Purpose: signed TRAYDAQ user Google Play internal-testing candidate, not production rollout.
+Release: 1.0.6 / versionCode 8; package com.traydaq.app; Android API 36.
+Private source main: 7e15e43ee942c3153bd7f77d62497c594253657c
+Fix: For You block-list verification via authenticated firebase-member-chat server instead of RTDB lease-dependent listener; retry, lifecycle recheck, no blocked-content leaks.
+Proof: PR #79 merged; Builder workflow run 40680247398 passed private web/Android tests and TypeScript.
+Keep permanent original signing key, its Google OAuth fingerprint, no STAFF output.
+Generate signed AAB and companion APK with manifest and signing verification only.
+Do not upload to Play Console, publish to testers, or alter user data.

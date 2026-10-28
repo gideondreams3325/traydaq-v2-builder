@@ -1,4 +1,5 @@
 name: TRAYDAQ STAFF - Retire Member Deletion Review (Source Only)
+# Retry after updating retired-module registry assertions and historical audit checks.
 on:
   push:
     branches: [main]

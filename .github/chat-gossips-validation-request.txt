@@ -1,1 +1,1 @@
-Source-only responsive messaging validation: TRAYDAQ V2 PR #72, pinned private commit e4c14264d46df513ae37b6610c3fc4f5f200fea9. Web/React Native source/Deno/Firebase RTDB emulator tests. NO APK, no release and no deployment.
+TRAYDAQ V2 messaging redesign PR #72, source commit 83ad656013ff68a86b6018ca485e066bf024760e. Revalidate web, Android JS tests/TypeScript, Deno, Firebase emulator. Fixes native sheet backdrop typing and profile navigation regression. Do NOT build/sign/deploy an APK or release production.

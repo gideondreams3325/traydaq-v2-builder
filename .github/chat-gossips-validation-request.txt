@@ -3,3 +3,5 @@ Private TRAYDAQ v2 chat feature source PR #71 validation; pinned 7246aff7fb0f6f7
 Rerun: fix native/web TypeScript and report TAP test locations.
 
 Validation: updated server-owned message tests, group feature assertions; no APK build.
+
+Final server Deno check for source commit 7246aff7fb0f6f76970401e343721f9640ba3b74, with no APK or deployment.

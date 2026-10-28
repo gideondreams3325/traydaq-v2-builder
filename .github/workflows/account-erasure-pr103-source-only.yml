@@ -1,4 +1,5 @@
 name: TRAYDAQ V2 - Erasure PR 103 Source-only Validation
+# Recheck the exact protected release PR head through Builder; never run production erasure.
 on:
   push:
     branches: [main]

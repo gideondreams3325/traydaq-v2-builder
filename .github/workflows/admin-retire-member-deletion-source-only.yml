@@ -1,0 +1,47 @@
+name: TRAYDAQ STAFF - Retire Member Deletion Review (Source Only)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/admin-retire-member-deletion-source-only.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate-staff-source:
+    name: Native STAFF tests and typecheck - NO APK or AAB
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out separate private STAFF app candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/staff-native-retire-deletion-reviews-20261028
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test STAFF deletion menu removal, authorization and department isolation
+        working-directory: private-src/admin-native
+        shell: bash
+        run: |
+          set -euo pipefail
+          check() {
+            local label="$1"; shift
+            if "$@" > "$RUNNER_TEMP/$label.log" 2>&1; then
+              echo "::notice::$label passed"
+            else
+              echo "::error::$label failed"
+              grep -E '^not ok [0-9]+ - |error TS[0-9]+' "$RUNNER_TEMP/$label.log" | head -12 | sed -E 's/[^a-zA-Z0-9 ._:/-]//g' || true
+              grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/$label.log" | tail -3 || true
+              exit 1
+            fi
+          }
+          check staff-tests npm run test:security
+          check staff-install npm install --no-audit --no-fund
+          check staff-types npm run typecheck
+          test ! -e src/DeletionReviews.tsx
+          echo "::notice::Only source tests and TypeScript were run. No APK, AAB, Gradle, signing or Expo export."

@@ -1,1 +1,1 @@
-Final four-job validation for TRAYDAQ V2 chat PR #71. Pinned app source 866cae3926112dc0b2409d632a9f1a0b1650588b. Web build/tests, Android source tests, Deno typecheck and Firebase local emulator rules tests. No APK build/sign, no app deployment.
+Final 4-job validation TRAYDAQ V2 chat PR #71: commit 0dfd696d418c061a5c0ef3c2fbbb8d72e73435f5. Web tests/build, Android TypeScript/tests, Deno server typecheck and Firebase local RTDB emulator. No APK build, signing, app publishing or deployment.

@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 env:
-  APP_COMMIT_SHA: 88ad449edfcc89135bb00e45f09fa14a05308f82
+  APP_COMMIT_SHA: a9addf3547172b66c613c747d622c96eb7092026
 
 jobs:
   full-production-web-check:

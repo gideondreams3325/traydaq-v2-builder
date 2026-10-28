@@ -164,6 +164,12 @@ jobs:
               safe=re.sub(r'[/\\][A-Za-z0-9_./\\-]{12,}','<path>',safe)
               safe=re.sub(r'[^a-zA-Z0-9 .:,_()<>-]','',safe)
               print('::notice::Deno error class:',safe[:135])
+          for line in [line.strip() for line in t.splitlines() if line.strip()][:10]:
+              line=re.sub(r'\x1b\[[0-9;]*m','',line)
+              line=re.sub(r'(?:file|https?)://[^\s]+','<url>',line)
+              line=re.sub(r'/home/[^\s]+','<path>',line)
+              line=re.sub(r'[^a-zA-Z0-9 .:_()<>,-]','',line)
+              print('::notice::Deno output:',line[:125])
           PY
             exit 1
           fi

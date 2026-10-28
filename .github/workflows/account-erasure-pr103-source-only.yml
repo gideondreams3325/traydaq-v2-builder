@@ -1,85 +1,74 @@
-name: TRAYDAQ V2 - Erasure PR 103 Source-only Validation
+name: TRAYDAQ Legal Aid - Department Staff Source Validation
 on:
-  push:
-    branches: [main]
-    paths: [".github/workflows/account-erasure-pr103-source-only.yml"]
-  workflow_dispatch:
   pull_request:
     branches: [main]
     paths: [".github/workflows/account-erasure-pr103-source-only.yml"]
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  pr103-source-test:
-    name: Validate PR 103 code only (no erasure or deploy)
+  main-web-legal-aid:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
-      - name: Checkout exact PR 103 commit from source repository
+      - name: Fetch pinned Legal Aid UI PR 105
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: f6f10b418664b5ec4eb52da06e603ef518e17631
+          ref: cd8f7d42de378e5abcf0e6f8caf2fd4134dae1cb
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Verify exact source revision
+      - name: Verify immutable UI source and run privacy tests
         working-directory: private-src
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "f6f10b418664b5ec4eb52da06e603ef518e17631"
-          echo "::notice::Validated pinned PR 103 commit"
-      - name: Run release safety, identity and account deletion suites
+          test "$(git rev-parse HEAD)" = "cd8f7d42de378e5abcf0e6f8caf2fd4134dae1cb"
+          node --test tests/legal-aid-live-owner-vault.test.mjs tests/legal-aid-case-access.test.mjs tests/legal-aid-verified-custody.test.mjs tests/identity-fraud-consent-age-policy.test.mjs
+      - name: Typecheck web Security Hub (no deploy)
         working-directory: private-src
         shell: bash
         run: |
           set -euo pipefail
-          if node --test \
-            tests/account-erasure-release-lock.test.mjs \
-            tests/account-erasure-session.test.mjs \
-            tests/account-erasure-worker.test.mjs \
-            tests/account-erasure-live-preflight.test.mjs \
-            tests/account-owner-self-service-erasure.test.mjs \
-            tests/member-block-account-deletion-ui.test.mjs \
-            tests/self-service-content-and-privacy-minimization.test.mjs \
-            tests/unified-deletion-parity.test.mjs \
-            tests/owner-content-media-ownership.test.mjs \
-            tests/account-staging-erasure-holds.test.mjs \
-            tests/release-account-erasure.test.mjs \
-            tests/fraud-evidence-erasure-holds.test.mjs \
-            tests/account-investigation-retention.test.mjs \
-            tests/ordinary-identity-erasure-policy.test.mjs \
-            tests/identity-fraud-consent-age-policy.test.mjs \
-            > "$RUNNER_TEMP/erasure-pr103.log" 2>&1; then
-            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/erasure-pr103.log" | tail -3 || true
-            echo "::notice::PR103 deletion and fraud identity source regression tests passed"
-          else
-            grep -E '^not ok [0-9]+ - |^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/erasure-pr103.log" | head -18 || true
-            echo "::error::Source tests failed; do not merge or deploy"
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/legal-aid-web-install.log" 2>&1
+          npm run typecheck > "$RUNNER_TEMP/legal-aid-web-typecheck.log" 2>&1 || {
+            grep -E 'error TS[0-9]+' "$RUNNER_TEMP/legal-aid-web-typecheck.log" | head -12 || true
             exit 1
-          fi
-      - name: Validate independent release flag and mandatory retention
-        working-directory: private-src
+          }
+          echo "::notice::Legal Aid web UI and TS tests passed, without deployment"
+  standalone-staff-legal-aid:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Fetch pinned STAFF Legal Aid PR 106
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 5f1676e8472a36e663dcf2e82d7d531734be3c8b
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify immutable STAFF source and run security tests
+        working-directory: private-src/admin-native
         shell: bash
         run: |
-          node --input-type=module -e "
-            import assert from 'node:assert/strict';
-            import {ACCOUNT_ERASURE_RELEASE_VALIDATED,accountErasureRolloutEnabled} from './supabase/functions/_shared/accountErasureReleaseGate.mjs';
-            import {retentionReviewHolds,sensitiveEvidenceMediaHolds} from './supabase/functions/_shared/accountRetentionPolicy.mjs';
-            assert.equal(ACCOUNT_ERASURE_RELEASE_VALIDATED,true);
-            for (const value of [undefined,null,'','false','TRUE',true,1]) assert.equal(accountErasureRolloutEnabled(value),false);
-            assert.equal(accountErasureRolloutEnabled('true'),true);
-            assert.ok(retentionReviewHolds({counts:{'public.native_product_orders':1}}).length>0);
-            assert.ok(retentionReviewHolds({counts:{'public.v2_security_notices':1}}).length>0);
-            assert.ok(sensitiveEvidenceMediaHolds('fixtureOwner123456',{storageObjects:[{bucket:'traydaq-native-report-evidence',path:'fixtureOwner123456/report.jpg'}]}).length>0);
-            const fs=await import('node:fs');
-            const edge=fs.readFileSync('supabase/functions/firebase-account-erasure/index.ts','utf8');
-            assert.match(edge,/if\(plan\.holds\.length\)/);
-            assert.match(edge,/v2_legal_aid_erasure_holds/);
-            assert.match(edge,/hasVerifiedErasure\(proof\)/);
-          "
-          echo "::notice::Release guard and independent legal holds retained"
+          set -euo pipefail
+          test "$(git -C .. rev-parse HEAD)" = "5f1676e8472a36e663dcf2e82d7d531734be3c8b"
+          node --test tests/legal-aid-readiness.test.mjs
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/legal-aid-staff-install.log" 2>&1
+          npm run test:security > "$RUNNER_TEMP/legal-aid-staff-tests.log" 2>&1 || {
+            grep -E '^not ok [0-9]+ - |^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/legal-aid-staff-tests.log" | head -20 || true
+            exit 1
+          }
+          npm run typecheck > "$RUNNER_TEMP/legal-aid-staff-ts.log" 2>&1 || {
+            grep -E 'error TS[0-9]+' "$RUNNER_TEMP/legal-aid-staff-ts.log" | head -12 || true
+            exit 1
+          }
+          echo "::notice::Legal Aid STAFF scoped case metadata tests and TypeScript passed"

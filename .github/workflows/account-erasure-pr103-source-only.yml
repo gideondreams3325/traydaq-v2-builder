@@ -62,7 +62,11 @@ jobs:
           set -euo pipefail
           test "$(git -C .. rev-parse HEAD)" = "5f1676e8472a36e663dcf2e82d7d531734be3c8b"
           node --test tests/legal-aid-readiness.test.mjs
-          npm ci --no-audit --no-fund > "$RUNNER_TEMP/legal-aid-staff-install.log" 2>&1
+          npm install --no-audit --no-fund > "$RUNNER_TEMP/legal-aid-staff-install.log" 2>&1 || {
+            echo "::error::STAFF dependency installation failed"
+            grep -E 'npm error|npm ERR' "$RUNNER_TEMP/legal-aid-staff-install.log" | head -10 || true
+            exit 1
+          }
           npm run test:security > "$RUNNER_TEMP/legal-aid-staff-tests.log" 2>&1 || {
             grep -E '^not ok [0-9]+ - |^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/legal-aid-staff-tests.log" | head -20 || true
             exit 1

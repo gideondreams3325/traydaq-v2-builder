@@ -1,0 +1,1 @@
+Validation of TRAYDAQ V2 free chat/Gossips PR #71, pinned source 006378cb7ee36e5ceaf1524fb4aee5dfd04fa4c1. Validate web tests/build, native tests/typecheck and Deno server typecheck. Absolutely no APK assembly, signing, deployment or release.

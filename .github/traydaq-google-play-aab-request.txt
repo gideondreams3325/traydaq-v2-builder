@@ -10,3 +10,12 @@ Regenerate final 1.0.2/code 4 candidate after correcting About version display.
 Private release source: 644e0b2c2349ca9b400dc9b46a1f84a7a75968d3
 Branch: release/google-play-user-1.0.2-20261024
 User app only; no Play signing/configuration, public rollout or STAFF changes.
+
+
+User-requested internal Google Play tester update — 2026-10-28.
+App identity: com.traydaq.app (existing unreviewed internal testing listing).
+Source: merged private TRAYDAQ V2 main b46e2b1e7962cd30386999e79a4809161c543b3f (PR #77; includes Android privacy/blocking PR #76).
+Release: 1.0.4, versionCode 6 (greater than active code 4 and unpublished code 5 draft); Android target API 36.
+Scope: build signed Android App Bundle with the original verified TRAYDAQ upload key and matching APK for verification, retain version/package, run native tests, verify bundle manifest/certificate and 16KiB alignment.
+Never upload private signing secrets or source to artifacts. No STAFF build. No automatic Play upload, public rollout or changes to review answers.
+Intended next step: upload verified AAB to existing Google Play internal testing track through Play Console and share tester opt-in URL.

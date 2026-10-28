@@ -1,1 +1,1 @@
-Final validation of TRAYDAQ V2 chat/Gossips PR #71 source d8e91a6b727fd38d56e5b199550d985893e652ee. Check web TypeScript/tests/build, Android JS TypeScript/tests, and server Deno. Do not assemble, sign, publish or build any APK; do not deploy.
+Final four-job validation for TRAYDAQ V2 chat PR #71. Pinned app source 866cae3926112dc0b2409d632a9f1a0b1650588b. Web build/tests, Android source tests, Deno typecheck and Firebase local emulator rules tests. No APK build/sign, no app deployment.

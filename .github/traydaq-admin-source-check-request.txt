@@ -4,3 +4,5 @@ STAFF 1.0.2 / Android versionCode 5 · source a10227e5292fe98f0e0d301e069954254b
 Run independent Security age appeal native source checks, all STAFF security contracts, and React Native TypeScript. Do not build APK until source checks pass.
 
 Rerun STAFF Security 1.0.2 source checks c89d1baec15c51db7d8632cdb6e2cb0bfa875519: maintain account exclusion and DOB routing regression, no APK signing yet.
+
+Validate merged native STAFF member-deletion-review retirement at 8b4363b965cc51ba81217413ce0ea78a0cdcd871. Source checks and TypeScript ONLY. No APK or AAB.

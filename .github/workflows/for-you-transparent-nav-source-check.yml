@@ -79,7 +79,7 @@ jobs:
           else
             echo "::error::Private native regression tests failed; sanitized failing test names follow"
             grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/native-tests.log" | sed -E 's/^not ok [0-9]+ - /FAIL: /' | cut -c1-190 | head -25 || true
-            awk '/^not ok [0-9]+ - / { bad=1; next } bad && /location: / { sub(/^.*location: /,""); sub(/.*\\//,""); sub(/:[0-9]+:[0-9]+.*$/,""); print "FAIL FILE: " $0; bad=0 }' "$RUNNER_TEMP/native-tests.log" | head -25 || true
+            node -e 'const fs=require("node:fs");const rows=fs.readFileSync(process.argv[1],"utf8").split(/\\r?\\n/);let bad=false;for(const row of rows){if(/^not ok [0-9]+ - /.test(row)){bad=true;continue;}if(bad&&row.includes("location:")){const m=row.match(/([A-Za-z0-9._-]+\\.test\\.mjs):[0-9]+/);if(m)console.log("FAIL FILE: "+m[1]);bad=false;}}' "$RUNNER_TEMP/native-tests.log" | sort -u
             grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/native-tests.log" | tail -3 || true
             exit 1
           fi

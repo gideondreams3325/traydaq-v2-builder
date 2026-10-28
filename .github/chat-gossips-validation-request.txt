@@ -1,1 +1,1 @@
-TRAYDAQ V2 messaging redesign PR #72, source commit 83ad656013ff68a86b6018ca485e066bf024760e. Revalidate web, Android JS tests/TypeScript, Deno, Firebase emulator. Fixes native sheet backdrop typing and profile navigation regression. Do NOT build/sign/deploy an APK or release production.
+FINAL UI source validation for TRAYDAQ V2 responsive Messages and Gossips PR #72, commit e1ffe277d88ba5b95f967b506600d4db1d765034. Verify web build/tests, Android TypeScript/unit tests, Deno, Firebase emulator. No APK, signing or deployment.

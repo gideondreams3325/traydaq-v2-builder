@@ -147,7 +147,7 @@ jobs:
         shell: bash
         working-directory: src
         run: |
-          if deno check supabase/functions/firebase-member-chat/index.ts supabase/functions/_shared/chatBusiness.ts > "$RUNNER_TEMP/deno-chat-check.log" 2>&1; then
+          if deno check --node-modules-dir=auto supabase/functions/firebase-member-chat/index.ts supabase/functions/_shared/chatBusiness.ts > "$RUNNER_TEMP/deno-chat-check.log" 2>&1; then
             echo "::notice::Chat server Deno typecheck passed"
           else
             echo "::error::Chat server Deno typecheck failed; private source logs were not uploaded"

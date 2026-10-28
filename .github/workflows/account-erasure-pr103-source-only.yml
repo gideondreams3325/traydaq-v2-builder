@@ -1,0 +1,82 @@
+name: TRAYDAQ V2 - Erasure PR 103 Source-only Validation
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/account-erasure-pr103-source-only.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pr103-source-test:
+    name: Validate PR 103 code only (no erasure or deploy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact PR 103 commit from source repository
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: f6f10b418664b5ec4eb52da06e603ef518e17631
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify exact source revision
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "f6f10b418664b5ec4eb52da06e603ef518e17631"
+          echo "::notice::Validated pinned PR 103 commit"
+      - name: Run release safety, identity and account deletion suites
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          if node --test \
+            tests/account-erasure-release-lock.test.mjs \
+            tests/account-erasure-session.test.mjs \
+            tests/account-erasure-worker.test.mjs \
+            tests/account-erasure-live-preflight.test.mjs \
+            tests/account-owner-self-service-erasure.test.mjs \
+            tests/member-block-account-deletion-ui.test.mjs \
+            tests/self-service-content-and-privacy-minimization.test.mjs \
+            tests/unified-deletion-parity.test.mjs \
+            tests/owner-content-media-ownership.test.mjs \
+            tests/account-staging-erasure-holds.test.mjs \
+            tests/release-account-erasure.test.mjs \
+            tests/fraud-evidence-erasure-holds.test.mjs \
+            tests/account-investigation-retention.test.mjs \
+            tests/ordinary-identity-erasure-policy.test.mjs \
+            tests/identity-fraud-consent-age-policy.test.mjs \
+            > "$RUNNER_TEMP/erasure-pr103.log" 2>&1; then
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/erasure-pr103.log" | tail -3 || true
+            echo "::notice::PR103 deletion and fraud identity source regression tests passed"
+          else
+            grep -E '^not ok [0-9]+ - |^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/erasure-pr103.log" | head -18 || true
+            echo "::error::Source tests failed; do not merge or deploy"
+            exit 1
+          fi
+      - name: Validate independent release flag and mandatory retention
+        working-directory: private-src
+        shell: bash
+        run: |
+          node --input-type=module -e "
+            import assert from 'node:assert/strict';
+            import {ACCOUNT_ERASURE_RELEASE_VALIDATED,accountErasureRolloutEnabled} from './supabase/functions/_shared/accountErasureReleaseGate.mjs';
+            import {retentionReviewHolds,sensitiveEvidenceMediaHolds} from './supabase/functions/_shared/accountRetentionPolicy.mjs';
+            assert.equal(ACCOUNT_ERASURE_RELEASE_VALIDATED,true);
+            for (const value of [undefined,null,'','false','TRUE',true,1]) assert.equal(accountErasureRolloutEnabled(value),false);
+            assert.equal(accountErasureRolloutEnabled('true'),true);
+            assert.ok(retentionReviewHolds({counts:{'public.native_product_orders':1}}).length>0);
+            assert.ok(retentionReviewHolds({counts:{'public.v2_security_notices':1}}).length>0);
+            assert.ok(sensitiveEvidenceMediaHolds('fixtureOwner123456',{storageObjects:[{bucket:'traydaq-native-report-evidence',path:'fixtureOwner123456/report.jpg'}]}).length>0);
+            const fs=await import('node:fs');
+            const edge=fs.readFileSync('supabase/functions/firebase-account-erasure/index.ts','utf8');
+            assert.match(edge,/if\(plan\.holds\.length\)/);
+            assert.match(edge,/v2_legal_aid_erasure_holds/);
+            assert.match(edge,/hasVerifiedErasure\(proof\)/);
+          "
+          echo "::notice::Release guard and independent legal holds retained"

@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: main
+          ref: feat/identity-fraud-consent-age-appeal-20261028
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -70,6 +70,28 @@ jobs:
           else
             echo "::error::Owner-only expiry cleanup Edge TypeScript failed"
             grep -E 'TS[0-9]+|error:' "$RUNNER_TEMP/legal-aid-owner-expiry.log" | head -12 | sed -E 's/[^a-zA-Z0-9 ._:/-]//g' || true
+            exit 1
+          fi
+      - name: Validate new identity consent and age-screening Edge Function
+        working-directory: private-src
+        shell: bash
+        run: |
+          if deno check --node-modules-dir=auto supabase/functions/firebase-identity-review/index.ts > "$RUNNER_TEMP/identity-age-check.log" 2>&1; then
+            echo "::notice::ID fraud consent and age Edge TypeScript passed"
+          else
+            echo "::error::ID consent/age Edge TypeScript failed"
+            grep -E 'TS[0-9]+|error:' "$RUNNER_TEMP/identity-age-check.log" | head -15 | sed -E 's/[^a-zA-Z0-9 ._:/-]//g' || true
+            exit 1
+          fi
+      - name: Verify native Android TypeScript (no APK or AAB)
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          if npm ci --no-audit --no-fund > "$RUNNER_TEMP/mobile-deps.log" 2>&1 && npm run typecheck > "$RUNNER_TEMP/mobile-identity-types.log" 2>&1; then
+            echo "::notice::Android ID consent, age and appeals TypeScript passed"
+          else
+            echo "::error::Android verification source validation failed"
+            grep -E 'error TS[0-9]+|npm ERR' "$RUNNER_TEMP/mobile-identity-types.log" | head -14 || true
             exit 1
           fi
       - name: Typecheck guarded account-erasure source interlock

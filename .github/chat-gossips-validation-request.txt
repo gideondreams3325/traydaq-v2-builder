@@ -1,1 +1,2 @@
 TRAYDAQ Chat and Gossips validation-only request. Source commit: 10bfca7a8ea6d5075047ee8b58803d39f6d2d3d7. Web tests, React Native tests, Deno server typecheck. No APK build, no deployment.
+Full validation source 006378cb7ee36e5ceaf1524fb4aee5dfd04fa4c1. Fixed regression assertion after thread identifier captured in async closure. No APK.

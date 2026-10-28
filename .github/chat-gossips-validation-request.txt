@@ -1,1 +1,1 @@
-Validate private TRAYDAQ source PR #73 commit a199a05c67112e3551c01e79a40d051b071509b7. Web tests/typecheck/build; Android JS unit tests/typecheck; Deno Edge Function typecheck; Firebase RTDB emulator tests. NO APK, signing, publishing or deployment.
+Final live Privacy page fix validation PR #73 source 567f8000981388725131f6e1d07a9f05d1a79ed7. Verified server chat preferences, owned block list and block/unblock; web TypeScript/unit tests/build, Android JS tests/typecheck, Deno, Firebase emulator. No APK, signing, app release or deploy.

@@ -31,3 +31,11 @@ Keep existing upload key and target Android API 36; verify AAB, APK, permissions
 Deliver AAB/APK and verification evidence as Actions artifact only.
 Do NOT upload to Google Play, configure Play App Signing, publish to testers, change tester lists,
 start production rollout, release STAFF APK, or change any account data.
+
+Retry request — 2026-10-28 after failed run 40660544254.
+Cause confirmed from Gradle log: Maven Central react-android-0.86.3-release.aar Read timed out.
+Builder fix: a35c867425682b9beb59af86bfed152a08019cb0.
+Retry version 1.0.5 (code 7) from immutable source 6562712194642826effc3dcadb108630ad643e3e.
+Use same registered TRAYDAQ upload key, package com.traydaq.app and target API 36.
+Output only signed internal-testing AAB, compatible APK and verification evidence.
+No Google Play upload, release to testers, production rollout, or admin APK.

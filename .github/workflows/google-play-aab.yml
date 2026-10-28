@@ -269,21 +269,21 @@ jobs:
           print('Verified same-certificate AAB/APK, target 36, permissions and',len(checked),'16KiB ELF libraries.')
           PY
           cat > play-release/GOOGLE-PLAY-TESTING-NOTES.txt <<'NOTES'
-TRAYDAQ for Google Play testing
-Application ID: com.traydaq.app
-Version: 1.0.5 (7)
-Release channel intended: Internal testing (or closed testing after internal verification)
-Changes:
-- Add a Chats shortcut at the top-left of For You, opening Messages, New Chat and Gossips.
-- Show loading, retry and empty states instead of a blank For You screen.
-- Improve profile loading recovery and show the correct public member identity when full details are unavailable.
-- Keep private content review, existing member blocks, and publishing rules.
-Safety:
-- Signed with the existing TRAYDAQ V2 Android upload certificate.
-- AAB has NOT been uploaded to Google Play.
-- A Play Console authorized release manager must check Google Play policy declarations,
-  app signing setup, tester list and release availability before launching a test.
-NOTES
+          TRAYDAQ for Google Play testing
+          Application ID: com.traydaq.app
+          Version: 1.0.5 (7)
+          Release channel intended: Internal testing (or closed testing after internal verification)
+          Changes:
+          - Add a Chats shortcut at the top-left of For You, opening Messages, New Chat and Gossips.
+          - Show loading, retry and empty states instead of a blank For You screen.
+          - Improve profile loading recovery and show the correct public member identity when full details are unavailable.
+          - Keep private content review, existing member blocks, and publishing rules.
+          Safety:
+          - Signed with the existing TRAYDAQ V2 Android upload certificate.
+          - AAB has NOT been uploaded to Google Play.
+          - A Play Console authorized release manager must check Google Play policy declarations,
+            app signing setup, tester list and release availability before launching a test.
+          NOTES
           echo "PASS: user AAB; package=$PACKAGE versionCode=$CODE target API=$TARGET, original signing key."
           sha256sum "$AAB"
 

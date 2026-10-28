@@ -61,6 +61,17 @@ jobs:
             grep -E 'TS[0-9]+|error:' "$RUNNER_TEMP/legal-aid-live.log" | head -12 | sed -E 's/[^a-zA-Z0-9 ._:/-]//g' || true
             exit 1
           fi
+      - name: Typecheck daily physical owner PDF expiry worker
+        working-directory: private-src
+        shell: bash
+        run: |
+          if deno check --node-modules-dir=auto supabase/functions/firebase-legal-aid-owner-expiry/index.ts > "$RUNNER_TEMP/legal-aid-owner-expiry.log" 2>&1; then
+            echo "::notice::Owner-only expiry cleanup Edge TypeScript passed"
+          else
+            echo "::error::Owner-only expiry cleanup Edge TypeScript failed"
+            grep -E 'TS[0-9]+|error:' "$RUNNER_TEMP/legal-aid-owner-expiry.log" | head -12 | sed -E 's/[^a-zA-Z0-9 ._:/-]//g' || true
+            exit 1
+          fi
       - name: Typecheck guarded account-erasure source interlock
         working-directory: private-src
         shell: bash

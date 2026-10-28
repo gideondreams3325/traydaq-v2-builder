@@ -1,0 +1,117 @@
+name: TRAYDAQ Gossips Member Invitations - Source Validation Only
+
+# Validate the private change without generating APKs, AABs, Expo exports,
+# Android bundles, release packages, or publishing app artifacts.
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/gossips-member-invites-source-only.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check private source credential
+        env:
+          READY: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$READY" = true
+      - name: Checkout feature source privately
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/gossips-live-member-suggestions-20261028
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Web tests, TypeScript and Cloudflare-targeted asset check
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          check() {
+            local label="$1"; shift
+            if "$@" > "$RUNNER_TEMP/$label.log" 2>&1; then
+              echo "::notice::$label passed"
+            else
+              echo "::error::$label failed; private logs remain on the runner"
+              if [[ "$label" == "web-tests" ]]; then
+                grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/$label.log" | tail -3 || true
+              fi
+              exit 1
+            fi
+          }
+          check web-deps npm ci --no-audit --no-fund
+          check web-tests npm test
+          check web-types npm run typecheck
+          check web-assets npm run build
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check private source credential
+        env:
+          READY: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$READY" = true
+      - name: Checkout native sources privately
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/gossips-live-member-suggestions-20261028
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Native source tests and TypeScript only
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! npm install --no-audit --no-fund > "$RUNNER_TEMP/native-install.log" 2>&1; then
+            echo "::error::Native dependency install failed"; exit 1
+          fi
+          if ! node --test tests/*.test.mjs > "$RUNNER_TEMP/native-tests.log" 2>&1; then
+            echo "::error::Native source tests failed"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/native-tests.log" | tail -3 || true
+            exit 1
+          fi
+          if ! npm run typecheck > "$RUNNER_TEMP/native-types.log" 2>&1; then
+            echo "::error::Native typecheck failed"; exit 1
+          fi
+          echo "::notice::Native tests and TypeScript passed; no Android build performed"
+  edge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout private server source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/gossips-live-member-suggestions-20261028
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Typecheck private Gossips edge function
+        working-directory: private-src
+        shell: bash
+        run: |
+          if deno check --node-modules-dir=auto supabase/functions/firebase-member-chat/index.ts > "$RUNNER_TEMP/gossips-deno.log" 2>&1; then
+            echo "::notice::Gossips edge function typecheck passed"
+          else
+            echo "::error::Edge function typecheck failed; diagnostics remain private"
+            grep -o 'TS[0-9]\{4\}' "$RUNNER_TEMP/gossips-deno.log" | sort -u | head -8 || true
+            exit 1
+          fi

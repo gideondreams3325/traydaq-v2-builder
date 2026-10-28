@@ -1,5 +1,6 @@
 name: TRAYDAQ Gossips Member Invitations - Source Validation Only
 
+# Validation retry for exact private source c69add57211f8f1420e861cb0a016f49c7834d49
 # Validate the private change without generating APKs, AABs, Expo exports,
 # Android bundles, release packages, or publishing app artifacts.
 on:

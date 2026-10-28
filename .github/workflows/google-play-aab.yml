@@ -18,7 +18,7 @@ jobs:
   signed-aab:
     name: Existing-key signed AAB (Android API 36)
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
     env:
       CI: "1"
       EXPO_NO_TELEMETRY: "1"
@@ -180,7 +180,7 @@ jobs:
           console.log('Release AAB configured to use original permanent keystore.');
           NODE
 
-      - name: Build signed Google Play AAB
+      - name: Build signed Google Play AAB (resilient Maven Central downloads)
         env:
           TRAYDAQ_UPLOAD_STOREPASS: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEYSTORE_PASSWORD }}
           TRAYDAQ_UPLOAD_KEYPASS: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEY_PASSWORD }}
@@ -188,7 +188,34 @@ jobs:
           set -euo pipefail
           cd android
           chmod +x gradlew
-          ./gradlew --no-daemon :app:bundleRelease :app:assembleRelease
+          # React Native 0.86.3 AAR downloads timed out on the first run.
+          # Allow longer official Maven Central HTTP reads and reduce concurrent requests.
+          # The same generated Android project and permanent signing key are reused.
+          for attempt in 1 2; do
+            LOG="$RUNNER_TEMP/traydaq-aab-gradle-attempt-${attempt}.log"
+            echo "Building signed AAB/APK (attempt ${attempt}/2, Maven timeouts increased)."
+            if ./gradlew --no-daemon --max-workers=2 \
+              -Dorg.gradle.internal.http.connectionTimeout=120000 \
+              -Dorg.gradle.internal.http.socketTimeout=300000 \
+              -Dorg.gradle.internal.repository.max.tentatives=5 \
+              -Dorg.gradle.internal.repository.initial.backoff=1000 \
+              :app:bundleRelease :app:assembleRelease > "$LOG" 2>&1; then
+              echo "PASS: signed AAB/APK compilation completed on attempt $attempt."
+              exit 0
+            fi
+            if ! grep -Eqi 'Read timed out|Connection reset|Connect timed out|Connection timed out|Could not download|Could not GET|Network is unreachable' "$LOG"; then
+              echo "::error::Gradle failed for a non-network reason. Inspect the private runner log."
+              grep -E '(^FAILURE:|^Execution failed for task |^> Task :[^ ]+ FAILED)' "$LOG" | tail -8 || true
+              exit 1
+            fi
+            echo "::warning::Official dependency download failed on attempt $attempt."
+            if [ "$attempt" -eq 2 ]; then
+              echo "::error::Maven download failed again; release was not produced."
+              exit 1
+            fi
+            echo "Retrying the same release build with retained Gradle cache."
+            sleep 20
+          done
 
       - name: Verify signed app bundle and target API exactly 36
         env:

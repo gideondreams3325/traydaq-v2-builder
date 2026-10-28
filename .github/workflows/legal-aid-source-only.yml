@@ -113,6 +113,17 @@ jobs:
             grep -E '^not ok [0-9]+ - |^# (tests|pass|fail) ' "$RUNNER_TEMP/identity-consent-age.log" | head -12 || true
             exit 1
           fi
+      - name: Test nonconsenting identity deletion disposition without case archiving
+        working-directory: private-src
+        shell: bash
+        run: |
+          if node --test tests/ordinary-identity-erasure-policy.test.mjs tests/fraud-evidence-erasure-holds.test.mjs > "$RUNNER_TEMP/ordinary-id-erasure.log" 2>&1; then
+            echo "::notice::Nonconsenting ID deletion and independent case-hold tests passed"
+          else
+            echo "::error::Identity deletion retention policy regressions"
+            grep -E '^not ok [0-9]+ - |^# (tests|pass|fail) ' "$RUNNER_TEMP/ordinary-id-erasure.log" | head -15 || true
+            exit 1
+          fi
       - name: Typecheck guarded account-erasure source interlock
         working-directory: private-src
         shell: bash

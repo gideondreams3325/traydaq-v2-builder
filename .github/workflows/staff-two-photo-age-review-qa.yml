@@ -55,3 +55,5 @@ jobs:
 # Rerun after adjusting native release UI assertions and protected recommendation approval tests.
 
 # Validate dynamic decision requirements and regression assertion update.
+
+# Rerun after adding native-only browser-origin guards and auditing the full STAFF suite.

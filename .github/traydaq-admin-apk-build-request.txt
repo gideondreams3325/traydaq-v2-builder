@@ -80,3 +80,8 @@ Build only TRAYDAQ STAFF 1.0.4 versionCode 7, com.traydaq.admin.
 Private source: gideondreams3325/traydaq-v2 feat/standalone-admin-native including merged PR #118 (a3af6ac9f98eaab5273894e45d953a7b0aa95b13).
 Fix: STAFF consumes real private v2_age_capture_reviews evidence submitted by firebase-age-verification (one live face photo and one proof-of-age photo), not four-selfie ID Verification.
 Require Security tests, TypeScript, Expo checks, Gradle release, original independent STAFF signing, Firebase signing SHA verification, artifact upload. ID Verification unchanged. Do not publish to Play Store or build customer APK.
+
+OWNER-REQUESTED STAFF AGE REVIEW 403 + RECOMMENDATION APPROVAL REPAIR — 2026-10-29
+Build only TRAYDAQ STAFF 1.0.5 versionCode 8, package com.traydaq.admin, source private feat/standalone-admin-native after PR #120 (e9c13e216701450ca6aa984737f1757d07c627e4).
+Features: dedicated two-photo age review; Security appointments can inspect evidence; historical recommendation is a pending approval request; authorized Official Owner or Security Head may record a separate decision only following independent adult-proof verification. Raw evidence privacy/audit unchanged.
+Validate existing independent STAFF Firebase signing SHA, TypeScript and all Security tests, compile signed release and publish STAFF APK artifact. Do not build the customer APK, alter ID Verification or publish to Play Store.

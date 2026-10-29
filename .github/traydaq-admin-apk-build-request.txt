@@ -74,3 +74,9 @@ Build TRAYDAQ STAFF 1.0.3 versionCode 6, package com.traydaq.admin, source priva
 Include audited fresh selfie and private DOB-proof age-appeal reviewer UI, CEO/Official Owner recommend/approval eligibility after separate independent identity verification, and protected age security tests.
 Run dedicated admin-native.yml, compile signed standalone release, verify independent Staff keystore and Firebase SHA-1, publish only TRAYDAQ-V2-Admin-Native-Android-APK.
 Do not build legacy app or approve real appeals.
+
+OWNER-REQUESTED STAFF TWO-PHOTO AGE REVIEW REPAIR RELEASE — 2026-10-29
+Build only TRAYDAQ STAFF 1.0.4 versionCode 7, com.traydaq.admin.
+Private source: gideondreams3325/traydaq-v2 feat/standalone-admin-native including merged PR #118 (a3af6ac9f98eaab5273894e45d953a7b0aa95b13).
+Fix: STAFF consumes real private v2_age_capture_reviews evidence submitted by firebase-age-verification (one live face photo and one proof-of-age photo), not four-selfie ID Verification.
+Require Security tests, TypeScript, Expo checks, Gradle release, original independent STAFF signing, Firebase signing SHA verification, artifact upload. ID Verification unchanged. Do not publish to Play Store or build customer APK.

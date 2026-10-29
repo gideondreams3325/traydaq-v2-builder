@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-v2-for-you-engagement-sound-icon-validation
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: b76118ebab6c258cbdcb535ef5d5fe091ab91a7e
+  PRIVATE_SOURCE_SHA: 592eedbf433c7836628350376ba94484d4a196c5
 jobs:
   web:
     name: Private web tests, TypeScript and Cloudflare bundle

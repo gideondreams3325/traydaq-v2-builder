@@ -1,0 +1,78 @@
+name: TRAYDAQ Web Sign In Mobile and Back QA
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/web-signin-mobile-back-qa.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-web-signin-mobile-qa
+  cancel-in-progress: true
+env:
+  PRIVATE_SOURCE_SHA: d4e411e729cb05b36da04d5222ca9cd9801ec750
+jobs:
+  web:
+    name: Private account UI tests TypeScript and Cloudflare bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: "1"
+    steps:
+      - name: Check private source authorization
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - name: Checkout exactly the private web auth branch commit
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install locked web dependencies
+        shell: bash
+        working-directory: private-src
+        run: |
+          set -euo pipefail
+          test -f wrangler.jsonc
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/account-install.log" 2>&1 || { echo "::error::Web dependencies failed"; exit 1; }
+          echo "PASS: web dependencies"
+      - name: Run all web regression tests
+        shell: bash
+        working-directory: private-src
+        run: |
+          set -euo pipefail
+          if npm test > "$RUNNER_TEMP/account-tests.log" 2>&1; then
+            echo "PASS: full web regression suite"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/account-tests.log" | tail -3 || true
+          else
+            echo "::error::Web tests failed"
+            grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/account-tests.log" | sed -E 's/^not ok [0-9]+ - /FAIL: /' | cut -c1-160 | head -30 || true
+            exit 1
+          fi
+      - name: Typecheck web source
+        shell: bash
+        working-directory: private-src
+        run: |
+          set -euo pipefail
+          if npm run typecheck > "$RUNNER_TEMP/account-ts.log" 2>&1; then echo "PASS: web TS"; else
+            echo "::error::Web TypeScript failed"
+            grep -E 'error TS[0-9]+' "$RUNNER_TEMP/account-ts.log" | sed -E 's@.*/@@' | cut -c1-160 | head -20 || true
+            exit 1
+          fi
+      - name: Validate Cloudflare web build
+        shell: bash
+        working-directory: private-src
+        run: |
+          set -euo pipefail
+          npm run build > "$RUNNER_TEMP/account-build.log" 2>&1 || { echo "::error::Cloudflare-targeted web build failed"; exit 1; }
+          test -f dist/index.html
+          echo "PASS: web production build and policy output"
+# No private source upload, publishing, Android app or APK/AAB build.

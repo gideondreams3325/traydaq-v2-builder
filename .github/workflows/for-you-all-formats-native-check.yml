@@ -10,7 +10,7 @@ concurrency:
   group: traydaq-v2-for-you-all-formats-native-validation
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 7b92af989507df68614985d82bbdb24f036bdbb0
+  PRIVATE_SOURCE_SHA: 2dbc4b6684245dd64a581a6a81f10adeb0b8b1fd
 jobs:
   native:
     name: Private Android tests, TypeScript and JS export

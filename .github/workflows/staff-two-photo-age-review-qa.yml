@@ -38,3 +38,5 @@ jobs:
           grep -q "firebase-age-verification-review" admin-native/src/backend.ts
           grep -q "v2_age_capture_reviews" supabase/functions/firebase-admin-workspace/index.ts
           echo "Dedicated two-photo age evidence is wired into STAFF."
+
+# Retest the corrected age evidence contract and signed STAFF 1.0.4 source.

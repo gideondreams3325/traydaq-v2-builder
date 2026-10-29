@@ -85,3 +85,9 @@ OWNER-REQUESTED STAFF AGE REVIEW 403 + RECOMMENDATION APPROVAL REPAIR — 2026-1
 Build only TRAYDAQ STAFF 1.0.5 versionCode 8, package com.traydaq.admin, source private feat/standalone-admin-native after PR #120 (e9c13e216701450ca6aa984737f1757d07c627e4).
 Features: dedicated two-photo age review; Security appointments can inspect evidence; historical recommendation is a pending approval request; authorized Official Owner or Security Head may record a separate decision only following independent adult-proof verification. Raw evidence privacy/audit unchanged.
 Validate existing independent STAFF Firebase signing SHA, TypeScript and all Security tests, compile signed release and publish STAFF APK artifact. Do not build the customer APK, alter ID Verification or publish to Play Store.
+
+OWNER-AUTHORIZED STAFF SECURITY AUDIT RELEASE — 2026-10-29
+Build signed TRAYDAQ STAFF version 1.0.6, versionCode 9, com.traydaq.admin from private branch feat/standalone-admin-native (latest merged full-native Security audit PR #125, commit 46a530f8d856c4f9b81715af408a5ab3b6dfe254).
+Use TRAYDAQ V2 BUILDER admin-native workflow and separate original STAFF signing key. Run entire STAFF tests, typecheck, Expo compatibility, Android Gradle build, Firebase SHA-1 verification and publish STAFF APK artifact.
+Features: security and department audit, no browser Security Hub fallback, appointed native age-review decisions, and native STAFF backend browser-origin rejection. Existing protected Supabase services deployed.
+Do NOT create a new app, alter com.traydaq.app, trigger user Android APK/AAB, publish to Google Play, or change signing credentials.

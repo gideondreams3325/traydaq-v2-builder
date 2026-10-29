@@ -214,3 +214,10 @@ OWNER-REQUESTED MEMBER IDENTITY AGE-RECHECK PROOF BUILD — 2026-10-29
 Build TRAYDAQ customer Android app 1.0.7, versionCode 9, com.traydaq.app from latest private main including PR #116 and private DOB proof / four-selfie age recheck restart.
 Run only build.yml, separate from admin-native.yml. Require identity, TypeScript, security regression tests, Expo validation, native Gradle release compilation, production signing and Firebase SHA verification. Upload installable user APK artifact.
 No live age-appeal approvals, no Play Store deployment.
+
+
+USER-REQUESTED APK BUILD — 2026-10-29 07:05 GMT
+App: existing TRAYDAQ V2 regular USER Android application (com.traydaq.app), version 1.0.7 / versionCode 9.
+Source: gideondreams3325/traydaq-v2 main @ f92b132f9487418f21fcbe1797dc3240ba72ec02 (Android-only For You fix from PR #117; source and web/native validation passed).
+Builder: ONLY public traydaq-v2-builder .github/workflows/build.yml. Compile, test, TypeScript check, Expo bundle, Gradle assembleRelease, verify original upload signing certificate and Firebase matching SHA, check installability, publish user APK artifact.
+User explicitly asked to trigger the build and inspect/fix failures until success. Do not trigger Admin/Staff, Play Store rollout, or Google Play AAB.

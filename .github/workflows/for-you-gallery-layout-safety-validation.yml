@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-v2-for-you-gallery-layout-safety-validation
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: ef0026eef4a4d1ebc92c751bf4cbf31071af3015
+  PRIVATE_SOURCE_SHA: 2be7c2a7459c5dbb26163426ef241061faff74d3
 jobs:
   web:
     name: Private web tests, TypeScript and Cloudflare bundle
@@ -92,7 +92,13 @@ jobs:
             grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/native-tests.log" | tail -3 || true
             exit 1
           fi
-          npm run typecheck > "$RUNNER_TEMP/native-typecheck.log" 2>&1 || { echo "::error::Private native TypeScript failed"; exit 1; }
+          if npm run typecheck > "$RUNNER_TEMP/native-typecheck.log" 2>&1; then
+            echo "PASS: native TypeScript"
+          else
+            echo "::error::Private native TypeScript failed; filenames and compiler codes only"
+            grep -E 'error TS[0-9]+' "$RUNNER_TEMP/native-typecheck.log" | sed -E 's@^.*/@@; s@^([^:( ]+).*error (TS[0-9]+).*@\1 \2@' | head -15 || true
+            exit 1
+          fi
           npx expo export --platform android > "$RUNNER_TEMP/native-export.log" 2>&1 || { echo "::error::Private Android JavaScript bundling failed"; exit 1; }
           echo "PASS: private native tests, TypeScript and Android bundle"
 # No deployment, APK publishing, credentials, or private source artifacts.

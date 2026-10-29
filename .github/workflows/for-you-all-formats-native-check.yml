@@ -1,0 +1,61 @@
+name: TRAYDAQ Android For You All Aspect Formats (No APK)
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/for-you-all-formats-native-check.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-v2-for-you-all-formats-native-validation
+  cancel-in-progress: true
+env:
+  PRIVATE_SOURCE_SHA: 7b92af989507df68614985d82bbdb24f036bdbb0
+jobs:
+  native:
+    name: Private Android tests, TypeScript and JS export
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - name: Verify read-only private source token
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - name: Checkout exact private feature source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run native source checks and Android JavaScript export
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-audit --no-fund > "$RUNNER_TEMP/native-install.log" 2>&1 || { echo "::error::Android dependency install failed"; exit 1; }
+          if node --test tests/*.test.mjs > "$RUNNER_TEMP/native-tests.log" 2>&1; then
+            echo "PASS: Native Android regression tests"
+          else
+            echo "::error::Native Android tests failed, sanitized test names:"
+            grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/native-tests.log" | sed -E 's/^not ok [0-9]+ - /FAIL: /' | cut -c1-155 | head -30 || true
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/native-tests.log" | tail -3 || true
+            exit 1
+          fi
+          if npm run typecheck > "$RUNNER_TEMP/native-ts.log" 2>&1; then
+            echo "PASS: Native TypeScript"
+          else
+            echo "::error::Android TypeScript validation failed"
+            grep -E 'error TS[0-9]+' "$RUNNER_TEMP/native-ts.log" | sed -E 's@.*/@@' | cut -c1-170 | head -20 || true
+            exit 1
+          fi
+          npx expo export --platform android > "$RUNNER_TEMP/native-export.log" 2>&1 || { echo "::error::Android JS bundle failed"; exit 1; }
+          echo "PASS: Android JavaScript export (no APK/AAB)"
+# Never upload private-source artifacts, publish a release or build/sign APK/AAB.

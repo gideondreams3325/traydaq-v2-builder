@@ -1,0 +1,52 @@
+name: TRAYDAQ verified age appeal approval no-release-lock QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/verified-age-approval-gate-removal-qa.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  staff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout updated private STAFF source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/staff-approve-age-appeal-direct-20261029
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install native STAFF dependencies
+        working-directory: private-src/admin-native
+        run: npm install --no-audit --no-fund
+      - name: Test all STAFF access, approval and audit contracts
+        working-directory: private-src/admin-native
+        run: npm run test:security
+      - name: Typecheck STAFF
+        working-directory: private-src/admin-native
+        run: npm run typecheck
+  age_api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout modified dedicated age review service
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/enable-verified-age-appeal-finalization-20261029
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Test dedicated age-review and retired legacy release lock
+        run: node --test tests/age-review-security-appointments.test.mjs tests/independent-age-review-release-lock.test.mjs tests/security-hub-native-only.test.mjs
+      - name: Typecheck web and shared source
+        run: npm ci --no-audit --no-fund && npm run typecheck

@@ -1,0 +1,34 @@
+name: TRAYDAQ member age-recheck proof source validation
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/member-age-recheck-safety-check.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout private member source fix branch
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/member-age-recheck-main-20261029
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install native member dependencies
+        working-directory: private-src/mobile
+        run: npm install --no-audit --no-fund
+      - name: Verify member identity and age recheck proof contracts
+        working-directory: private-src/mobile
+        run: node --test tests/age-appeal-evidence.test.mjs tests/authoritative-member-identity.test.mjs tests/fraud-identity-hardening.test.mjs tests/member-appeals-parity.test.mjs
+      - name: Typecheck member Android source
+        working-directory: private-src/mobile
+        run: npm run typecheck

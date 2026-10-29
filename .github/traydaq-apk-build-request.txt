@@ -221,3 +221,8 @@ App: existing TRAYDAQ V2 regular USER Android application (com.traydaq.app), ver
 Source: gideondreams3325/traydaq-v2 main @ f92b132f9487418f21fcbe1797dc3240ba72ec02 (Android-only For You fix from PR #117; source and web/native validation passed).
 Builder: ONLY public traydaq-v2-builder .github/workflows/build.yml. Compile, test, TypeScript check, Expo bundle, Gradle assembleRelease, verify original upload signing certificate and Firebase matching SHA, check installability, publish user APK artifact.
 User explicitly asked to trigger the build and inspect/fix failures until success. Do not trigger Admin/Staff, Play Store rollout, or Google Play AAB.
+
+
+USER-AUTHORIZED FOLLOW-UP TRAYDAQ USER APK — 2026-10-29
+Latest private source: gideondreams3325/traydaq-v2 main @ d4c60b3f6d4b45612d1aacdacd17e6915ba8aafc (Android For You screenshot corrections, merged PR #121).
+Build only regular USER Android com.traydaq.app version 1.0.7/code 9 via existing public dedicated .github/workflows/build.yml; preserve permanent production signing certificate and Firebase SHA. Run native tests, Expo dependency checks, TypeScript, Android JS bundle, Gradle release compilation, APK installability/signature verification, and upload user APK. Inspect failures and repair if found. Do not touch web, staff APK, AAB, or Google Play rollout.

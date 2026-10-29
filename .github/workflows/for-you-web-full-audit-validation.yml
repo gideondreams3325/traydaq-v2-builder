@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-v2-web-for-you-full-audit
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 265718e8af53cf283dd33efdcd5cd2b94443f48b
+  PRIVATE_SOURCE_SHA: cd65befde06f1cb6968faa5ee70b4ca7e601d931
 jobs:
   web:
     name: Private web regression tests, TypeScript and Cloudflare bundle

@@ -1,0 +1,99 @@
+name: Traydaq Web Android Chat Voice and Layout QA (No APK)
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/web-android-chat-voice-ui-audit.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-chat-voice-and-layout-source
+  cancel-in-progress: true
+env:
+  PRIVATE_SOURCE_SHA: 4e42ef1258dad8283761adb1d99c2d60eebc64d8
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: "1"
+    steps:
+      - name: Check private read token
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Web tests, typecheck and Cloudflare build
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/web-install.log" 2>&1 || { echo "::error::Web dependency install failed"; exit 1; }
+          if npm test > "$RUNNER_TEMP/web-tests.log" 2>&1; then
+            echo "PASS: web tests"
+          else
+            echo "::error::Web tests failed"
+            grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/web-tests.log" | sed -E 's/^not ok [0-9]+ - /FAIL: /' | cut -c1-160 | head -35 || true
+            exit 1
+          fi
+          if npm run typecheck > "$RUNNER_TEMP/web-ts.log" 2>&1; then echo "PASS: web TypeScript"; else
+            echo "::error::Web TypeScript failed"
+            grep -E 'error TS[0-9]+' "$RUNNER_TEMP/web-ts.log" | sed -E 's@.*/@@' | cut -c1-160 | head -30 || true
+            exit 1
+          fi
+          npm run build > "$RUNNER_TEMP/web-build.log" 2>&1 || { echo "::error::Cloudflare web build failed"; exit 1; }
+          test -f dist/index.html
+          echo "PASS: Cloudflare web bundle"
+  android-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - name: Check private read token
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Android native tests, typecheck and JS export (no Gradle)
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-audit --no-fund > "$RUNNER_TEMP/android-install.log" 2>&1 || { echo "::error::Android dependency install failed"; exit 1; }
+          if node --test tests/*.test.mjs > "$RUNNER_TEMP/android-tests.log" 2>&1; then
+            echo "PASS: Android tests"
+          else
+            echo "::error::Android tests failed"
+            grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/android-tests.log" | sed -E 's/^not ok [0-9]+ - /FAIL: /' | cut -c1-160 | head -35 || true
+            exit 1
+          fi
+          if npm run typecheck > "$RUNNER_TEMP/android-ts.log" 2>&1; then echo "PASS: Android TypeScript"; else
+            echo "::error::Android TypeScript failed"
+            grep -E 'error TS[0-9]+' "$RUNNER_TEMP/android-ts.log" | sed -E 's@.*/@@' | cut -c1-160 | head -30 || true
+            exit 1
+          fi
+          npx expo export --platform android > "$RUNNER_TEMP/android-export.log" 2>&1 || { echo "::error::Android JavaScript export failed"; exit 1; }
+          echo "PASS: Android JS export (NO APK/AAB)"
+# Source-only validation: never upload source or binaries, build Gradle, or deploy.

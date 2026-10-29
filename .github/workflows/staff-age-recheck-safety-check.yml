@@ -1,0 +1,46 @@
+name: TRAYDAQ Staff age-recheck source safety validation
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/staff-age-recheck-safety-check.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - name: Checkout private age recheck fix branch
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/staff-age-appeal-evidence-20261029
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Staff dependencies
+        working-directory: private-src/admin-native
+        run: npm install --no-audit --no-fund
+      - name: Test Staff security and age review contracts
+        working-directory: private-src/admin-native
+        run: npm run test:security
+      - name: Typecheck Staff native screens
+        working-directory: private-src/admin-native
+        run: npm run typecheck
+      - name: Install mobile dependencies
+        working-directory: private-src/mobile
+        run: npm install --no-audit --no-fund
+      - name: Validate mobile native member verification tests
+        working-directory: private-src/mobile
+        run: node --test tests/authoritative-member-identity.test.mjs tests/fraud-identity-hardening.test.mjs tests/member-appeals-parity.test.mjs
+      - name: Typecheck member age-recheck screen
+        working-directory: private-src/mobile
+        run: npm run typecheck

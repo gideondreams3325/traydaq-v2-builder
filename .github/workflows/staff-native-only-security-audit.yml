@@ -56,3 +56,5 @@ jobs:
       - name: Typecheck and production-validate the web app
         working-directory: source
         run: npm run check
+
+# Rerun after retaining release-locked Legal Aid evidence and historical cutover flag contract.

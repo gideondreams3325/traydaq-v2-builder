@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-v2-for-you-visible-handle-safety-top
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 95ee738bafa2f6d3e2d7b829d6ef8c6b9d6c86b7
+  PRIVATE_SOURCE_SHA: 4119a0995f904b13e1040e66efcdfc9228aa320a
 jobs:
   web:
     name: Private web tests, TypeScript and Cloudflare bundle

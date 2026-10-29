@@ -1,0 +1,31 @@
+name: TRAYDAQ STAFF web Security Hub retirement QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/staff-browser-retirement-qa.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: security/retire-browser-staff-endpoints-20261029
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install source dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify retired web Security Hub and native-only staff endpoints
+        run: node --test tests/security-hub-native-only.test.mjs tests/age-review-security-appointments.test.mjs
+      - name: Typecheck web + Supabase source
+        run: npm run typecheck
+      - name: Verify Cloudflare web production bundle has no Security Hub route
+        run: npm run build

@@ -10,7 +10,7 @@ concurrency:
   group: traydaq-web-signin-mobile-qa
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: d4e411e729cb05b36da04d5222ca9cd9801ec750
+  PRIVATE_SOURCE_SHA: b254537a2b3846d99ae4c22b2e935c7fe217abdb
 jobs:
   web:
     name: Private account UI tests TypeScript and Cloudflare bundle

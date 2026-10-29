@@ -209,3 +209,8 @@ USER RELEASE RETRY 2026-10-24: User build #168 reached 493 of 494 successful nat
 2026-10-26 native sign-in fix retry after run 40404407071 failed one outdated Google signIn source assertion. Private traydaq-v2 main ed814ec89a9dea7299777a345d44f6ac5206b6ca aligns the regression test with bounded Google account chooser without weakening identity validation. Rebuild using same production signing key and package. No new project.
 
 2026-10-26 Android APK retry after run 40404718614: native tests uncovered one more outdated source-order assertion. Private V2 source main 008b6210dd291779d88d5ab1c0e39c3f31ac8e89 now checks the Google identity guard occurs before the wrapped Firebase credential exchange. Trigger existing signed release builder; retain package and permanent key, do not create hosting or source artifacts.
+
+OWNER-REQUESTED MEMBER IDENTITY AGE-RECHECK PROOF BUILD — 2026-10-29
+Build TRAYDAQ customer Android app 1.0.7, versionCode 9, com.traydaq.app from latest private main including PR #116 and private DOB proof / four-selfie age recheck restart.
+Run only build.yml, separate from admin-native.yml. Require identity, TypeScript, security regression tests, Expo validation, native Gradle release compilation, production signing and Firebase SHA verification. Upload installable user APK artifact.
+No live age-appeal approvals, no Play Store deployment.

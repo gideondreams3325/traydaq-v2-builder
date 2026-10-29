@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-v2-web-chat-viewport-drawer
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 49be621acc87b20f993ecbb5516f881225ea1f62
+  PRIVATE_SOURCE_SHA: 059dc70802cd8d18f043afb0996ab4e386f95733
 jobs:
   web:
     name: Web chat + drawer regressions, TypeScript, Cloudflare bundle

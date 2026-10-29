@@ -62,3 +62,9 @@ Source-only Admin access/department security tests, age routing regression and n
 Supabase firebase-admin-workspace Edge v69 ACTIVE: restricted staff DOB queue and verified age-review RPC.
 Build solely using admin-native.yml in this public builder with dedicated Admin Firebase client and original signing key; verify signed APK, Google Firebase SHA-1, app version metadata, self-contained JS bundle and upload signed TRAYDAQ-V2-Admin-Native-Android-APK artifact.
 Do not modify customer APK, approve any real age appeal, expose private source or keys, or deploy to Google Play.
+
+USER-AUTHORIZED STAFF APK BUILD — 2026-10-29
+Build only TRAYDAQ STAFF 1.0.2 (versionCode 5), package com.traydaq.admin.
+Dedicated workflow: .github/workflows/admin-native.yml in gideondreams3325/traydaq-v2-builder.
+Use latest private gideondreams3325/traydaq-v2 branch feat/standalone-admin-native (observed head fb2cba2cb3ac5f67afbe502724ffc6d1116143d1).
+Run staff security tests, typecheck, Expo checks, Android release build, independent signing and Firebase SHA-1 verification. Publish only the Staff APK artifact. Diagnose and correct build failures before retry. Do not trigger user APK or Google Play publication.

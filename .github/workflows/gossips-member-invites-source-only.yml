@@ -115,5 +115,13 @@ jobs:
           else
             echo "::error::Edge function typecheck failed; diagnostics remain private"
             grep -o 'TS[0-9]\{4\}' "$RUNNER_TEMP/gossips-deno.log" | sort -u | head -8 || true
+            python3 - "$RUNNER_TEMP/gossips-deno.log" <<'PY'
+          import os,re,sys
+          t=re.sub(r'\x1b\[[0-9;]*m','',open(sys.argv[1],errors='replace').read())
+          for path,line,col in re.findall(r'(?:file:///|(?:\s|/))([A-Za-z0-9._/-]+\.ts):(\d+):(\d+)',t)[:12]:
+              print('::notice::Deno diagnostic',os.path.basename(path),'line',line,'column',col)
+          for x in re.findall(r'error: (TS\d{4})',t)[:8]:
+              print('::notice::Deno error class',x)
+          PY
             exit 1
           fi

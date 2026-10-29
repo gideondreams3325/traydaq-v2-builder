@@ -97,3 +97,9 @@ Build signed TRAYDAQ STAFF 1.0.7 versionCode 10 package com.traydaq.admin from l
 Change: a Security Head or CEO can personally verify the dedicated two-photo age evidence then approve its recommendation without a different reviewer. Fresh adult DOB matching, secure image deletion, department authorization and audit remain mandatory. This is NOT an automatic case approval. Database migration PR #138 already merged and deployed.
 Use same original STAFF signing key and Firebase SHA1 checks. Run full native security tests, typecheck, Expo checks, Gradle compile and publish only the STAFF signed APK.
 Do not build the customer app or publish to Google Play.
+
+
+USER-REQUESTED BUILD — 2026-10-29 21:37 UTC
+Build TRAYDAQ STAFF Android APK with .github/workflows/admin-native.yml.
+Source: gideondreams3325/traydaq-v2 feat/standalone-admin-native (currently 4cd0a9cb7f1f58056cce8f8a8f36b34f2bdc6539).
+Package com.traydaq.admin; v1.0.7 code 10. Validate, compile, sign and publish artifact; diagnose failures.

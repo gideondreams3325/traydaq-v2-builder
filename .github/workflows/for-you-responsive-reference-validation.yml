@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-v2-for-you-responsive-reference-validation
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 525432f4ab2dd1221049ad5b9a3105adbb2e1b09
+  PRIVATE_SOURCE_SHA: c6f5a49235593f3358ef0a11bac950b4dcd1bbe5
 jobs:
   web:
     name: Private web tests, TypeScript and Cloudflare bundle

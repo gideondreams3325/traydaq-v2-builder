@@ -1,0 +1,73 @@
+name: TRAYDAQ V2 Web For You Full Audit Validation
+# Public builder validates the exact private feature SHA without exposing code.
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/for-you-web-full-audit-validation.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-v2-web-for-you-full-audit
+  cancel-in-progress: true
+env:
+  PRIVATE_SOURCE_SHA: 265718e8af53cf283dd33efdcd5cd2b94443f48b
+jobs:
+  web:
+    name: Private web regression tests, TypeScript and Cloudflare bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: "1"
+    steps:
+      - name: Verify private source read token
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - name: Checkout exact private V2 feature commit
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Verify Cloudflare target and perform locked install
+        shell: bash
+        working-directory: private-src
+        run: |
+          set -euo pipefail
+          test -f wrangler.jsonc
+          test -f package-lock.json
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/web-install.log" 2>&1 || { echo "::error::Private web install failed"; exit 1; }
+          echo "PASS: dependency install"
+      - name: Validate private web source and Cloudflare production build
+        shell: bash
+        working-directory: private-src
+        run: |
+          set -euo pipefail
+          if npm test > "$RUNNER_TEMP/web-tests.log" 2>&1; then
+            echo "PASS: web regression suite"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/web-tests.log" | tail -3 || true
+          else
+            echo "::error::Private web regression suite failed (sanitized test names)"
+            grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/web-tests.log" | sed -E 's/^not ok [0-9]+ - /FAIL: /' | cut -c1-160 | head -30 || true
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/web-tests.log" | tail -3 || true
+            exit 1
+          fi
+          if npm run typecheck > "$RUNNER_TEMP/web-tsc.log" 2>&1; then
+            echo "PASS: web TypeScript"
+          else
+            echo "::error::Private web TypeScript failed"
+            grep -E 'error TS[0-9]+' "$RUNNER_TEMP/web-tsc.log" | sed -E 's@.*/@@' | cut -c1-160 | head -20 || true
+            exit 1
+          fi
+          npm run build > "$RUNNER_TEMP/web-build.log" 2>&1 || { echo "::error::Cloudflare-targeted web bundle failed"; exit 1; }
+          test -f dist/index.html
+          echo "PASS: Cloudflare web bundle and public-policy output"
+# Source-only verification: no private files published; no APK/AAB or deployment.

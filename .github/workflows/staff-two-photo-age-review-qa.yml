@@ -53,3 +53,5 @@ jobs:
 # Retest the corrected age evidence contract and signed STAFF 1.0.4 source.
 
 # Rerun after adjusting native release UI assertions and protected recommendation approval tests.
+
+# Validate dynamic decision requirements and regression assertion update.

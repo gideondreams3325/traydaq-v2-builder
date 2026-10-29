@@ -10,7 +10,7 @@ concurrency:
   group: traydaq-chat-voice-and-layout-source
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 338ae7f712d58da67969f50c4d1d121bad640f31
+  PRIVATE_SOURCE_SHA: 7b0b0cfb3bdb3af692cd156d90a640c671322666
 jobs:
   web:
     runs-on: ubuntu-latest

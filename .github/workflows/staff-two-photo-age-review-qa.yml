@@ -57,3 +57,5 @@ jobs:
 # Validate dynamic decision requirements and regression assertion update.
 
 # Rerun after adding native-only browser-origin guards and auditing the full STAFF suite.
+
+# Rerun full native audit after preserving Legal Aid's dedicated read-only route.

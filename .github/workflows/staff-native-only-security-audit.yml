@@ -1,0 +1,58 @@
+name: TRAYDAQ STAFF native-only Security Hub audit
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/staff-native-only-security-audit.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  staff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout private STAFF native-only audit branch
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/staff-native-only-audit-20261029
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install native STAFF dependencies
+        working-directory: source/admin-native
+        run: npm install --no-audit --no-fund
+      - name: Run all native STAFF regression tests
+        working-directory: source/admin-native
+        run: npm run test:security && node --test tests/native-only-security-hub.test.mjs
+      - name: Typecheck the entire STAFF app
+        working-directory: source/admin-native
+        run: npm run typecheck
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout private web Security retirement branch
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/retire-web-security-hub-20261029
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install web dependencies
+        working-directory: source
+        run: npm install --no-audit --no-fund
+      - name: Test Security Hub retirement and member notice exception
+        working-directory: source
+        run: node --test tests/security-hub-native-only.test.mjs
+      - name: Typecheck and production-validate the web app
+        working-directory: source
+        run: npm run check

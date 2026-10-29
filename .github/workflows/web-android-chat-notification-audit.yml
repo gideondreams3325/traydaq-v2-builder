@@ -10,7 +10,7 @@ concurrency:
   group: traydaq-cross-platform-chat-notices-source
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 1c2a8f3f5441b10184f742ac35c675138aa690f0
+  PRIVATE_SOURCE_SHA: 10174112de3ba6f269eb3a2a0df94937f2b0925a
 jobs:
   web:
     runs-on: ubuntu-latest
@@ -40,12 +40,13 @@ jobs:
         run: |
           set -euo pipefail
           npm ci --no-audit --no-fund > "$RUNNER_TEMP/web-install.log" 2>&1 || { echo "::error::Web dependency install failed"; exit 1; }
+          test_failed=0
           if npm test > "$RUNNER_TEMP/web-tests.log" 2>&1; then
             echo "PASS: web tests"
           else
             echo "::error::Web tests failed"
             grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/web-tests.log" | sed -E 's/^not ok [0-9]+ - /FAIL: /' | cut -c1-160 | head -35 || true
-            exit 1
+            test_failed=1
           fi
           if npm run typecheck > "$RUNNER_TEMP/web-ts.log" 2>&1; then echo "PASS: web TypeScript"; else
             echo "::error::Web TypeScript failed"
@@ -55,6 +56,7 @@ jobs:
           npm run build > "$RUNNER_TEMP/web-build.log" 2>&1 || { echo "::error::Cloudflare web build failed"; exit 1; }
           test -f dist/index.html
           echo "PASS: Cloudflare web bundle"
+          test "$test_failed" -eq 0
   android-source:
     runs-on: ubuntu-latest
     timeout-minutes: 35
@@ -82,12 +84,13 @@ jobs:
         run: |
           set -euo pipefail
           npm install --no-audit --no-fund > "$RUNNER_TEMP/android-install.log" 2>&1 || { echo "::error::Android dependency install failed"; exit 1; }
+          test_failed=0
           if node --test tests/*.test.mjs > "$RUNNER_TEMP/android-tests.log" 2>&1; then
             echo "PASS: Android tests"
           else
             echo "::error::Android tests failed"
             grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/android-tests.log" | sed -E 's/^not ok [0-9]+ - /FAIL: /' | cut -c1-160 | head -35 || true
-            exit 1
+            test_failed=1
           fi
           if npm run typecheck > "$RUNNER_TEMP/android-ts.log" 2>&1; then echo "PASS: Android TypeScript"; else
             echo "::error::Android TypeScript failed"
@@ -96,4 +99,5 @@ jobs:
           fi
           npx expo export --platform android > "$RUNNER_TEMP/android-export.log" 2>&1 || { echo "::error::Android JavaScript export failed"; exit 1; }
           echo "PASS: Android JS export (NO APK/AAB)"
+          test "$test_failed" -eq 0
 # Source-only validation: never upload source or binaries, build Gradle, or deploy.

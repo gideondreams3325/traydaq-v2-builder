@@ -26,3 +26,7 @@ Private main SHA: 36273afab59ae8ee9a277cc26a8262baea93ea29
 PR #81 merged; validation all four jobs passed: https://github.com/gideondreams3325/traydaq-v2-builder/actions/runs/40693342794
 Private chat storage migration and both authenticated Edge Functions are ACTIVE.
 Deploy only TRAYDAQ V2 user web to the EXISTING Cloudflare Pages project after tests, TypeScript and production build. Do not change DNS, secrets, staff tools, data, or Android binaries.
+
+2026-10-29 OWNER-REQUESTED RESTORE LATEST TRAYDAQ USER WEB CHANGES
+Source: gideondreams3325/traydaq-v2 main at 9c75c5bfd66d0e2cf8324211dd2ecc137bb067c8
+Scope: Publish latest merged For You scam-alert badge, post verification guidance, Gossips/chat and responsive layout updates to existing Cloudflare Pages production project only, after npm test, typecheck and production build. No APK/AAB, no Vercel, no DNS or backend changes, no new Cloudflare project. If credentials are unavailable, fail safely without deployment.

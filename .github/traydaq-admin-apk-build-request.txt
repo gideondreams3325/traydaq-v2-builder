@@ -68,3 +68,9 @@ Build only TRAYDAQ STAFF 1.0.2 (versionCode 5), package com.traydaq.admin.
 Dedicated workflow: .github/workflows/admin-native.yml in gideondreams3325/traydaq-v2-builder.
 Use latest private gideondreams3325/traydaq-v2 branch feat/standalone-admin-native (observed head fb2cba2cb3ac5f67afbe502724ffc6d1116143d1).
 Run staff security tests, typecheck, Expo checks, Android release build, independent signing and Firebase SHA-1 verification. Publish only the Staff APK artifact. Diagnose and correct build failures before retry. Do not trigger user APK or Google Play publication.
+
+OWNER-REQUESTED STAFF AGE-RECHECK FIX APK — 2026-10-29
+Build TRAYDAQ STAFF 1.0.3 versionCode 6, package com.traydaq.admin, source private feat/standalone-admin-native after merged PR #115 (0d8d4779199324bfe8ae22af9cd7087684d08cc7).
+Include audited fresh selfie and private DOB-proof age-appeal reviewer UI, CEO/Official Owner recommend/approval eligibility after separate independent identity verification, and protected age security tests.
+Run dedicated admin-native.yml, compile signed standalone release, verify independent Staff keystore and Firebase SHA-1, publish only TRAYDAQ-V2-Admin-Native-Android-APK.
+Do not build legacy app or approve real appeals.

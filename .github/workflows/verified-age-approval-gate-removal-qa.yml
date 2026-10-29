@@ -50,3 +50,5 @@ jobs:
         run: node --test tests/age-review-security-appointments.test.mjs tests/independent-age-review-release-lock.test.mjs tests/security-hub-native-only.test.mjs
       - name: Typecheck web and shared source
         run: npm ci --no-audit --no-fund && npm run typecheck
+
+# Retest literal STAFF approval outcome assertion; no APK build.

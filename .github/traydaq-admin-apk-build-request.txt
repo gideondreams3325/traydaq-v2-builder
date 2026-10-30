@@ -105,3 +105,5 @@ Source: gideondreams3325/traydaq-v2 feat/standalone-admin-native (currently 4cd0
 Package com.traydaq.admin; v1.0.7 code 10. Validate, compile, sign and publish artifact; diagnose failures.
 
 Build TRAYDAQ STAFF 1.0.8 (versionCode 11) from feat/standalone-admin-native to deliver Communications promotion error handling and department duty UI fixes. Signed STAFF APK only; package com.traydaq.admin; do not change signing key or build user app. 2026-10-30.
+
+Retry STAFF 1.0.8 code 11 signed APK after correcting stale age-appeal test version assertions at private source ff4b7dd67c3eaf280a08491d00866c66ffd5b6ae. Same package and keystore. 2026-10-30.

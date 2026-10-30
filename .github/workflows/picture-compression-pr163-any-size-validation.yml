@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-pr165-compression-validation
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: abad21c78cf367f1ad2b83c8a09f53d1e58e374a
+  PRIVATE_SOURCE_SHA: 44f6550ffb4b04e6330ecc47cd6f6bf408d011cb
 jobs:
   web:
     name: Private web tests TypeScript Cloudflare build
@@ -120,6 +120,16 @@ jobs:
               grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/check-$label.log" | cut -c1-145 | head -12 || true
               grep -E 'error TS[0-9]+' "$RUNNER_TEMP/check-$label.log" | sed -E 's@.*/@@' | cut -c1-140 | head -12 || true
               grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/check-$label.log" | tail -3 || true
+              node - "$RUNNER_TEMP/check-$label.log" <<'NATIVE_TEST_DIAG'
+          const fs=require('fs');
+          const a=fs.readFileSync(process.argv[2],'utf8').split(/\r?\n/);
+          for(let i=0;i<a.length;i++){
+            if(!/^not ok \d+ - /.test(a[i]))continue;
+            const following=a.slice(i+1,i+40).join(' ');
+            const file=(following.match(/\/tests\/([A-Za-z0-9_.-]+\.test\.mjs):\d+/)||[])[1];
+            if(file)console.log('::notice::Failing native test file: '+file);
+          }
+          NATIVE_TEST_DIAG
               exit 1
             fi
           }

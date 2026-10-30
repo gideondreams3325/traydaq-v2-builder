@@ -261,3 +261,10 @@ Build signed USER APK, verify package, certificate, installable archive, upload 
 Private source: gideondreams3325/traydaq-v2 main at d17f6e951709fc04d8f0b6c1e16ebb17bf12f81f.
 Fix includes owner-scoped blocking API requests with Firebase token timeout, account-switch protection, a safe feed when blocked checks fail, and previous startup recovery. Supabase firebase-member-chat v9 is deployed.
 Builder regression run 41016551030 passed before version-only bump. Keep package com.traydaq.app and permanent signing key. Do not publish to Play Store or build staff app.
+
+
+USER-REQUESTED NEW TRAYDAQ USER APK RELEASE — 2026-10-30 after startup loading repair.
+Private source: gideondreams3325/traydaq-v2 @ 9ecd194948d62ac64529a44a0f0e46eab40c9646 (merged main).
+Release version: 1.0.11 (versionCode 13), package: com.traydaq.app.
+Fix: Android account verification deadlock, native secure storage startup timeout, and request timeouts from PR #174. Includes marketplace updates.
+Build user-app APK only using original verified signing key; run complete native tests, TypeScript and Expo checks; upload signed APK artifact. No staff app, no Google Play production rollout.

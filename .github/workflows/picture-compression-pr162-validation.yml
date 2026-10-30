@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-pr162-compression-validation
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: fced59ebc1e2c63ed72557072538fb005772533a
+  PRIVATE_SOURCE_SHA: fb2bfc5e7fc698f42a0613fcfcf59d18a8bbd1fb
 jobs:
   web:
     name: Private web tests TypeScript Cloudflare build
@@ -108,3 +108,37 @@ jobs:
           runcheck native-tests bash -c 'node --test tests/*.test.mjs'
           runcheck native-js-export npx expo export --platform android
           echo "::notice::PASS Android JS export only - no Gradle APK or AAB"
+
+  baseline-web:
+    name: Baseline comparison - current private main web tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout private main for comparison
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: main
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: baseline-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Compare baseline test failures without exposing source
+        working-directory: baseline-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "::notice::Baseline private main SHA $(git rev-parse HEAD)"
+          if ! npm ci --no-audit --no-fund > "$RUNNER_TEMP/baseline-install.log" 2>&1; then
+            echo "::error::Baseline npm install failed"
+            exit 1
+          fi
+          if npm test > "$RUNNER_TEMP/baseline-tests.log" 2>&1; then
+            echo "::notice::PASS baseline complete web tests"
+          else
+            echo "::warning::Baseline main already has failed web tests"
+            grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/baseline-tests.log" | cut -c1-160 | head -20 || true
+          fi
+          grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/baseline-tests.log" | tail -3 || true

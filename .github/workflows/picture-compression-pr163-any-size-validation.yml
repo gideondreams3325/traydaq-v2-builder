@@ -1,4 +1,4 @@
-name: TRAYDAQ PR163 Picture Compression Validation (No APK)
+name: TRAYDAQ Picture Quality & Upload UI Validation (No APK)
 on:
   push:
     branches: [main]
@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-pr163-compression-validation
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 4a4558fcb2597b911292f357d8a9cf6cd2f99a05
+  PRIVATE_SOURCE_SHA: 834ca4c36e199ce8963d20f4469d9b80fae3c9cc
 jobs:
   web:
     name: Private web tests TypeScript Cloudflare build

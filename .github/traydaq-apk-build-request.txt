@@ -239,3 +239,5 @@ Includes merged #159-#161 Android For You startup full-screen branded spinning T
 Build through .github/workflows/build.yml on this builder; maintain original production signing key and Firebase OAuth certificate; versionName 1.0.7/versionCode 9 per current app.json.
 Run native tests, expo-doctor, TypeScript, JS export, Gradle release, signing and installability verification; upload signed User APK artifact.
 Do NOT build Staff app or upload/publish to Google Play; correct build failures if needed.
+
+2026-10-30 user-requested Android For You startup repair release: build signed TRAYDAQ user APK from private main b903959831f9002adbfe2a8daacbbd5a75c45710 after green source validation run 41008034855. Preserve existing package and signing key. No staff app, no Play Store publishing.

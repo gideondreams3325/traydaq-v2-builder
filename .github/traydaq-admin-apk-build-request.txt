@@ -103,3 +103,5 @@ USER-REQUESTED BUILD — 2026-10-29 21:37 UTC
 Build TRAYDAQ STAFF Android APK with .github/workflows/admin-native.yml.
 Source: gideondreams3325/traydaq-v2 feat/standalone-admin-native (currently 4cd0a9cb7f1f58056cce8f8a8f36b34f2bdc6539).
 Package com.traydaq.admin; v1.0.7 code 10. Validate, compile, sign and publish artifact; diagnose failures.
+
+Build TRAYDAQ STAFF 1.0.8 (versionCode 11) from feat/standalone-admin-native to deliver Communications promotion error handling and department duty UI fixes. Signed STAFF APK only; package com.traydaq.admin; do not change signing key or build user app. 2026-10-30.

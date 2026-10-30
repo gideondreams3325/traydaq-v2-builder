@@ -1,0 +1,54 @@
+name: TRAYDAQ Android For You Startup Validation (No APK)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/for-you-startup-android-validation.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-for-you-startup-validation
+  cancel-in-progress: true
+jobs:
+  android:
+    name: Native tests, TypeScript and Android JS export
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - name: Verify read-only source access
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - name: Checkout exact private Android source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 4e356ef9a5509658deeb1bee903dc234bdd33abe
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate all Android regressions, types and JavaScript export
+        shell: bash
+        working-directory: private-src/mobile
+        run: |
+          set -euo pipefail
+          npm install --no-audit --no-fund > "$RUNNER_TEMP/native-install.log" 2>&1 || { echo "::error::Android dependencies could not be installed"; exit 1; }
+          if node --test tests/*.test.mjs > "$RUNNER_TEMP/native-tests.log" 2>&1; then
+            echo "PASS: Native regressions"
+          else
+            echo "::error::Native tests failed; sanitized test names:"
+            grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/native-tests.log" | sed -E 's/^not ok [0-9]+ - /FAIL: /' | cut -c1-160 | head -25 || true
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/native-tests.log" | tail -3 || true
+            exit 1
+          fi
+          npm run typecheck > "$RUNNER_TEMP/native-types.log" 2>&1 || { echo "::error::Native TypeScript failed"; grep -E 'error TS[0-9]+' "$RUNNER_TEMP/native-types.log" | cut -c1-160 | head -15 || true; exit 1; }
+          npx expo export --platform android > "$RUNNER_TEMP/android-export.log" 2>&1 || { echo "::error::Android JS export failed"; exit 1; }
+          echo "PASS: Native tests, types and Android export"
+# Intentionally no signing, APK/AAB, Cloudflare deployment, private artifacts or source upload.

@@ -105,9 +105,9 @@ jobs:
           test ! -d mobile/android
           node - <<'NODE'
           const c=require('./mobile/app.json').expo;
-          if(c.android?.package!=='com.traydaq.app'||c.android.versionCode!==9||c.version!=='1.0.7')
+          if(c.android?.package!=='com.traydaq.app'||c.android.versionCode!==10||c.version!=='1.0.8')
            throw Error('User production package/version verification failed');
-          console.log('TRAYDAQ user production app v1.0.2 / code 4 verified.');
+          console.log('TRAYDAQ user Android v1.0.8 / code 10 verified.');
           NODE
 
       - name: Set up Java 17
@@ -346,7 +346,7 @@ jobs:
           unzip -t "$APK" >/dev/null
           unzip -Z1 "$APK" | grep -E '^assets/(index.android.bundle|.*\.hbc)$'
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$APK"
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.traydaq.app' versionCode='9' versionName='1.0.7'"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.traydaq.app' versionCode='10' versionName='1.0.8'"
           sha256sum "$APK"
           mkdir -p build-output
           cp "$APK" build-output/TRAYDAQ.apk

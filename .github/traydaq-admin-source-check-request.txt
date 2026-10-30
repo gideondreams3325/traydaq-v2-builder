@@ -10,3 +10,5 @@ Validate merged native STAFF member-deletion-review retirement at 8b4363b965cc51
 Verify merged STAFF Legal Aid placeholder at 8483e078b02b7afedff778ff6f604b5bb1b3f86e. No APK/AAB; keep evidence vault release locked.
 
 Validate STAFF promotion 503 handling, separate content search state, 38 native department routes, and all Staff TypeScript/security tests from feat/standalone-admin-native as of 2026-10-30. SOURCE ONLY, DO NOT BUILD APK/AAB.
+
+2026-10-30 Owner/CEO department navigation audit: verify all 12 department workspaces, backend authorization, promotion reviewer messaging, and full STAFF security/typecheck tests from feat/standalone-admin-native. SOURCE-ONLY; NO APK/AAB or release workflow.

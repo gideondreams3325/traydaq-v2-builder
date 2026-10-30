@@ -249,3 +249,10 @@ Fixes: bounded Firebase token and blocked-member checks, independent For You spl
 Validation: TRAYDAQ Android For You Startup Validation (No APK), run 41011879411, success.
 Build APK, check native regression tests, Expo, TypeScript, signed package, certificate, offline bundle, and artifact upload.
 Do not change the staff application or publish to Google Play.
+
+USER-REQUESTED REPLACEMENT RELEASE — 2026-10-30 Android blocked-member feed startup fix.
+Private main source: gideondreams3325/traydaq-v2 @ 85ab596cf8205cd0f1ef16475c27551ed556e012.
+Package com.traydaq.app, version 1.0.9 / versionCode 11. Keep the existing production signing key and Firebase OAuth certificate.
+Live Firebase-member-chat Supabase function version 9 ACTIVE (verified), with account-owned blocks no longer gated by chat email/age write eligibility.
+Validation passed in public v2 builder source-only run 41014679301 (all native tests, TS, export).
+Build signed USER APK, verify package, certificate, installable archive, upload artifact. Do not build staff app, deploy web, or publish to Google Play.

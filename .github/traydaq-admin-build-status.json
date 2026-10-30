@@ -1,25 +1,20 @@
 {
   "workflow": "admin-native.yml",
   "app": "com.traydaq.admin",
-  "runId": 41008724620,
-  "url": "https://github.com/gideondreams3325/traydaq-v2-builder/actions/runs/41008724620",
-  "headSha": "4358b3e0edc1fbb0dc25651b3836f44babaf4370",
-  "runNumber": 35,
+  "runId": 41008926080,
+  "url": "https://github.com/gideondreams3325/traydaq-v2-builder/actions/runs/41008926080",
+  "headSha": "14e2e8829964737c56b37eb1cf42bd0a3589a5cb",
+  "runNumber": 36,
   "status": "completed",
-  "conclusion": "failure",
-  "updatedAt": "2026-10-30T05:30:15.382Z",
+  "conclusion": "success",
+  "updatedAt": "2026-10-30T05:42:51.841Z",
   "jobs": [
     {
-      "id": 123909504572,
+      "id": 123910135924,
       "name": "TRAYDAQ Admin Native Android APK",
       "status": "completed",
-      "conclusion": "failure",
-      "failedSteps": [
-        {
-          "name": "Run strict Admin access and department approval tests",
-          "number": 12
-        }
-      ]
+      "conclusion": "success",
+      "failedSteps": []
     }
   ],
   "artifactName": "TRAYDAQ-V2-Admin-Native-Android-APK"

@@ -256,3 +256,8 @@ Package com.traydaq.app, version 1.0.9 / versionCode 11. Keep the existing produ
 Live Firebase-member-chat Supabase function version 9 ACTIVE (verified), with account-owned blocks no longer gated by chat email/age write eligibility.
 Validation passed in public v2 builder source-only run 41014679301 (all native tests, TS, export).
 Build signed USER APK, verify package, certificate, installable archive, upload artifact. Do not build staff app, deploy web, or publish to Google Play.
+
+2026-10-30: User-requested TRAYDAQ User Android replacement 1.0.10 (code 12).
+Private source: gideondreams3325/traydaq-v2 main at d17f6e951709fc04d8f0b6c1e16ebb17bf12f81f.
+Fix includes owner-scoped blocking API requests with Firebase token timeout, account-switch protection, a safe feed when blocked checks fail, and previous startup recovery. Supabase firebase-member-chat v9 is deployed.
+Builder regression run 41016551030 passed before version-only bump. Keep package com.traydaq.app and permanent signing key. Do not publish to Play Store or build staff app.

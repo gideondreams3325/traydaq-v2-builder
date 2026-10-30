@@ -241,3 +241,11 @@ Run native tests, expo-doctor, TypeScript, JS export, Gradle release, signing an
 Do NOT build Staff app or upload/publish to Google Play; correct build failures if needed.
 
 2026-10-30 user-requested Android For You startup repair release: build signed TRAYDAQ user APK from private main b903959831f9002adbfe2a8daacbbd5a75c45710 after green source validation run 41008034855. Preserve existing package and signing key. No staff app, no Play Store publishing.
+
+2026-10-30 Android User startup repair replacement build.
+Canonical private source: gideondreams3325/traydaq-v2 at 19acbc6a897967f36198f0b2bad8e31c62c31f60 (main).
+User app only: com.traydaq.app version 1.0.8 / code 10; preserve existing permanent signing certificate.
+Fixes: bounded Firebase token and blocked-member checks, independent For You splash escape, safe Marketplace navigation if the feed cannot initialize.
+Validation: TRAYDAQ Android For You Startup Validation (No APK), run 41011879411, success.
+Build APK, check native regression tests, Expo, TypeScript, signed package, certificate, offline bundle, and artifact upload.
+Do not change the staff application or publish to Google Play.

@@ -1,4 +1,4 @@
-name: TRAYDAQ Unique Marketplace Categories QA (No APK)
+name: TRAYDAQ Horizontal Marketplace QA (No APK)
 on:
   push:
     branches: [main]
@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-pr165-compression-validation
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: a0d9401490c77785b8b7409b2b31ca71276d4c7b
+  PRIVATE_SOURCE_SHA: 5cce5505d94b2d362204f0bd4e8811bf6afeebf6
 jobs:
   web:
     name: Private web tests TypeScript Cloudflare build

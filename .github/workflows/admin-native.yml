@@ -61,8 +61,8 @@ jobs:
           node - <<'NODE'
           const config=require('./app.config.js').expo;
           if(config.android?.package!=='com.traydaq.admin') throw Error('Wrong Android package: must be com.traydaq.admin.');
-          if(config.version!=='1.0.8'||config.android.versionCode!==11)
-           throw Error('Production STAFF version must be 1.0.8 / code 11.');
+          if(config.version!=='1.0.9'||config.android.versionCode!==12)
+           throw Error('Production STAFF version must be 1.0.9 / code 12.');
           if(JSON.stringify(config.platforms)!=='["android"]') throw Error('The Admin app must remain Android native-only.');
           console.log('Verified separate Admin app package and sources.');
           NODE
@@ -262,7 +262,7 @@ jobs:
           unzip -t "$APK" > /dev/null
           unzip -Z1 "$APK" | grep -E '^assets/(index.android.bundle|.*\\.hbc)$'
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$APK"
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.traydaq.admin' versionCode='11' versionName='1.0.8'"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.traydaq.admin' versionCode='12' versionName='1.0.9'"
           sha256sum "$APK"
 
       - name: Publish only the Admin APK

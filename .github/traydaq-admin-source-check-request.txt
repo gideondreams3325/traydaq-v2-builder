@@ -8,3 +8,5 @@ Rerun STAFF Security 1.0.2 source checks c89d1baec15c51db7d8632cdb6e2cb0bfa87551
 Validate merged native STAFF member-deletion-review retirement at 8b4363b965cc51ba81217413ce0ea78a0cdcd871. Source checks and TypeScript ONLY. No APK or AAB.
 
 Verify merged STAFF Legal Aid placeholder at 8483e078b02b7afedff778ff6f604b5bb1b3f86e. No APK/AAB; keep evidence vault release locked.
+
+Validate STAFF promotion 503 handling, separate content search state, 38 native department routes, and all Staff TypeScript/security tests from feat/standalone-admin-native as of 2026-10-30. SOURCE ONLY, DO NOT BUILD APK/AAB.

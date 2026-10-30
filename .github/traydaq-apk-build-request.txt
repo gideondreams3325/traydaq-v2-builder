@@ -232,3 +232,10 @@ USER-REQUESTED BUILD — 2026-10-29 21:37 UTC
 Build TRAYDAQ User Android APK with .github/workflows/build.yml.
 Source: gideondreams3325/traydaq-v2 main (currently 7b9afb91444d2ade3046daf6dfdb455d9a89ddb0).
 Package com.traydaq.app; v1.0.7 code 9. Validate, compile, sign and publish artifact; diagnose failures.
+
+USER-REQUESTED NEW TRAYDAQ USER APP RELEASE — 2026-10-30
+Build regular USER Android application only, package com.traydaq.app, from private traydaq-v2/main @ 00b9fd5f67bf88bfa8fc77679c100a8e73875469.
+Includes merged #159-#161 Android For You startup full-screen branded spinning TRAYDAQ cart, media covers, profiles, and recent chat fixes.
+Build through .github/workflows/build.yml on this builder; maintain original production signing key and Firebase OAuth certificate; versionName 1.0.7/versionCode 9 per current app.json.
+Run native tests, expo-doctor, TypeScript, JS export, Gradle release, signing and installability verification; upload signed User APK artifact.
+Do NOT build Staff app or upload/publish to Google Play; correct build failures if needed.

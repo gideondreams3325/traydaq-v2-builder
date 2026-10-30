@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/picture-compression-pr163-validation.yml"
+      - ".github/workflows/picture-compression-pr163-any-size-validation.yml"
   workflow_dispatch:
 permissions:
   contents: read

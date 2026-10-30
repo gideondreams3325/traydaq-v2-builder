@@ -1,0 +1,110 @@
+name: TRAYDAQ PR162 Picture Compression Validation (No APK)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/picture-compression-pr162-validation.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-pr162-compression-validation
+  cancel-in-progress: true
+env:
+  PRIVATE_SOURCE_SHA: fced59ebc1e2c63ed72557072538fb005772533a
+jobs:
+  web:
+    name: Private web tests TypeScript Cloudflare build
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Verify private read-only token
+        env:
+          TOKEN_CONFIGURED: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$TOKEN_CONFIGURED" = "true"
+      - name: Checkout exact PR162 private source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Verify exact source SHA
+        run: test "$(git -C private-src rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Check web tests TypeScript and Cloudflare production bundle
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          runcheck() {
+            label="$1"; shift
+            if "$@" > "$RUNNER_TEMP/check-$label.log" 2>&1; then
+              echo "::notice::PASS $label"
+            else
+              echo "::error::FAIL $label (private logs are not exported)"
+              grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/check-$label.log" | cut -c1-145 | head -12 || true
+              grep -E 'error TS[0-9]+' "$RUNNER_TEMP/check-$label.log" | sed -E 's@.*/@@' | cut -c1-140 | head -12 || true
+              grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/check-$label.log" | tail -3 || true
+              exit 1
+            fi
+          }
+          runcheck web-install npm ci --no-audit --no-fund
+          runcheck web-types npm run typecheck
+          runcheck web-tests npm test
+          runcheck web-build npm run build
+          test -f dist/index.html
+          echo "::notice::PASS Cloudflare-targeted static assets produced (not deployed)"
+  android:
+    name: Private Android source tests TypeScript JS export (No APK)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - name: Verify private read-only token
+        env:
+          TOKEN_CONFIGURED: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$TOKEN_CONFIGURED" = "true"
+      - name: Checkout exact PR162 private source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Verify exact source SHA
+        run: test "$(git -C private-src rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check Android tests TypeScript and JavaScript bundle
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          runcheck() {
+            label="$1"; shift
+            if "$@" > "$RUNNER_TEMP/check-$label.log" 2>&1; then
+              echo "::notice::PASS $label"
+            else
+              echo "::error::FAIL $label (private logs are not exported)"
+              grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/check-$label.log" | cut -c1-145 | head -12 || true
+              grep -E 'error TS[0-9]+' "$RUNNER_TEMP/check-$label.log" | sed -E 's@.*/@@' | cut -c1-140 | head -12 || true
+              grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/check-$label.log" | tail -3 || true
+              exit 1
+            fi
+          }
+          runcheck native-install npm install --no-audit --no-fund
+          runcheck native-types npm run typecheck
+          runcheck native-tests bash -c 'node --test tests/*.test.mjs'
+          runcheck native-js-export npx expo export --platform android
+          echo "::notice::PASS Android JS export only - no Gradle APK or AAB"

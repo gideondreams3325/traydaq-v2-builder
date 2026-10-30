@@ -1,4 +1,4 @@
-name: TRAYDAQ Horizontal Marketplace QA (No APK)
+name: TRAYDAQ Marketplace Visible Cards Repair QA (No APK)
 on:
   push:
     branches: [main]
@@ -8,10 +8,10 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: traydaq-pr165-compression-validation
+  group: traydaq-pr171-viewport-repair-validation
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 7cfbcfc0ac6537fbbecd2889981a5fa3431f710e
+  PRIVATE_SOURCE_SHA: 7d766ac718ac9579b92d431033502d2b1c05f20f
 jobs:
   web:
     name: Private web tests TypeScript Cloudflare build
@@ -22,7 +22,7 @@ jobs:
         env:
           TOKEN_CONFIGURED: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
         run: test "$TOKEN_CONFIGURED" = "true"
-      - name: Checkout exact PR165 private source
+      - name: Checkout exact PR171 private source
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
@@ -92,7 +92,7 @@ jobs:
         env:
           TOKEN_CONFIGURED: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
         run: test "$TOKEN_CONFIGURED" = "true"
-      - name: Checkout exact PR165 private source
+      - name: Checkout exact PR171 private source
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2

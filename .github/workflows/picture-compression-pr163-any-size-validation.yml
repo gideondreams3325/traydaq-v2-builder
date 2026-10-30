@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-pr165-compression-validation
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 71c395b8ca56753f897e16d98a748b609e35b516
+  PRIVATE_SOURCE_SHA: cabcb8b19d08a78e0f5287b8cf94fd7ffbf269d3
 jobs:
   web:
     name: Private web tests TypeScript Cloudflare build

@@ -1,4 +1,4 @@
-name: TRAYDAQ Pinned Marketplace Compact Cards QA (No APK)
+name: TRAYDAQ Original Categories Compact Market QA (No APK)
 on:
   push:
     branches: [main]
@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-pr165-compression-validation
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 299e8461ca89f632025187228205e29326cbc93c
+  PRIVATE_SOURCE_SHA: 8fd13a7384229f734ca4adb3c266f696933604b0
 jobs:
   web:
     name: Private web tests TypeScript Cloudflare build

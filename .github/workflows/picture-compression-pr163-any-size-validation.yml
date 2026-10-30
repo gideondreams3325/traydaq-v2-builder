@@ -1,4 +1,4 @@
-name: TRAYDAQ Marketplace Green Layout QA (No APK)
+name: TRAYDAQ Pinned Marketplace Compact Cards QA (No APK)
 on:
   push:
     branches: [main]
@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-pr165-compression-validation
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: cabcb8b19d08a78e0f5287b8cf94fd7ffbf269d3
+  PRIVATE_SOURCE_SHA: 155e808d2c90bbe3010eac56937659e8a15ca4a8
 jobs:
   web:
     name: Private web tests TypeScript Cloudflare build

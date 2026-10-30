@@ -1,4 +1,4 @@
-name: TRAYDAQ Marketplace Store Card Visibility QA (No APK)
+name: TRAYDAQ Compact Popular Stores QA (No APK)
 on:
   push:
     branches: [main]
@@ -8,10 +8,10 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: traydaq-pr172-visible-store-cards-validation
+  group: traydaq-pr173-compact-popular-stores-qa
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 9522bd6d87c696d6a45ff702d5d62020edeae6ee
+  PRIVATE_SOURCE_SHA: d6285820e2f4157b9eedc24e2f5461debfcd4952
 jobs:
   web:
     name: Private web tests TypeScript Cloudflare build
@@ -22,7 +22,7 @@ jobs:
         env:
           TOKEN_CONFIGURED: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
         run: test "$TOKEN_CONFIGURED" = "true"
-      - name: Checkout exact PR172 private source
+      - name: Checkout exact PR173 private source
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
@@ -92,7 +92,7 @@ jobs:
         env:
           TOKEN_CONFIGURED: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
         run: test "$TOKEN_CONFIGURED" = "true"
-      - name: Checkout exact PR172 private source
+      - name: Checkout exact PR173 private source
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2

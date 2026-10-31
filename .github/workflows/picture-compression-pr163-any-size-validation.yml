@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-pr176-android-for-you-recovery
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 3b796586dddd16c388711114661a7d0625664da1
+  PRIVATE_SOURCE_SHA: 9f0c4c3ea7ac3ec7a27fc2df5c2ec50cd8adcbd0
 jobs:
   web:
     name: Private web tests TypeScript Cloudflare build

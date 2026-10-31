@@ -11,7 +11,7 @@ concurrency:
   group: profile-notification-scroll-video-source-qa
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: a6cdc3033afb334427ab9071000a2f840018d5bd
+  PRIVATE_SOURCE_SHA: 6f2651b85c80414507ba0b328d1f6fee0d198cc9
 jobs:
   web:
     runs-on: ubuntu-latest
@@ -36,7 +36,7 @@ jobs:
         run: |
           set -euo pipefail
           npm ci --no-audit --no-fund > "$RUNNER_TEMP/web-install.log" 2>&1 || { echo "::error::Web dependency installation failed"; exit 1; }
-          node --test tests/profile-notification-scroll-performance.test.mjs
+          node --test tests/profile-notification-scroll-performance.test.mjs tests/android-profile-scroll-video-stills.test.mjs tests/mobile-chrome-profile-scroll-stutter.test.mjs
           npm test > "$RUNNER_TEMP/web-tests.log" 2>&1 || { echo "::error::Web regression tests failed"; grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/web-tests.log" | head -10 || true; exit 1; }
           npm run typecheck
           npm run build > "$RUNNER_TEMP/web-build.log" 2>&1 || { echo "::error::Web production build failed"; exit 1; }

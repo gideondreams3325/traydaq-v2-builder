@@ -39,5 +39,6 @@ jobs:
         working-directory: source
         run: |
           test -f admin-native/tests/final-media-review-coverage.test.mjs
+          grep -q 'setMedia({id:media.id,title:media.title' admin-native/src/CreatorPublishedReviews.tsx
           ! grep -q 'firebase-security-hub' admin-native/src/App.tsx
           echo 'Source validated without building an APK or AAB.'

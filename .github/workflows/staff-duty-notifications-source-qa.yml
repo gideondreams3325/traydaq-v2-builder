@@ -1,0 +1,47 @@
+name: TRAYDAQ STAFF duty notifications source validation
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/staff-duty-notifications-source-qa.yml"
+permissions:
+  contents: read
+jobs:
+  staff-duty-notifications:
+    name: STAFF notifications and duty counters (no APK)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - name: Checkout private STAFF feature branch
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/staff-duty-notifications-badges-20261031
+          path: source
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install existing native STAFF dependencies
+        working-directory: source/admin-native
+        run: npm install --no-audit --no-fund
+      - name: Staff TypeScript validation
+        working-directory: source/admin-native
+        run: npm run typecheck
+      - name: Staff duty notification and all regression tests
+        working-directory: source/admin-native
+        run: npm run test:security
+      - name: Verify native-only release scope
+        working-directory: source
+        run: |
+          test -f admin-native/src/push.ts
+          test -f supabase/migrations/20261031120000_staff_duty_notifications_and_counts.sql
+          test -f supabase/functions/firebase-staff-campaign-deliver/index.ts
+          ! grep -q 'firebase-security-hub' admin-native/src/App.tsx
+          echo "No APK/AAB built and no production migration or Edge Function deployed."

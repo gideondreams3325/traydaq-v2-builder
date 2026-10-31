@@ -13,3 +13,11 @@ Includes merged PR #182: exclusive single-owner video audio session, audio stopp
 Source validation: public V2 builder run 41189012826 passed 637 native tests, TypeScript, Expo and Android Hermes export.
 Execute production user-only workflow; verify persistent signing certificate, embedded Hermes bytecode, package/version, APK integrity, signed APK emulator smoke, and upload GitHub artifact.
 Do not build or release staff app, and do not publish to Google Play or other app stores.
+
+User-authorized NEW TRAYDAQ USER Android release — 2026-10-31.
+Package: com.traydaq.app; versionName: 1.0.16; versionCode: 18.
+Private source merged main commit: 3a3eda1292792c357cd7ebe1563e048f8522438b (PR #196).
+V2 Builder full native source QA passed: https://github.com/gideondreams3325/traydaq-v2-builder/actions/runs/41250302871
+Includes native transparent white navigation, profile/notification scroll and real video covers, plus verified creator choices.
+Run production user-only signed APK with original signing certificate and emulator smoke tests.
+Never build staff app or upload to Google Play.

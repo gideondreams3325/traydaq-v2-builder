@@ -11,7 +11,7 @@ concurrency:
   group: profile-notification-scroll-video-source-qa
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 8fe4ef61acff936ba5972a6a024d1c1eb6c734a1
+  PRIVATE_SOURCE_SHA: a6cdc3033afb334427ab9071000a2f840018d5bd
 jobs:
   web:
     runs-on: ubuntu-latest

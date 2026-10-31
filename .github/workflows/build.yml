@@ -40,7 +40,7 @@ name: TRAYDAQ V2 User Android Production Release
 # Retry after full native member-facing screen scan and safe error handling fixes.
 # Rebuild latest private main after fixing verification TypeScript string syntax.
 # Retry after fixing narrowed Security Team broadcaster role typecheck.
-# TRAYDAQ user release 1.0.13/code15 with For You per-post crash isolation (#178) pinned to source SHA e7ab80c6c0b478b091d92ca75309dc3d9db5c076; includes For You recovery #176.
+# TRAYDAQ user release 1.0.14/code16 with verified For You startup null-state fixes (#180) pinned to source SHA 59008d5151946e749ba4d38048a54618f13a6c85; includes For You recovery #176.
 # Builds run only on explicit manual dispatch or a dedicated user-authorized
 # build-request marker. Ordinary source/branding pushes never start an APK build.
 on:
@@ -88,7 +88,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: e7ab80c6c0b478b091d92ca75309dc3d9db5c076
+          ref: 59008d5151946e749ba4d38048a54618f13a6c85
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -106,9 +106,9 @@ jobs:
           test ! -d mobile/android
           node - <<'NODE'
           const c=require('./mobile/app.json').expo;
-          if(c.android?.package!=='com.traydaq.app'||c.android.versionCode!==15||c.version!=='1.0.13')
+          if(c.android?.package!=='com.traydaq.app'||c.android.versionCode!==16||c.version!=='1.0.14')
            throw Error('User production package/version verification failed');
-          console.log('TRAYDAQ user Android v1.0.13 / code 15 verified.');
+          console.log('TRAYDAQ user Android v1.0.14 / code 16 verified.');
           NODE
 
       - name: Set up Java 17
@@ -255,13 +255,13 @@ jobs:
           NODE
 
       - name: Install native packages
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Validate all native security, redesign, and studio tests
         run: node --test tests/*.test.mjs
 
       - name: Validate Expo dependencies
-        run: npx expo-doctor
+        run: npx expo install --check && npx expo-doctor
 
       - name: Check React Native TypeScript
         run: npm run typecheck
@@ -347,10 +347,37 @@ jobs:
           unzip -t "$APK" >/dev/null
           unzip -Z1 "$APK" | grep -E '^assets/(index.android.bundle|.*\.hbc)$'
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$APK"
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.traydaq.app' versionCode='15' versionName='1.0.13'"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.traydaq.app' versionCode='16' versionName='1.0.14'"
+          CERT_SHA256=$("$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -1)
+          test "$CERT_SHA256" = "716a68f5734545bc9d9700f045d2bfb1b1087ffe732021f216b32a575f03f83d"
+          echo "PASS: signing certificate matches downloaded 1.0.13 APK exactly"
+          python3 - "$APK" <<'PYCODE'
+          import hashlib, sys, zipfile
+          with zipfile.ZipFile(sys.argv[1]) as archive:
+              bundle=archive.read('assets/index.android.bundle')
+          if bundle[:8].hex() != 'c61fbc03c103191f':
+              raise SystemExit('APK bundle is not Hermes bytecode')
+          print('PASS: embedded Android Hermes bytecode, SHA256='+hashlib.sha256(bundle).hexdigest())
+          PYCODE
           sha256sum "$APK"
           mkdir -p build-output
           cp "$APK" build-output/TRAYDAQ.apk
+
+      - name: Enable emulator acceleration
+        working-directory: .
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Test signed user release on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          working-directory: private-src/mobile
+          script: python3 scripts/android-release-smoke.py
 
       - name: Upload APK only (never private source)
         uses: actions/upload-artifact@v4

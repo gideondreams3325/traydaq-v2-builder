@@ -1,0 +1,58 @@
+name: TRAYDAQ For You Exclusive Video QA (No APK)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/native-video-session-source-qa.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-v2-native-video-session-qa
+  cancel-in-progress: true
+jobs:
+  native-video:
+    name: Native audio lifecycle, Expo checks and Hermes export
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - name: Confirm read-only source access
+        working-directory: .
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - name: Checkout exact private source candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: a9509b8e05715e83900a6cb7f4aabf2603a62cc9
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test native playback and all regressions
+        run: |
+          npm install --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+          if node --test tests/*.test.mjs > "$RUNNER_TEMP/native-tests.log" 2>&1; then
+            echo "PASS: native tests"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/native-tests.log" | tail -3 || true
+          else
+            echo "::error::Native tests failed"
+            grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/native-tests.log" | sed -E 's/^not ok [0-9]+ - /FAIL: /' | head -25 || true
+            exit 1
+          fi
+      - name: Check native TypeScript
+        run: npm run typecheck
+      - name: Check Expo dependencies
+        run: npx expo-doctor
+      - name: Bundle Android Hermes JavaScript (no APK)
+        run: npx expo export --platform android
+# No signing, Gradle, Google Play or artifact upload.

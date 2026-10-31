@@ -42,6 +42,8 @@ jobs:
         run: |
           test -f admin-native/src/push.ts
           test -f supabase/migrations/20261031120000_staff_duty_notifications_and_counts.sql
+          test -f supabase/functions/firebase-staff-duty-dispatch/index.ts
+          test -f supabase/migrations/20261031123000_staff_duty_push_scheduler.sql
           test -f supabase/functions/firebase-staff-campaign-deliver/index.ts
           ! grep -q 'firebase-security-hub' admin-native/src/App.tsx
           echo "No APK/AAB built and no production migration or Edge Function deployed."

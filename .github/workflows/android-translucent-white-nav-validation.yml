@@ -1,0 +1,45 @@
+name: TRAYDAQ Android Translucent White Navigation QA (No APK)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/android-translucent-white-nav-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-translucent-white-nav
+  cancel-in-progress: true
+env:
+  PRIVATE_SOURCE_SHA: aae71cfa75ed4886ba1ceb56a585b692df164390
+jobs:
+  native-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify full native navigation source and Android JS
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/native-install.log" 2>&1 || { echo "::error::Android source dependency installation failed"; exit 1; }
+          node --test tests/for-you-transparent-navigation.test.mjs tests/navigation-contrast-and-services.test.mjs tests/for-you-all-formats-legibility.test.mjs tests/for-you-android-media-contrast.test.mjs tests/for-you-complete-audit.test.mjs
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/native-tests.log" 2>&1 || { echo "::error::Android regression tests failed"; grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/native-tests.log" | head -20 || true; exit 1; }
+          npm run typecheck
+          npx expo export --platform android > "$RUNNER_TEMP/android-export.log" 2>&1 || { echo "::error::Android JavaScript export failed"; exit 1; }
+          echo 'PASS: Native navigation tests, all regression tests, TypeScript and Android JavaScript.'
+# Source-only QA: no Android native compilation, APK, AAB or app release.

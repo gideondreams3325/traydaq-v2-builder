@@ -4,3 +4,12 @@ Validated release-mode emulator: https://github.com/gideondreams3325/traydaq-v2-
 Preserve com.traydaq.app and the exact 1.0.13 release certificate.
 Run all native tests, Expo checks, Hermes export, release compile, signing, package/Hermes/integrity verification and signed-APK emulator smoke checks before artifact upload.
 No staff app or Google Play upload.
+
+
+User-authorized new TRAYDAQ USER Android APK release — 2026-10-31.
+Package com.traydaq.app; version 1.0.15, versionCode 17.
+Private canonical main merge commit: 9ef218386be2b423279fa705cc502daeca882c38 (PR #183).
+Includes merged PR #182: exclusive single-owner video audio session, audio stopped at swipe start, video cover retained through first frame; prior PR #180 null-state crash repair.
+Source validation: public V2 builder run 41189012826 passed 637 native tests, TypeScript, Expo and Android Hermes export.
+Execute production user-only workflow; verify persistent signing certificate, embedded Hermes bytecode, package/version, APK integrity, signed APK emulator smoke, and upload GitHub artifact.
+Do not build or release staff app, and do not publish to Google Play or other app stores.

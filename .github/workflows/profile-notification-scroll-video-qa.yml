@@ -36,7 +36,7 @@ jobs:
         run: |
           set -euo pipefail
           npm ci --no-audit --no-fund > "$RUNNER_TEMP/web-install.log" 2>&1 || { echo "::error::Web dependency installation failed"; exit 1; }
-          node --test tests/profile-notification-scroll-performance.test.mjs tests/android-profile-scroll-video-stills.test.mjs tests/mobile-chrome-profile-scroll-stutter.test.mjs
+          node --test tests/profile-notification-scroll-performance.test.mjs tests/mobile-chrome-profile-scroll-stutter.test.mjs
           npm test > "$RUNNER_TEMP/web-tests.log" 2>&1 || { echo "::error::Web regression tests failed"; grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/web-tests.log" | head -10 || true; exit 1; }
           npm run typecheck
           npm run build > "$RUNNER_TEMP/web-build.log" 2>&1 || { echo "::error::Web production build failed"; exit 1; }
@@ -65,7 +65,7 @@ jobs:
         run: |
           set -euo pipefail
           npm ci --no-audit --no-fund > "$RUNNER_TEMP/android-install.log" 2>&1 || { echo "::error::Native dependency installation failed"; exit 1; }
-          node --test tests/profile-notification-scroll-performance.test.mjs
+          node --test tests/profile-notification-scroll-performance.test.mjs tests/android-profile-scroll-video-stills.test.mjs
           node --test tests/*.test.mjs > "$RUNNER_TEMP/android-tests.log" 2>&1 || { echo "::error::Native regression tests failed"; grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/android-tests.log" | head -10 || true; exit 1; }
           npm run typecheck
           npx expo export --platform android > "$RUNNER_TEMP/android-export.log" 2>&1 || { echo "::error::Android JavaScript export failed"; exit 1; }

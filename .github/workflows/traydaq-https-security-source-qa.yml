@@ -8,7 +8,7 @@ on:
 permissions:
   contents: read
 env:
-  SOURCE_SHA: fabb60a538902a2e410b974b89b32f8d0bc132a8
+  SOURCE_SHA: 46aa0acbdacdce1405fac6c1b546f88169c5f66a
 jobs:
   web-security:
     runs-on: ubuntu-latest

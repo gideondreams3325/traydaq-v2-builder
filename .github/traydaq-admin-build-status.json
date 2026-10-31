@@ -6,20 +6,15 @@
   "headSha": "2ad027e3d3da9e787725a6995d5b37b4e24240a1",
   "runNumber": 38,
   "status": "completed",
-  "conclusion": "failure",
-  "updatedAt": "2026-10-31T22:57:14.673Z",
+  "conclusion": "success",
+  "updatedAt": "2026-10-31T23:08:32.822Z",
   "jobs": [
     {
-      "id": 124682436619,
+      "id": 124682760533,
       "name": "TRAYDAQ Admin Native Android APK",
       "status": "completed",
-      "conclusion": "failure",
-      "failedSteps": [
-        {
-          "name": "Run strict Admin access and department approval tests",
-          "number": 12
-        }
-      ]
+      "conclusion": "success",
+      "failedSteps": []
     }
   ],
   "artifactName": "TRAYDAQ-V2-Admin-Native-Android-APK"

@@ -30,3 +30,7 @@ Deploy only TRAYDAQ V2 user web to the EXISTING Cloudflare Pages project after t
 2026-10-29 OWNER-REQUESTED RESTORE LATEST TRAYDAQ USER WEB CHANGES
 Source: gideondreams3325/traydaq-v2 main at 9c75c5bfd66d0e2cf8324211dd2ecc137bb067c8
 Scope: Publish latest merged For You scam-alert badge, post verification guidance, Gossips/chat and responsive layout updates to existing Cloudflare Pages production project only, after npm test, typecheck and production build. No APK/AAB, no Vercel, no DNS or backend changes, no new Cloudflare project. If credentials are unavailable, fail safely without deployment.
+
+2026-10-31 USER-REQUESTED TRAYDAQ WEB + ANDROID CREATOR OPTION GATING
+Source: private TRAYDAQ V2 main after PR #186 and Cloudflare request commit 72d7cefa361dfd5567c5313ab1e582bff6e05260.
+Public builder read-only QA run 41195641765: web and Android jobs both passed full source tests, TypeScript, web build and native Android JS export. Deploy only the existing user website to the configured Cloudflare Pages project using the guarded source tests + build + credentials check. The private repository deploy attempt 41195816969 failed before a runner was assigned, with no job steps; use the existing public builder's working hosted runners. No APK/AAB, no backend changes, DNS or service replacements. Fail safely if Pages credentials are unavailable.

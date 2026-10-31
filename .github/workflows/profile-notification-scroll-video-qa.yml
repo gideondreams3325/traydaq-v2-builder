@@ -1,0 +1,73 @@
+name: TRAYDAQ V2 Profile Notification Scroll Video QA (No APK)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/profile-notification-scroll-video-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: profile-notification-scroll-video-source-qa
+  cancel-in-progress: true
+env:
+  PRIVATE_SOURCE_SHA: 8fe4ef61acff936ba5972a6a024d1c1eb6c734a1
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate web profile and notifications performance and production assets
+        working-directory: private-src
+        env:
+          CI: '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/web-install.log" 2>&1 || { echo "::error::Web dependency installation failed"; exit 1; }
+          node --test tests/profile-notification-scroll-performance.test.mjs
+          npm test > "$RUNNER_TEMP/web-tests.log" 2>&1 || { echo "::error::Web regression tests failed"; grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/web-tests.log" | head -10 || true; exit 1; }
+          npm run typecheck
+          npm run build > "$RUNNER_TEMP/web-build.log" 2>&1 || { echo "::error::Web production build failed"; exit 1; }
+          echo 'PASS: web profile/notification QA and private web tests, TypeScript and Cloudflare-targeted assets.'
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      EXPO_NO_TELEMETRY: '1'
+      CI: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate Android profile and notifications performance and JS only
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/android-install.log" 2>&1 || { echo "::error::Native dependency installation failed"; exit 1; }
+          node --test tests/profile-notification-scroll-performance.test.mjs
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/android-tests.log" 2>&1 || { echo "::error::Native regression tests failed"; grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/android-tests.log" | head -10 || true; exit 1; }
+          npm run typecheck
+          npx expo export --platform android > "$RUNNER_TEMP/android-export.log" 2>&1 || { echo "::error::Android JavaScript export failed"; exit 1; }
+          echo 'PASS: Android profile/notification QA and regression tests, TypeScript and JS export.'
+# Source checks only: never create, sign or publish an APK or AAB.

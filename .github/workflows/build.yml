@@ -40,7 +40,7 @@ name: TRAYDAQ V2 User Android Production Release
 # Retry after full native member-facing screen scan and safe error handling fixes.
 # Rebuild latest private main after fixing verification TypeScript string syntax.
 # Retry after fixing narrowed Security Team broadcaster role typecheck.
-# TRAYDAQ user release 1.0.14/code16 with verified For You startup null-state fixes (#180) pinned to source SHA 59008d5151946e749ba4d38048a54618f13a6c85; includes For You recovery #176.
+# TRAYDAQ user release 1.0.15/code17 with exclusive For You audio playback (#182), poster buffering fix and startup repair (#180) pinned to source SHA 9ef218386be2b423279fa705cc502daeca882c38; includes For You recovery #176.
 # Builds run only on explicit manual dispatch or a dedicated user-authorized
 # build-request marker. Ordinary source/branding pushes never start an APK build.
 on:
@@ -88,7 +88,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 59008d5151946e749ba4d38048a54618f13a6c85
+          ref: 9ef218386be2b423279fa705cc502daeca882c38
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -106,9 +106,9 @@ jobs:
           test ! -d mobile/android
           node - <<'NODE'
           const c=require('./mobile/app.json').expo;
-          if(c.android?.package!=='com.traydaq.app'||c.android.versionCode!==16||c.version!=='1.0.14')
+          if(c.android?.package!=='com.traydaq.app'||c.android.versionCode!==17||c.version!=='1.0.15')
            throw Error('User production package/version verification failed');
-          console.log('TRAYDAQ user Android v1.0.14 / code 16 verified.');
+          console.log('TRAYDAQ user Android v1.0.15 / code 17 verified.');
           NODE
 
       - name: Set up Java 17
@@ -347,10 +347,10 @@ jobs:
           unzip -t "$APK" >/dev/null
           unzip -Z1 "$APK" | grep -E '^assets/(index.android.bundle|.*\.hbc)$'
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$APK"
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.traydaq.app' versionCode='16' versionName='1.0.14'"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.traydaq.app' versionCode='17' versionName='1.0.15'"
           CERT_SHA256=$("$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -1)
           test "$CERT_SHA256" = "716a68f5734545bc9d9700f045d2bfb1b1087ffe732021f216b32a575f03f83d"
-          echo "PASS: signing certificate matches downloaded 1.0.13 APK exactly"
+          echo "PASS: signing certificate matches existing TRAYDAQ user release certificate exactly"
           python3 - "$APK" <<'PYCODE'
           import hashlib, sys, zipfile
           with zipfile.ZipFile(sys.argv[1]) as archive:

@@ -1,0 +1,46 @@
+name: TRAYDAQ STAFF Native Evidence and Date Selector QA
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/staff-evidence-inspection-qa.yml"
+permissions:
+  contents: read
+jobs:
+  staff-evidence:
+    name: Validate STAFF review evidence (no APK)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - name: Checkout private source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/staff-evidence-inspection-age-date-20261031
+          path: source
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install native STAFF dependencies
+        working-directory: source/admin-native
+        run: npm install --no-audit --no-fund
+      - name: Typecheck entire native STAFF app
+        working-directory: source/admin-native
+        run: npm run typecheck
+      - name: Run complete STAFF regression suite
+        working-directory: source/admin-native
+        run: npm run test:security
+      - name: Confirm no web Admin fallback or Android release
+        working-directory: source
+        run: |
+          test -f supabase/migrations/20261031153000_staff_support_case_photo_inspection.sql
+          test -f admin-native/tests/persistent-evidence-age-date.test.mjs
+          ! grep -q 'firebase-security-hub' admin-native/src/App.tsx
+          echo "No APK/AAB or user app was built or deployed."

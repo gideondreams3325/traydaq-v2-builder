@@ -10,7 +10,7 @@ concurrency:
   group: traydaq-cross-platform-chat-notices-source
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 688d5a780173a3a038b5b96dae1835af4cdf5371
+  PRIVATE_SOURCE_SHA: 827a713db049e61869aa5ff9dc37daa13528098d
 jobs:
   web:
     runs-on: ubuntu-latest

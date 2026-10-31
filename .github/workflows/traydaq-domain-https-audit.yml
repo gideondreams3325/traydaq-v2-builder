@@ -36,3 +36,4 @@ jobs:
             echo "::endgroup::"
           done
 # Diagnostic only: no deployments, domain edits, token access, or native builds.
+# Recheck after owner enabled Cloudflare Always Use HTTPS on 2026-10-31.

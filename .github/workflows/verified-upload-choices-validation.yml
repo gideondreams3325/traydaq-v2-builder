@@ -1,0 +1,73 @@
+name: TRAYDAQ V2 Verified Upload Choices QA (No APK)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/verified-upload-choices-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: verified-upload-choices-source-qa
+  cancel-in-progress: true
+env:
+  PRIVATE_SOURCE_SHA: bb8947ad474fc5375c492c8ed3ef841f71d2c51d
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate private web creator choices and production assets
+        working-directory: private-src
+        env:
+          CI: '1'
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/web-install.log" 2>&1 || { echo "::error::Web dependency installation failed"; exit 1; }
+          node --test tests/verified-create-choices.test.mjs
+          npm test > "$RUNNER_TEMP/web-tests.log" 2>&1 || { echo "::error::Web regression tests failed"; grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/web-tests.log" | head -10 || true; exit 1; }
+          npm run typecheck
+          npm run build > "$RUNNER_TEMP/web-build.log" 2>&1 || { echo "::error::Web production build failed"; exit 1; }
+          echo 'PASS: private web tests, TypeScript and Cloudflare-targeted assets.'
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      EXPO_NO_TELEMETRY: '1'
+      CI: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate native upload chooser and Android JS only
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/android-install.log" 2>&1 || { echo "::error::Native dependency installation failed"; exit 1; }
+          node --test tests/verified-create-choices.test.mjs
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/android-tests.log" 2>&1 || { echo "::error::Native regression tests failed"; grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/android-tests.log" | head -10 || true; exit 1; }
+          npm run typecheck
+          npx expo export --platform android > "$RUNNER_TEMP/android-export.log" 2>&1 || { echo "::error::Android JavaScript export failed"; exit 1; }
+          echo 'PASS: private Android regression tests, TypeScript and JS export.'
+# Source checks only: never create, sign or publish an APK or AAB.

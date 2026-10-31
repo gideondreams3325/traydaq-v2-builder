@@ -40,7 +40,7 @@ name: TRAYDAQ V2 User Android Production Release
 # Retry after full native member-facing screen scan and safe error handling fixes.
 # Rebuild latest private main after fixing verification TypeScript string syntax.
 # Retry after fixing narrowed Security Team broadcaster role typecheck.
-# TRAYDAQ user release 1.0.11/code13 pinned to source SHA 9ecd194948d62ac64529a44a0f0e46eab40c9646; includes startup repair #174.
+# TRAYDAQ user release 1.0.12/code14 pinned to source SHA e52546c62c5b8072a4ea59a49e43e8eca5d54ae1; includes For You recovery #176.
 # Builds run only on explicit manual dispatch or a dedicated user-authorized
 # build-request marker. Ordinary source/branding pushes never start an APK build.
 on:
@@ -88,7 +88,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 9ecd194948d62ac64529a44a0f0e46eab40c9646
+          ref: e52546c62c5b8072a4ea59a49e43e8eca5d54ae1
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -106,9 +106,9 @@ jobs:
           test ! -d mobile/android
           node - <<'NODE'
           const c=require('./mobile/app.json').expo;
-          if(c.android?.package!=='com.traydaq.app'||c.android.versionCode!==13||c.version!=='1.0.11')
+          if(c.android?.package!=='com.traydaq.app'||c.android.versionCode!==14||c.version!=='1.0.12')
            throw Error('User production package/version verification failed');
-          console.log('TRAYDAQ user Android v1.0.11 / code 13 verified.');
+          console.log('TRAYDAQ user Android v1.0.12 / code 14 verified.');
           NODE
 
       - name: Set up Java 17
@@ -347,7 +347,7 @@ jobs:
           unzip -t "$APK" >/dev/null
           unzip -Z1 "$APK" | grep -E '^assets/(index.android.bundle|.*\.hbc)$'
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$APK"
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.traydaq.app' versionCode='13' versionName='1.0.11'"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.traydaq.app' versionCode='14' versionName='1.0.12'"
           sha256sum "$APK"
           mkdir -p build-output
           cp "$APK" build-output/TRAYDAQ.apk

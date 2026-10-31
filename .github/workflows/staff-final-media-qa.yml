@@ -1,0 +1,43 @@
+name: TRAYDAQ STAFF Complete Review Media Validation
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/staff-final-media-qa.yml"
+permissions:
+  contents: read
+jobs:
+  staff-review-media:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - name: Checkout existing TRAYDAQ STAFF source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/staff-final-media-review-coverage-20261031
+          path: source
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install native staff dependencies
+        working-directory: source/admin-native
+        run: npm install --no-audit --no-fund
+      - name: Native staff TypeScript
+        working-directory: source/admin-native
+        run: npm run typecheck
+      - name: All native staff security and evidence tests
+        working-directory: source/admin-native
+        run: npm run test:security
+      - name: No APK or retired web Security Hub
+        working-directory: source
+        run: |
+          test -f admin-native/tests/final-media-review-coverage.test.mjs
+          ! grep -q 'firebase-security-hub' admin-native/src/App.tsx
+          echo 'Source validated without building an APK or AAB.'

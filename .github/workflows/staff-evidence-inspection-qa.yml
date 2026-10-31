@@ -42,5 +42,6 @@ jobs:
         run: |
           test -f supabase/migrations/20261031153000_staff_support_case_photo_inspection.sql
           test -f admin-native/tests/persistent-evidence-age-date.test.mjs
+          test -f supabase/migrations/20261031154000_staff_store_change_media_audit.sql
           ! grep -q 'firebase-security-hub' admin-native/src/App.tsx
           echo "No APK/AAB or user app was built or deployed."

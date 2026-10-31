@@ -1,0 +1,48 @@
+name: TRAYDAQ HTTPS security headers source validation
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/traydaq-https-security-source-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  SOURCE_SHA: fabb60a538902a2e410b974b89b32f8d0bc132a8
+jobs:
+  web-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate Cloudflare Pages security header packaging and web regression suite
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+          node --test tests/cloudflare-https-security-hardening.test.mjs
+          npm test > "$RUNNER_TEMP/test.log" 2>&1 || {
+            echo "::error::Web regression tests failed"
+            grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/test.log" | head -15 || true
+            exit 1
+          }
+          npm run typecheck
+          npm run build > "$RUNNER_TEMP/build.log" 2>&1 || {
+            echo "::error::Production web build failed"
+            exit 1
+          }
+          test -f dist/_headers || { echo "::error::Vite did not copy Cloudflare headers to production dist"; exit 1; }
+          grep -F 'Strict-Transport-Security: max-age=86400' dist/_headers
+          grep -F 'Content-Security-Policy: upgrade-insecure-requests' dist/_headers
+          echo "PASS: Source security headers, full web tests, TypeScript, production bundle."
+# Source-only checks. Cloudflare's separate zone-level Always Use HTTPS must also be enabled by owner.

@@ -275,3 +275,11 @@ Private source: gideondreams3325/traydaq-v2 @ e52546c62c5b8072a4ea59a49e43e8eca5
 Package: com.traydaq.app; versionName 1.0.12; versionCode 14.
 Fixes For You initial render failure route recovery and bounds approved catalog loading (PR176), retains Firebase signed block-list privacy checks.
 Build and verify signed USER APK using permanent existing certificate; upload installable APK artifact. No staff build and no Play Store publication.
+
+
+User-authorized TRAYDAQ native USER Android release: 2026-10-31.
+Version: 1.0.13 (versionCode 15), package: com.traydaq.app.
+Pinned private source: gideondreams3325/traydaq-v2 main @ e7ab80c6c0b478b091d92ca75309dc3d9db5c076.
+Changes: render-crash isolation per For You post and offscreen Android video player lifecycle fix, merged PR #178; version PR #179.
+V2 native regression tests, TypeScript and Android export already passed (V2 Builder 41179678858) before the version-only increment.
+Trigger ONLY the dedicated V2 user APK workflow, verify signature and downloadable signed artifact. Do not build staff app or release to Google Play.

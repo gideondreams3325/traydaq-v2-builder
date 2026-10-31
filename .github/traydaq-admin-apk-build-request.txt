@@ -114,3 +114,16 @@ Use .github/workflows/admin-native.yml in gideondreams3325/traydaq-v2-builder ma
 Include verified Official Owner/CEO cross-department same-actor recommendation/approval and own Post/Product/Vacancy/Event/Music evidence and promotion fixes. Supabase staff backend v78 active and owner SQL migrations deployed.
 Run all staff security and owner-content tests, native TypeScript, Expo compatibility, Gradle signed release using unchanged Admin signing keystore and Firebase SHA-1 verification.
 Upload only TRAYDAQ-V2-Admin-Native-Android-APK artifact. Do not build the User app or publish to Play Store.
+
+USER-REQUESTED TRAYDAQ STAFF APK RELEASE — 2026-10-31
+Build only the existing native TRAYDAQ STAFF Android package com.traydaq.admin, version 1.0.10 (versionCode 13).
+Source: gideondreams3325/traydaq-v2 branch feat/standalone-admin-native, with merged PRs #188 #190 #191 #195.
+Use only the dedicated TRAYDAQ V2 builder .github/workflows/admin-native.yml.
+Include department duty push notifications and pending badges, date-picker age evidence verification,
+and persistent secure photos/videos for age, verification, stores, products, services,
+jobs/events, support, safety, content removal, and member enforcement.
+Run all security tests, native TypeScript, Expo compatibility, Android release assemble,
+original independent STAFF signing key and Firebase registered SHA-1 checks.
+Upload TRAYDAQ-V2-Admin-Native-Android-APK only, no user Android APK/AAB,
+no Play Store upload, no change in signing identity.
+Diagnose failures and repair before claiming release success.

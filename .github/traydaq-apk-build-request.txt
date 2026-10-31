@@ -268,3 +268,10 @@ Private source: gideondreams3325/traydaq-v2 @ 9ecd194948d62ac64529a44a0f0e46eab4
 Release version: 1.0.11 (versionCode 13), package: com.traydaq.app.
 Fix: Android account verification deadlock, native secure storage startup timeout, and request timeouts from PR #174. Includes marketplace updates.
 Build user-app APK only using original verified signing key; run complete native tests, TypeScript and Expo checks; upload signed APK artifact. No staff app, no Google Play production rollout.
+
+
+USER-REQUESTED REPLACEMENT TRAYDAQ USER APK — 2026-10-31 For You still connecting.
+Private source: gideondreams3325/traydaq-v2 @ e52546c62c5b8072a4ea59a49e43e8eca5d54ae1 (main, PR177).
+Package: com.traydaq.app; versionName 1.0.12; versionCode 14.
+Fixes For You initial render failure route recovery and bounds approved catalog loading (PR176), retains Firebase signed block-list privacy checks.
+Build and verify signed USER APK using permanent existing certificate; upload installable APK artifact. No staff build and no Play Store publication.

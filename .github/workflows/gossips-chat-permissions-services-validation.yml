@@ -1,0 +1,65 @@
+name: TRAYDAQ Gossips Chat Posting Service Reactions QA (No APK)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/gossips-chat-permissions-services-validation.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PRIVATE_SOURCE_SHA: f4d33eee69c33147debc1afe646040478e80c474
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate member-authorized covers, activity, web regressions and production build
+        shell: bash
+        working-directory: private-src
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+          node --test tests/gossip-cover-and-service-reactions-qa.test.mjs
+          npm test > "$RUNNER_TEMP/test.log" 2>&1 || { echo "::error::Web regression failure"; grep -E '^not ok [0-9]+ -' "$RUNNER_TEMP/test.log" | head -20 || true; exit 1; }
+          npm run typecheck
+          npm run build > "$RUNNER_TEMP/build.log" 2>&1 || { echo "::error::Web production build failed"; exit 1; }
+          echo 'PASS: web source, full tests, TS and Vite production bundle'
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate keyboard, creator rights, gossip cover, all Android tests and export
+        shell: bash
+        working-directory: private-src/mobile
+        env:
+          EXPO_NO_TELEMETRY: '1'
+          CI: '1'
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+          node --test tests/fast-chat-group-avatar-and-permissions.test.mjs
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/test.log" 2>&1 || { echo "::error::Android regression failure"; grep -E '^not ok [0-9]+ -' "$RUNNER_TEMP/test.log" | head -20 || true; exit 1; }
+          npm run typecheck
+          npx expo export --platform android > "$RUNNER_TEMP/export.log" 2>&1 || { echo "::error::Android JS bundle failure"; exit 1; }
+          echo 'PASS: Android source, full tests, TS, Expo JavaScript'
+# No app builds, signing or releases; no production function deployment.

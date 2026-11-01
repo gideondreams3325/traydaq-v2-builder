@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 env:
-  PRIVATE_SOURCE_SHA: d17773ecb50bf8320527dc05435749b7d23f0875
+  PRIVATE_SOURCE_SHA: 49dfa84c39ba8594232dce63ff740909d8204ad3
 jobs:
   backend-deno:
     name: Check indexed Gossips Edge Function Deno types

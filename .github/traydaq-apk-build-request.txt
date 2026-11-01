@@ -21,3 +21,11 @@ V2 Builder full native source QA passed: https://github.com/gideondreams3325/tra
 Includes native transparent white navigation, profile/notification scroll and real video covers, plus verified creator choices.
 Run production user-only signed APK with original signing certificate and emulator smoke tests.
 Never build staff app or upload to Google Play.
+
+User-authorized TRAYDAQ USER Android APK release — 2026-11-01.
+Package: com.traydaq.app; versionName: 1.0.17; versionCode: 19.
+Merged main source: 0dbbc3c98a0995db325039bb7dd31306aa31d68c (PR #203).
+Full native source QA: https://github.com/gideondreams3325/traydaq-v2-builder/actions/runs/41302816134 (success).
+Includes faster creator permissions and engagement, Gossips custom avatars, chat keyboard fixes, service reactions, and indexed membership groundwork.
+Gossips 100,000-member feature is NOT active: the existing safe server limit remains 12 pending full privacy/fanout migration.
+Build signed production USER APK only; preserve previous signing certificate; verify app identity, Hermes offline bundle and Android emulator startup, then upload artifact. Do not build the staff app. Do not upload to Play Store.

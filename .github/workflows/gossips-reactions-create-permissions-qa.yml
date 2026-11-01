@@ -11,7 +11,7 @@ concurrency:
   group: gossips-reactions-create-speed-source-qa
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 31d45b4f8a10b98611ce5f4dfb24f709c0f969f5
+  PRIVATE_SOURCE_SHA: a2d7e2d8da290665ce3c34ae0bdc51063ec9e0b5
 jobs:
   web:
     runs-on: ubuntu-latest

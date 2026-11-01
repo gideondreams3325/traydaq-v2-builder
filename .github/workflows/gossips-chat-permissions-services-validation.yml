@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 env:
-  PRIVATE_SOURCE_SHA: f4d33eee69c33147debc1afe646040478e80c474
+  PRIVATE_SOURCE_SHA: d83b94aea1eb1e0b68bda3d46156c22f83d07b68
 jobs:
   web:
     runs-on: ubuntu-latest

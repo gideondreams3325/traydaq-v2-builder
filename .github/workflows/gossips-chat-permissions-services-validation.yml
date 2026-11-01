@@ -26,7 +26,7 @@ jobs:
           deno-version: v2.x
       - name: Type-check member-chat production backend
         working-directory: private-src
-        run: deno check --no-lock supabase/functions/firebase-member-chat/index.ts
+        run: deno check --node-modules-dir=auto --no-lock supabase/functions/firebase-member-chat/index.ts
   web:
     runs-on: ubuntu-latest
     timeout-minutes: 35

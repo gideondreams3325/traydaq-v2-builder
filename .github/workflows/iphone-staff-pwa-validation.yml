@@ -1,0 +1,52 @@
+name: TRAYDAQ iPhone Staff PWA Private Source Validation
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/iphone-staff-pwa-validation.yml']
+permissions:
+  contents: read
+jobs:
+  ios-staff-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Confirm private source access configured
+        env:
+          TOKEN_PRESENT: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$TOKEN_PRESENT" = true
+      - name: Fetch exact iPhone staff source branch
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 454e4e96b3bbfc1026489a823296bc5006f2ab03
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate staff-only source without disclosing private code
+        working-directory: private-src
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/staff-dependencies.log" 2>&1
+          if npm run typecheck:staff > "$RUNNER_TEMP/staff-types.log" 2>&1; then
+            echo "::notice::iPhone staff types PASS"
+          else
+            echo "::error::iPhone staff types FAIL"; exit 1
+          fi
+          if node --test tests/staff-iphone-pwa.test.mjs > "$RUNNER_TEMP/staff-tests.log" 2>&1; then
+            echo "::notice::iPhone staff authorization and privacy checks PASS"
+          else
+            echo "::error::iPhone staff checks FAIL"; exit 1
+          fi
+          if npm run build:staff > "$RUNNER_TEMP/staff-build.log" 2>&1; then
+            echo "::notice::iPhone staff Cloudflare bundle PASS"
+          else
+            echo "::error::iPhone staff Cloudflare bundle FAIL"; exit 1
+          fi
+          test -f dist-staff/manifest.webmanifest
+          test -f dist-staff/index.html
+          test -f dist-staff/_headers
+          echo "::notice::TRAYDAQ iPhone staff PWA validated. No APK, AAB, secret, or private source artifact published."

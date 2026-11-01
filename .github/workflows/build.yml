@@ -40,9 +40,9 @@ name: TRAYDAQ V2 User Android Production Release
 # Retry after full native member-facing screen scan and safe error handling fixes.
 # Rebuild latest private main after fixing verification TypeScript string syntax.
 # Retry after fixing narrowed Security Team broadcaster role typecheck.
-# TRAYDAQ user release 1.0.17/code19: latest merged chat, engagement and Gossips indexed membership groundwork.
+# TRAYDAQ user release 1.0.18/code20: latest merged chat, engagement and Gossips indexed membership groundwork.
 # video covers, verified posting choices, transparent white bottom navigation,
-# and previously validated exclusive For You audio playback. (#182), poster buffering fix and startup repair (#180) pinned to source SHA 0dbbc3c98a0995db325039bb7dd31306aa31d68c; includes For You recovery #176.
+# and previously validated exclusive For You audio playback. (#182), poster buffering fix and startup repair (#180) pinned to source SHA 2617f2402fef55fe9cb5d1bd0a5b4af769251cd9; includes For You recovery #176.
 # Builds run only on explicit manual dispatch or a dedicated user-authorized
 # build-request marker. Ordinary source/branding pushes never start an APK build.
 on:
@@ -90,7 +90,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 0dbbc3c98a0995db325039bb7dd31306aa31d68c
+          ref: 2617f2402fef55fe9cb5d1bd0a5b4af769251cd9
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -108,9 +108,9 @@ jobs:
           test ! -d mobile/android
           node - <<'NODE'
           const c=require('./mobile/app.json').expo;
-          if(c.android?.package!=='com.traydaq.app'||c.android.versionCode!==19||c.version!=='1.0.17')
+          if(c.android?.package!=='com.traydaq.app'||c.android.versionCode!==20||c.version!=='1.0.18')
            throw Error('User production package/version verification failed');
-          console.log('TRAYDAQ user Android v1.0.17 / code 19 verified.');
+          console.log('TRAYDAQ user Android v1.0.18 / code 20 verified.');
           NODE
 
       - name: Set up Java 17
@@ -349,7 +349,7 @@ jobs:
           unzip -t "$APK" >/dev/null
           unzip -Z1 "$APK" | grep -E '^assets/(index.android.bundle|.*\.hbc)$'
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$APK"
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.traydaq.app' versionCode='19' versionName='1.0.17'"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.traydaq.app' versionCode='20' versionName='1.0.18'"
           CERT_SHA256=$("$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -1)
           test "$CERT_SHA256" = "716a68f5734545bc9d9700f045d2bfb1b1087ffe732021f216b32a575f03f83d"
           echo "PASS: signing certificate matches existing TRAYDAQ user release certificate exactly"

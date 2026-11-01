@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
     paths:
-      - '.github/workflows/user-android-1016-release-source-qa.yml'
+      - '.github/workflows/user-android-1017-release-source-qa.yml'
   workflow_dispatch:
 permissions:
   contents: read

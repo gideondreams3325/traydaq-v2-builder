@@ -29,3 +29,10 @@ Full native source QA: https://github.com/gideondreams3325/traydaq-v2-builder/ac
 Includes faster creator permissions and engagement, Gossips custom avatars, chat keyboard fixes, service reactions, and indexed membership groundwork.
 Gossips 100,000-member feature is NOT active: the existing safe server limit remains 12 pending full privacy/fanout migration.
 Build signed production USER APK only; preserve previous signing certificate; verify app identity, Hermes offline bundle and Android emulator startup, then upload artifact. Do not build the staff app. Do not upload to Play Store.
+
+TRAYDAQ user Android production v1.0.18 build 20 — 2026-11-01 final continuation.
+Merged main source: 2617f2402fef55fe9cb5d1bd0a5b4af769251cd9, PR #205.
+Source QA passed: https://github.com/gideondreams3325/traydaq-v2-builder/actions/runs/41305568447
+Includes paginated Gossips member settings on web and Android plus previously merged chat/input, service reaction and engagements updates.
+The 100000-member Gossips feature remains INACTIVE: 12-member server cap enforced until full 100k messaging, notifications and privacy scaling validated.
+Build only the signed TRAYDAQ user APK, preserve original certificate, verify package/version/Hermes/integrity and run emulator smoke test. No staff build, no Play Store publish.

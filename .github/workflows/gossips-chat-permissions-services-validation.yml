@@ -7,8 +7,26 @@ on:
 permissions:
   contents: read
 env:
-  PRIVATE_SOURCE_SHA: c53f95b1d9bef8a3e55ac7a050fe5e73d3e75643
+  PRIVATE_SOURCE_SHA: d17773ecb50bf8320527dc05435749b7d23f0875
 jobs:
+  backend-deno:
+    name: Check indexed Gossips Edge Function Deno types
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check member-chat production backend
+        working-directory: private-src
+        run: deno check --no-lock supabase/functions/firebase-member-chat/index.ts
   web:
     runs-on: ubuntu-latest
     timeout-minutes: 35

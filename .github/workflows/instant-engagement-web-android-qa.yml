@@ -1,0 +1,65 @@
+name: TRAYDAQ Instant Engagement Web Android QA (No APK)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/instant-engagement-web-android-qa.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PRIVATE_SOURCE_SHA: fa9dbbb8d843ed13d95a1441e89feaef82c19db4
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test immediate web music reactions and full web build
+        shell: bash
+        working-directory: private-src
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+          node --test tests/instant-engagement-across-app.test.mjs
+          npm test > "$RUNNER_TEMP/test.log" 2>&1 || { echo "::error::Web tests failed"; grep -E '^not ok [0-9]+ -' "$RUNNER_TEMP/test.log" | head -20 || true; exit 1; }
+          npm run typecheck
+          npm run build > "$RUNNER_TEMP/build.log" 2>&1 || { echo "::error::Web production build failed"; exit 1; }
+          echo 'PASS: full web tests, typecheck, production bundle'
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test For You Music Jobs Events immediate reactions and Android export
+        shell: bash
+        working-directory: private-src/mobile
+        env:
+          EXPO_NO_TELEMETRY: '1'
+          CI: '1'
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+          node --test tests/instant-engagement-across-app.test.mjs
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/test.log" 2>&1 || { echo "::error::Android tests failed"; grep -E '^not ok [0-9]+ -' "$RUNNER_TEMP/test.log" | head -20 || true; exit 1; }
+          npm run typecheck
+          npx expo export --platform android > "$RUNNER_TEMP/export.log" 2>&1 || { echo "::error::Android JS export failed"; exit 1; }
+          echo 'PASS: full Android tests, typecheck, JS export'
+# Source-only validation; no APK/AAB, no Play upload or staff build.

@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 8e154792fddb696d9ef13e4fd7364483eb1fd70b
+          ref: 239cc5bda3f4a8a8b21a8576c0374888ad804d32
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -42,4 +42,6 @@ jobs:
           grep -Fq 'getLastNotificationResponseAsync()' admin-native/src/push.ts
           grep -Fq 'if(disposed)return' admin-native/src/push.ts
           grep -Fq 'recipient_uid",actor.uid' supabase/functions/firebase-admin-workspace/index.ts
-          echo "Source-only QA complete. No Android artifact was built."
+          grep -q 'version: "1.0.13"' admin-native/app.config.js
+          grep -q 'versionCode: 16' admin-native/app.config.js
+          echo "Verified Staff 1.0.13 source only; no APK/AAB generated."

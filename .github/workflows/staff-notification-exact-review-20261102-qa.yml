@@ -1,0 +1,48 @@
+name: TRAYDAQ STAFF exact notification review deep-link QA (no APK)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/staff-notification-exact-review-20261102-qa.yml"
+permissions:
+  contents: read
+jobs:
+  verify-staff-notification-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - name: Checkout pinned private Staff review patch
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 1e50764c19b6717c404c204644d104b33bf70047
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install native Staff dependencies
+        working-directory: private-src/admin-native
+        run: npm install --no-audit --no-fund
+      - name: Typecheck entire native Staff application
+        working-directory: private-src/admin-native
+        run: npm run typecheck
+      - name: Run complete native Staff security and notification tests
+        working-directory: private-src/admin-native
+        run: npm run test:security
+      - name: Confirm route integrity and no Android package build
+        working-directory: private-src
+        run: |
+          test -f admin-native/src/notificationDutyRoute.ts
+          test -f admin-native/tests/notification-duty-deeplinks-ai-flags.test.mjs
+          grep -q '"MusicRights","review"' supabase/functions/firebase-admin-workspace/index.ts
+          grep -q "focusReviewId" admin-native/src/VerificationDecisions.tsx
+          grep -q "focusReviewId" admin-native/src/DisputeReviews.tsx
+          grep -q "focusReviewId" admin-native/src/CreatorCopyrightReviews.tsx
+          grep -q "focusReviewId" admin-native/src/MusicCopyrightReviews.tsx
+          echo "Validated Staff source only; no APK/AAB generated."

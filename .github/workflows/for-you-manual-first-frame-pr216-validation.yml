@@ -1,0 +1,50 @@
+name: TRAYDAQ v2 Builder — Android manual first-frame PR 216 (no APK)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/for-you-manual-first-frame-pr216-validation.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-pr216-android-video
+  cancel-in-progress: true
+jobs:
+  native-video:
+    name: Validate private PR 216 Android first-frame
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - name: Confirm private source read access
+        working-directory: .
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - name: Check out exact private Android patch
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: dc0f6d82e0f95c56b08da4e5565f4ae45216056e
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install mobile packages
+        run: npm ci --no-audit --no-fund
+      - name: Validate all Android tests
+        run: node --test tests/*.test.mjs
+      - name: Android TypeScript
+        run: npm run typecheck
+      - name: Expo dependency verification
+        run: npx expo install --check
+      - name: Export Android JavaScript only
+        run: npm run export:android
+# No APK, AAB, signing, Google Play, Cloudflare or web deployment.

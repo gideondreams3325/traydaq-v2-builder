@@ -1,0 +1,43 @@
+name: TRAYDAQ STAFF Notification Duty Linking and AI Flag Counts QA
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/staff-notification-deeplink-ai-flags-qa.yml"
+permissions:
+  contents: read
+jobs:
+  staff-notifications:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - name: Checkout private staff app source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/staff-notification-duty-deeplinks-ai-flag-counts-20261102
+          path: source
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        working-directory: source/admin-native
+        run: npm install --no-audit --no-fund
+      - name: Typecheck native STAFF
+        working-directory: source/admin-native
+        run: npm run typecheck
+      - name: Run all Staff security, notifications and deep-link regression tests
+        working-directory: source/admin-native
+        run: npm run test:security
+      - name: Confirm live SQL migration and no APK build
+        working-directory: source
+        run: |
+          test -f supabase/migrations/20261102090000_staff_ai_flag_duty_counts_no_duplicates.sql
+          test -f admin-native/src/notificationDutyRoute.ts
+          echo "No APK or AAB built."

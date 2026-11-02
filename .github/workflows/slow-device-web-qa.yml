@@ -1,0 +1,40 @@
+name: TRAYDAQ V2 Slow-Device Web QA (No APK, No Deployment)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/traydaq-low-bandwidth-validation-request.txt"
+permissions:
+  contents: read
+jobs:
+  web-performance:
+    name: Validate web source branch only
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout private V2 performance fixes
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/web-low-bandwidth-startup-20261102
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install locked web dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Run web typecheck, regression tests and Cloudflare-ready web build
+        working-directory: private-src
+        run: npm run check
+      - name: Confirm web entrypoint and hashed assets
+        working-directory: private-src
+        run: |
+          test -s dist/index.html
+          test -d dist/assets
+          echo "PASS: Web validation complete. No Android APK or AAB built or deployed."

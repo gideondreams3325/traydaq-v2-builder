@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 1e50764c19b6717c404c204644d104b33bf70047
+          ref: 9a263604cff0eff501b7e94c6ab7f2c4928363e4
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -45,4 +45,6 @@ jobs:
           grep -q "focusReviewId" admin-native/src/DisputeReviews.tsx
           grep -q "focusReviewId" admin-native/src/CreatorCopyrightReviews.tsx
           grep -q "focusReviewId" admin-native/src/MusicCopyrightReviews.tsx
-          echo "Validated Staff source only; no APK/AAB generated."
+          grep -q 'version: "1.0.12"' admin-native/app.config.js
+          grep -q 'versionCode: 15' admin-native/app.config.js
+          echo "Validated Staff 1.0.12 source only; no APK/AAB generated."

@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 8447c26386edd02580161d84f362cb3f26e81186
+          ref: b196893a42f4f5b24bd711d3e0ff73daf4b8acf0
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -36,7 +36,7 @@ jobs:
           else
             echo "::error::iPhone staff types FAIL"; exit 1
           fi
-          if node --test tests/staff-iphone-pwa.test.mjs tests/staff-iphone-expanded-duties.test.mjs tests/staff-iphone-notification-insights.test.mjs tests/staff-iphone-notification-case-links.test.mjs > "$RUNNER_TEMP/staff-tests.log" 2>&1; then
+          if node --test tests/staff-iphone-pwa.test.mjs tests/staff-iphone-expanded-duties.test.mjs tests/staff-iphone-notification-insights.test.mjs tests/staff-iphone-notification-case-links.test.mjs tests/staff-iphone-more-safe-queues.test.mjs > "$RUNNER_TEMP/staff-tests.log" 2>&1; then
             echo "::notice::iPhone staff authorization and privacy checks PASS"
           else
             echo "::error::iPhone staff checks FAIL"; exit 1

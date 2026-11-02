@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: b57b040e9cf6358c20ed62c4668fd3ebcc5732aa
+          ref: 2b7cf818017ae9dd30a61e3bf50b31b86a66157f
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -41,4 +41,6 @@ jobs:
           grep -Fq 'setSelected(previous=>previous?latest.find' admin-native/src/BioReviews.tsx
           grep -Fq '"Biography request is no longer pending":[409' supabase/functions/firebase-admin-workspace/index.ts
           grep -Fq 'bio-propose' admin-native/src/BioReviews.tsx
-          echo "Staff biography source QA passed; no APK/AAB built."
+          grep -Fq 'version: "1.0.14"' admin-native/app.config.js
+          grep -Fq 'versionCode: 17' admin-native/app.config.js
+          echo "Staff biography 1.0.14 candidate validated; no APK/AAB built."

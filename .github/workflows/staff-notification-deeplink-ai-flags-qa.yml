@@ -41,4 +41,5 @@ jobs:
           test -f supabase/migrations/20261102090000_staff_ai_flag_duty_counts_no_duplicates.sql
           test -f supabase/migrations/20261102091000_staff_duty_notification_actual_source_ids.sql
           test -f admin-native/src/notificationDutyRoute.ts
+          test -f supabase/migrations/20261102091000_staff_duty_notification_actual_source_ids.sql
           echo "No APK or AAB built."

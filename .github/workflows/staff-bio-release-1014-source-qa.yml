@@ -1,0 +1,45 @@
+name: TRAYDAQ STAFF 1.0.14 biography fix source QA (no APK)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/staff-bio-release-1014-source-qa.yml"
+permissions:
+  contents: read
+jobs:
+  staff-bio-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - name: Fetch exact private Staff release candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 0e239663607d90d83294e79ed06ab4b234a70e18
+          path: source
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install native Staff dependencies
+        working-directory: source/admin-native
+        run: npm install --no-audit --no-fund
+      - name: Typecheck native Staff
+        working-directory: source/admin-native
+        run: npm run typecheck
+      - name: Run full Staff security and biography review tests
+        working-directory: source/admin-native
+        run: npm run test:security
+      - name: Check biography stale selection and safe status conflicts
+        working-directory: source
+        run: |
+          grep -Fq 'cases.some(item=>item.id===selected.id)' admin-native/src/BioReviews.tsx
+          grep -Fq 'Biography request is no longer pending' supabase/functions/firebase-admin-workspace/index.ts
+          grep -Fq 'version: "1.0.14"' admin-native/app.config.js
+          grep -Fq 'versionCode: 17' admin-native/app.config.js
+          echo "Validated source only, no APK/AAB."

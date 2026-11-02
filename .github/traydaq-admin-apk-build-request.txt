@@ -148,3 +148,11 @@ Pin private source to merged gideondreams3325/traydaq-v2 commit 78bc0b14a756fbfc
 Use only dedicated gideondreams3325/traydaq-v2-builder main .github/workflows/admin-native.yml.
 Full security tests and TypeScript already passed in PR CI and independent v2 Builder; additionally run Expo preflight, Gradle production assembleRelease, original independent Staff keystore and Firebase SHA-1 validation, signed APK metadata checks and artifact upload.
 Fix failures before confirming success; preserve same signing identity. Do not build user Android, iPhone Staff, or upload to Play Store.
+
+
+USER-REQUESTED TRAYDAQ STAFF COLD-START PATCH RELEASE — 2026-11-02
+Build only existing signed TRAYDAQ STAFF Android 1.0.13, versionCode 16, package com.traydaq.admin.
+Validated Staff source: gideondreams3325/traydaq-v2 feat/standalone-admin-native commit c32b43ffdb8293528915b993a0b5e6babe2739c7 (merged notification patch PRs #225 and #226).
+Use dedicated gideondreams3325/traydaq-v2-builder .github/workflows/admin-native.yml only.
+Preserve original independent Staff signing keystore, Firebase SHA-1 registration, user app package isolation and appointment authorization checks. Run security tests, TypeScript, Expo checks/prebuild, native Gradle assembleRelease, APK signature/version/source verification and upload the signed Staff APK artifact.
+No user Android APK/AAB, iPhone Staff rebuild, Play Store upload, or backend migrations. Diagnose errors before claiming a successful signed release.

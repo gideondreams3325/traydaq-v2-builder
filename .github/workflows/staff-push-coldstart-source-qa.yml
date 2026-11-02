@@ -1,0 +1,45 @@
+name: TRAYDAQ STAFF cold-start notification routing QA (source only)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/staff-push-coldstart-source-qa.yml"
+permissions:
+  contents: read
+jobs:
+  verify-cold-start:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - name: Checkout validated private Staff source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 8e154792fddb696d9ef13e4fd7364483eb1fd70b
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Staff dependencies
+        working-directory: private-src/admin-native
+        run: npm install --no-audit --no-fund
+      - name: Typecheck Staff Android
+        working-directory: private-src/admin-native
+        run: npm run typecheck
+      - name: Execute all native Staff security and notifications tests
+        working-directory: private-src/admin-native
+        run: npm run test:security
+      - name: Confirm cold-start replay and authorization gates
+        working-directory: private-src
+        run: |
+          grep -Fq 'if(!user||!workspace?.authorized)return;' admin-native/src/App.tsx
+          grep -Fq 'getLastNotificationResponseAsync()' admin-native/src/push.ts
+          grep -Fq 'if(disposed)return' admin-native/src/push.ts
+          grep -Fq 'recipient_uid",actor.uid' supabase/functions/firebase-admin-workspace/index.ts
+          echo "Source-only QA complete. No Android artifact was built."

@@ -1,0 +1,44 @@
+name: TRAYDAQ STAFF Official Owner Self-Submission Review QA
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/staff-official-owner-own-content-qa.yml"
+permissions:
+  contents: read
+jobs:
+  owner-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - name: Checkout verified private STAFF source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/official-owner-self-submission-review-20261102
+          path: source
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install STAFF dependencies
+        working-directory: source/admin-native
+        run: npm install --no-audit --no-fund
+      - name: Native STAFF TypeScript
+        working-directory: source/admin-native
+        run: npm run typecheck
+      - name: Full access, evidence, Owner and departments regression suite
+        working-directory: source/admin-native
+        run: npm run test:security
+      - name: Confirm only owner content moderation scope changed
+        working-directory: source
+        run: |
+          test -f supabase/migrations/20261102070000_official_owner_submission_evidence_and_video.sql
+          grep -q 'public.v2_admin_is_owner(p_actor_uid)' supabase/migrations/20261102070000_official_owner_submission_evidence_and_video.sql
+          test -f admin-native/tests/official-owner-self-submission-parity.test.mjs
+          echo "No APK/AAB built. No live member review decision performed."

@@ -156,3 +156,10 @@ Validated Staff source: gideondreams3325/traydaq-v2 feat/standalone-admin-native
 Use dedicated gideondreams3325/traydaq-v2-builder .github/workflows/admin-native.yml only.
 Preserve original independent Staff signing keystore, Firebase SHA-1 registration, user app package isolation and appointment authorization checks. Run security tests, TypeScript, Expo checks/prebuild, native Gradle assembleRelease, APK signature/version/source verification and upload the signed Staff APK artifact.
 No user Android APK/AAB, iPhone Staff rebuild, Play Store upload, or backend migrations. Diagnose errors before claiming a successful signed release.
+
+
+USER-REQUESTED TRAYDAQ STAFF BIOGRAPHY REVIEW FIX RELEASE — 2026-11-02
+Build only existing native TRAYDAQ STAFF Android APK version 1.0.14 (versionCode 17), package com.traydaq.admin.
+Source must be the exact validated, merged private commit 7017cd8e4ca5ab3b47bf635f1850ade5e7d8c20a (PRs #245 and #247), which clears stale biography selections and displays safe 409 conflict feedback. Backend firebase-admin-workspace v87 is already deployed; no database schema changes.
+Use only gideondreams3325/traydaq-v2-builder .github/workflows/admin-native.yml and original independent Staff signing keystore, Firebase signing SHA1, native security tests, TypeScript, Expo check, Gradle release, signature/version and offline bundle verification, artifact publication.
+No customer Android app APK/AAB, no Play Store publication and no iPhone Staff replacement.

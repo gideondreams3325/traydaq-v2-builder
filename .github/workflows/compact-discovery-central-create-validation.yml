@@ -1,0 +1,64 @@
+name: TRAYDAQ v2 Builder - Compact Jobs Events and Central Plus (no APK)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/compact-discovery-central-create-validation.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  web:
+    name: Independent web source and navigation plus QA
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - name: Require private repository token
+        working-directory: .
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 0e0c37bec7db5aaddd2125e377e6b77c41cd8a80
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+      - run: node --test tests/compact-discovery-central-create.test.mjs
+      - run: npm run typecheck
+      - run: npm run build
+  android:
+    name: Independent Android native source checks without APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - name: Require private repository token
+        working-directory: .
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 0e0c37bec7db5aaddd2125e377e6b77c41cd8a80
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+      - run: node --test tests/*.test.mjs
+      - run: npm run typecheck
+      - run: npm run export:android
+# This workflow never generates APK/AAB, signs binaries or deploys staff apps.

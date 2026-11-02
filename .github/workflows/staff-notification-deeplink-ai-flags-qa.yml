@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: fix/staff-notification-duty-deeplinks-ai-flag-counts-20261102
+          ref: fix/staff-age-notification-resolved-case-routing-20261102
           path: source
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -42,6 +42,7 @@ jobs:
           test -f supabase/migrations/20261102091000_staff_duty_notification_actual_source_ids.sql
           grep -q "v_source_id" supabase/migrations/20261102091000_staff_duty_notification_actual_source_ids.sql
           grep -q "notification-duty" supabase/functions/firebase-admin-workspace/index.ts
+          grep -q "age.data?.category" supabase/functions/firebase-admin-workspace/index.ts
           grep -q "v_source_id" supabase/migrations/20261102091000_staff_duty_notification_actual_source_ids.sql
           test -f admin-native/src/notificationDutyRoute.ts
           test -f supabase/migrations/20261102091000_staff_duty_notification_actual_source_ids.sql

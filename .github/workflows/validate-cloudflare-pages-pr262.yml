@@ -1,0 +1,62 @@
+name: TRAYDAQ V2 Builder - Cloudflare Sitemap and Project Resolver PR262
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/validate-cloudflare-pages-pr262.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: traydaq-v2-builder-cloudflare-seo-pr262
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate private TRAYDAQ V2 PR262 without deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - name: Check private repository read access
+        working-directory: .
+        env:
+          HAS_READ_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_READ_TOKEN" = true
+      - name: Checkout exact private V2 candidate source (read only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 30326fb1d8365d60c07bed8ac5a6e8229eda56b1
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Ensure exact candidate commit is being validated
+        run: test "$(git rev-parse HEAD)" = "30326fb1d8365d60c07bed8ac5a6e8229eda56b1"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Validate Cloudflare domain resolution and sitemap tests
+        run: node --test tests/cloudflare-pages-domain-resolution.test.mjs tests/google-sitemap-build.test.mjs tests/google-discovery-seo.test.mjs
+      - name: Run full private TRAYDAQ V2 web regression suite
+        run: npm test
+      - name: Validate web TypeScript
+        run: npm run typecheck
+      - name: Build Cloudflare user website including sitemap checks and staff isolation
+        run: npm run build
+      - name: Verify built public sitemap XML is not app shell HTML
+        run: |
+          node scripts/verify-public-search-output.mjs dist
+          grep -q '<urlset' dist/sitemap.xml
+          ! grep -qi '<html' dist/sitemap.xml
+          test -s dist/index.html
+          test -s dist/robots.txt
+      - name: Report independent validation (no deploy)
+        run: echo "PASS - V2 builder validated exact PR262 candidate source, tests, typecheck, and Cloudflare-ready build. Nothing was deployed; no APK or AAB."
+# No Cloudflare credentials, production deployment, APK, AAB, signing, or private source uploads.

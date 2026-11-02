@@ -1,0 +1,44 @@
+name: TRAYDAQ STAFF biography review conflict QA (no APK)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/staff-bio-stale-review-source-qa.yml"
+permissions:
+  contents: read
+jobs:
+  staff-bio-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - name: Fetch private Staff bio fix
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 2eae50b8489c6c1e9c7e6ffa82de749e30fa0766
+          path: source
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        working-directory: source/admin-native
+        run: npm install --no-audit --no-fund
+      - name: Typecheck Android Staff
+        working-directory: source/admin-native
+        run: npm run typecheck
+      - name: Run complete Staff security and biography regression tests
+        working-directory: source/admin-native
+        run: npm run test:security
+      - name: Check strict biography state handling, without any APK build
+        working-directory: source
+        run: |
+          grep -Fq 'This biography is no longer pending' supabase/functions/firebase-admin-workspace/index.ts
+          grep -Fq 'setCases([]);setQueue(null);setSelected(null)' admin-native/src/BioReviews.tsx
+          grep -Fq 'pending=(open.items||[]).filter' admin-native/src/BioReviews.tsx
+          echo "No APK or AAB built."

@@ -36,3 +36,10 @@ Source QA passed: https://github.com/gideondreams3325/traydaq-v2-builder/actions
 Includes paginated Gossips member settings on web and Android plus previously merged chat/input, service reaction and engagements updates.
 The 100000-member Gossips feature remains INACTIVE: 12-member server cap enforced until full 100k messaging, notifications and privacy scaling validated.
 Build only the signed TRAYDAQ user APK, preserve original certificate, verify package/version/Hermes/integrity and run emulator smoke test. No staff build, no Play Store publish.
+
+TRAYDAQ USER Android signed production APK release — 2026-11-02.
+Package: com.traydaq.app; versionName: 1.0.19; versionCode: 21.
+Validated private main source: 6c8ee826870dd59f6435928e6a9647d5308c546c; release PR #231.
+Independent source QA passed: https://github.com/gideondreams3325/traydaq-v2-builder/actions/runs/41415834664
+Updates since 1.0.18: grouped Popular Service Stores, expanded marketplace categories, Android video first-frame and owner Delete labeling, plus merged customer source repairs.
+Build only USER Android APK, using existing permanent signing key and registered Firebase Google OAuth SHA. Enforce Hermes bundled offline, native tests, Expo check, TypeScript, package/version and emulator startup smoke. Upload signed APK artifact, no staff app, no AAB, no Google Play publication.

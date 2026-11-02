@@ -42,6 +42,7 @@ jobs:
           test -f supabase/migrations/20261102091000_staff_duty_notification_actual_source_ids.sql
           grep -q "v_source_id" supabase/migrations/20261102091000_staff_duty_notification_actual_source_ids.sql
           grep -q "notification-duty" supabase/functions/firebase-admin-workspace/index.ts
+          grep -q "v_source_id" supabase/migrations/20261102091000_staff_duty_notification_actual_source_ids.sql
           test -f admin-native/src/notificationDutyRoute.ts
           test -f supabase/migrations/20261102091000_staff_duty_notification_actual_source_ids.sql
           echo "No APK or AAB built."

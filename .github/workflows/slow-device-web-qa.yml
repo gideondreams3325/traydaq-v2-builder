@@ -13,11 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Checkout revised private V2 follow-up
+      - name: Checkout current private V2 main
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: fix/web-performance-followup-20261102
+          ref: main
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false

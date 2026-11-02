@@ -1,0 +1,44 @@
+name: TRAYDAQ STAFF Notification Duty Deep-links and AI Flag Counts QA
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/staff-notification-duty-ai-flag-qa.yml"
+permissions:
+  contents: read
+jobs:
+  native-staff-notification-duty:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - name: Checkout existing private TRAYDAQ Staff branch
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/staff-notification-duty-deeplinks-ai-flag-counts-20261102
+          path: source
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install native Staff dependencies
+        working-directory: source/admin-native
+        run: npm install --no-audit --no-fund
+      - name: Typecheck every native Staff screen
+        working-directory: source/admin-native
+        run: npm run typecheck
+      - name: Full Staff security and duty routing regressions
+        working-directory: source/admin-native
+        run: npm run test:security
+      - name: Verify no old web Security Hub or Android release
+        working-directory: source
+        run: |
+          test -f admin-native/tests/notification-duty-deeplinks-ai-flags.test.mjs
+          test -f supabase/migrations/20261102090000_staff_ai_flag_duty_counts_no_duplicates.sql
+          ! grep -q 'firebase-security-hub' admin-native/src/App.tsx
+          echo "No APK/AAB or consumer app build triggered."

@@ -1,0 +1,67 @@
+name: TRAYDAQ v2 Builder — Popular Jobs Events and Product Stores (no APK)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/jobs-events-popular-rails-validation.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-popular-rails-source-only
+  cancel-in-progress: false
+jobs:
+  web:
+    name: Verify private web Jobs Events categories and product stores
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - name: Require private source access
+        working-directory: .
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 84dcae570ff84e5a770dc5135789107f7c6e1024
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+      - run: node --test tests/jobs-events-popular-compact-parity.test.mjs
+      - run: npm run typecheck
+      - run: npm run build
+  android:
+    name: Verify private native Jobs Events and market rails without APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - name: Require private source access
+        working-directory: .
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 84dcae570ff84e5a770dc5135789107f7c6e1024
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+      - run: node --test tests/*.test.mjs
+      - run: npm run typecheck
+      - run: npm run export:android
+# Source-only, no Gradle, APK, AAB, staff app, production writes or cloud deploy.

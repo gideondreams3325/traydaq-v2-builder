@@ -1,0 +1,48 @@
+name: TRAYDAQ v2 Builder Web Low End Slow Network Validation
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/web-low-end-network-performance-validation.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  web:
+    name: Independent web performance, compatibility and source regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - name: Require read token
+        working-directory: .
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 52f7eb006a32a806d255de65126ded51c92c0ee5
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+      - run: node --test tests/web-low-end-network-performance.test.mjs
+      - run: npm run typecheck
+      - run: npm run build
+      - name: Verify gzip initial entry improvement
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import zlib from 'node:zlib';
+          const entries=fs.readdirSync('dist/assets').filter(x=>/^index-[^/]+\.js$/.test(x));
+          if(!entries.length)throw Error('missing entry');
+          const sizes=entries.map(name=>({name,bytes:zlib.gzipSync(fs.readFileSync('dist/assets/'+name)).length}));
+          console.log(sizes);
+          if(!sizes.some(x=>x.bytes<254000))throw Error('initial gzip budget not improved');
+          NODE
+# No APK, AAB, Gradle, Play Store, staff app release or live production writes.

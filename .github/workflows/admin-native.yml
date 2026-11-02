@@ -45,7 +45,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: feat/standalone-admin-native
+          ref: 78bc0b14a756fbfc07e6037f96c88be85d20cd7f
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           fetch-depth: 1
@@ -66,6 +66,7 @@ jobs:
           if(JSON.stringify(config.platforms)!=='["android"]') throw Error('The Admin app must remain Android native-only.');
           console.log('Verified separate Admin app package and sources.');
           NODE
+          test "$(git rev-parse HEAD)" = "78bc0b14a756fbfc07e6037f96c88be85d20cd7f"
           echo "TRAYDAQ_ADMIN_SOURCE_SHA=$(git rev-parse HEAD)"
 
       - uses: actions/setup-node@v4

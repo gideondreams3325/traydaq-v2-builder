@@ -1,0 +1,1 @@
+2026-11-02: Validate gideondreams3325/traydaq-v2 PR #252, branch fix/web-low-bandwidth-startup-20261102. Run locked dependency install, TypeScript, web tests and Cloudflare-compatible web build. Never build APK/AAB. Do not deploy.

@@ -1,0 +1,77 @@
+name: TRAYDAQ v2 Builder — Grouped service stores and expanded categories (no APK)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/marketplace-grouped-categories-pr224-validation.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-marketplace-pr224-source
+  cancel-in-progress: true
+jobs:
+  marketplace-web:
+    name: Validate private marketplace web and category server contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - name: Require private-source read access
+        working-directory: .
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - name: Checkout exact private PR candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 1c3f3d49996faa21e2b6d2ed51e4fcfe129b4df4
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+      - run: node --test tests/marketplace-category-store-grouping-parity.test.mjs tests/marketplace-professional-parity.test.mjs tests/professional-service-discovery-parity.test.mjs tests/marketplace-reference-redesign.test.mjs
+      - run: npm run typecheck
+      - name: Validate Cloudflare web build only (no deployment)
+        run: npm run build
+  marketplace-android:
+    name: Validate Android marketplace without APK or AAB
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - name: Require private-source read access
+        working-directory: .
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - name: Checkout exact private PR candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 1c3f3d49996faa21e2b6d2ed51e4fcfe129b4df4
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+      - run: node --test tests/marketplace-reference-redesign.test.mjs tests/professional-marketplace-parity.test.mjs
+      - run: npm run typecheck
+      - name: Export Android JavaScript only
+        run: npm run export:android
+# No APK, AAB, Gradle, Google Play, Supabase deploy or Cloudflare publish.

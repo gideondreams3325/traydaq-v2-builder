@@ -140,3 +140,11 @@ Run 183+ native security tests, TypeScript, Expo preflight, Gradle production AP
 separate original Admin signing keystore and Firebase SHA-1 verification.
 Upload only TRAYDAQ-V2-Admin-Native-Android-APK, no user app or Play Store.
 Inspect failed steps and repair the cause before claiming success.
+
+
+USER-REQUESTED STAFF NOTIFICATION DUTY RELEASE — 2026-11-02
+Build TRAYDAQ STAFF Android 1.0.12, versionCode 15, package com.traydaq.admin.
+Pin private source to merged gideondreams3325/traydaq-v2 commit 78bc0b14a756fbfc07e6037f96c88be85d20cd7f from feat/standalone-admin-native (PR #221, notification fixes #218-#220).
+Use only dedicated gideondreams3325/traydaq-v2-builder main .github/workflows/admin-native.yml.
+Full security tests and TypeScript already passed in PR CI and independent v2 Builder; additionally run Expo preflight, Gradle production assembleRelease, original independent Staff keystore and Firebase SHA-1 validation, signed APK metadata checks and artifact upload.
+Fix failures before confirming success; preserve same signing identity. Do not build user Android, iPhone Staff, or upload to Play Store.

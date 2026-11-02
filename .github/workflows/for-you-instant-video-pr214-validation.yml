@@ -1,4 +1,4 @@
-name: TRAYDAQ v2 Builder — Android first-frame PR 214 (no APK)
+name: TRAYDAQ v2 Builder — Android autoplay + manual first frame (no APK)
 on:
   push:
     branches: [main]
@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   native-video:
-    name: Validate private PR 214 Android first frame
+    name: Validate merged private Android autoplay + manual playback
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
@@ -26,11 +26,11 @@ jobs:
         env:
           HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
         run: test "$HAS_TOKEN" = true
-      - name: Checkout exact private PR candidate
+      - name: Checkout exact merged Android first-frame candidate
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 67c3cc733e108d5aefdc7cb29de9957bdd8aaa33
+          ref: 3cb18c6369ac3f7ac041fb477efc66f1fba8d6dd
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false

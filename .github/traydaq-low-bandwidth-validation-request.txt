@@ -1,1 +1,1 @@
-2026-11-02: Validate private TRAYDAQ V2 PR #253, branch fix/web-performance-followup-20261102. Run web TypeScript, all web tests and Cloudflare production build only. Do not build APK or AAB. Do not deploy.
+2026-11-02: Rerun web-only validation for private V2 PR #253 at branch fix/web-performance-followup-20261102, with the existing media/music navigation test updated to assert audio only on the active Music page. Run npm run check; never build APK/AAB or deploy.

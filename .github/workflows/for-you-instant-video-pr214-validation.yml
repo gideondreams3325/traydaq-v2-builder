@@ -1,0 +1,50 @@
+name: TRAYDAQ v2 Builder — Android first-frame PR 214 (no APK)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/for-you-instant-video-pr214-validation.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-pr214-android-video
+  cancel-in-progress: true
+jobs:
+  native-video:
+    name: Validate private PR 214 Android first frame
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - name: Confirm authenticated private-source read access
+        working-directory: .
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - name: Checkout exact private PR candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 67c3cc733e108d5aefdc7cb29de9957bdd8aaa33
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install locked mobile packages
+        run: npm ci --no-audit --no-fund
+      - name: Run complete Android regression tests
+        run: node --test tests/*.test.mjs
+      - name: Validate Android TypeScript
+        run: npm run typecheck
+      - name: Verify Expo dependencies
+        run: npx expo install --check
+      - name: Export Android JavaScript bundle (no APK or AAB)
+        run: npm run export:android
+# No signing, Gradle build, Google Play, Cloudflare deployment or source artifact upload.

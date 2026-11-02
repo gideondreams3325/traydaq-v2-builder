@@ -1,0 +1,44 @@
+name: TRAYDAQ STAFF Biography Stale Review QA (no APK)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/staff-bio-review-stale-case-qa.yml"
+permissions:
+  contents: read
+jobs:
+  validate-biography:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - name: Checkout exact private Staff repair
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: b57b040e9cf6358c20ed62c4668fd3ebcc5732aa
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Staff dependencies
+        working-directory: private-src/admin-native
+        run: npm install --no-audit --no-fund
+      - name: Typecheck Staff
+        working-directory: private-src/admin-native
+        run: npm run typecheck
+      - name: Run Staff security and biography regression checks
+        working-directory: private-src/admin-native
+        run: npm run test:security
+      - name: Verify stale case source protections
+        working-directory: private-src
+        run: |
+          grep -Fq 'setSelected(previous=>previous?latest.find' admin-native/src/BioReviews.tsx
+          grep -Fq '"Biography request is no longer pending":[409' supabase/functions/firebase-admin-workspace/index.ts
+          grep -Fq 'bio-propose' admin-native/src/BioReviews.tsx
+          echo "Staff biography source QA passed; no APK/AAB built."

@@ -1,0 +1,50 @@
+name: TRAYDAQ v2 Builder — Android owner direct Delete label (no APK)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/android-owner-direct-delete-pr222-validation.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-owner-delete-pr222
+  cancel-in-progress: true
+jobs:
+  android-owner-delete:
+    name: Verify Android owner-only Delete action from private PR 222
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - name: Require private-source read token
+        working-directory: .
+        env:
+          HAS_SOURCE_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_SOURCE_TOKEN" = true
+      - name: Checkout exact TRAYDAQ source candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 06256d3cc5d1969c5bfbb7f0e2c25c73c3c87bc6
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install locked native dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Run owner-deletion tests and complete Android regressions
+        run: node --test tests/*.test.mjs
+      - name: Validate native TypeScript
+        run: npm run typecheck
+      - name: Check Expo package compatibility
+        run: npx expo install --check
+      - name: Export Android JavaScript without building APK/AAB
+        run: npm run export:android
+# No Gradle, signing, Play Store, artifacts, Cloudflare deployment or APK/AAB creation.

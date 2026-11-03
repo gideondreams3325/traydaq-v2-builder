@@ -1,1 +1,1 @@
-2026-11-03: Validate private gideondreams3325/traydaq-v2 PR #264 (feat/email-verification-spam-junk-guidance-20261103). Run web + Android source tests and typechecks only. Do not build APK, AAB, Expo export, or deploy.
+2026-11-03: Rerun source-only QA for TRAYDAQ v2 PR #264 after correcting AccountAccess.tsx JSX closing expression, HEAD a5d937802bbaf0a76aabef50e72e624156c248fb. Web tests and TypeScript, Android tests and TypeScript. Never build APK/AAB or deploy.

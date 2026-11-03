@@ -1,0 +1,1 @@
+2026-11-03: Validate private gideondreams3325/traydaq-v2 PR #264 (feat/email-verification-spam-junk-guidance-20261103). Run web + Android source tests and typechecks only. Do not build APK, AAB, Expo export, or deploy.

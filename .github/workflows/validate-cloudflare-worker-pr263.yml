@@ -1,0 +1,60 @@
+name: TRAYDAQ V2 Builder - Existing Cloudflare Worker Release PR263
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/validate-cloudflare-worker-pr263.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate-existing-worker:
+    name: Independent TRAYDAQ Worker, sitemap, web and staff isolation validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - name: Verify private V2 read-only access is configured
+        working-directory: .
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - name: Checkout exact private customer Worker deployment candidate (read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ae3a5f5df1ca2d6dfc04dfb09cf795134e7df5bc
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Confirm candidate commit exactly
+        run: test "$(git rev-parse HEAD)" = "ae3a5f5df1ca2d6dfc04dfb09cf795134e7df5bc"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install private app dependency-locked packages
+        run: npm ci --no-audit --no-fund
+      - name: Check Worker target, fail-closed Cloudflare preflight and public sitemap
+        run: node --test tests/cloudflare-existing-worker-release.test.mjs tests/cloudflare-pages-domain-resolution.test.mjs tests/google-sitemap-build.test.mjs tests/google-discovery-seo.test.mjs
+      - name: Run full TRAYDAQ web regression suite
+        run: npm test
+      - name: Check full web TypeScript
+        run: npm run typecheck
+      - name: Build Cloudflare Worker static assets and embedded staff shell
+        run: npm run build
+      - name: Verify ready-to-publish static XML sitemap, robots and HTML assets
+        run: |
+          node scripts/verify-public-search-output.mjs dist
+          test -s dist/index.html
+          test -s dist/sitemap.xml
+          test -s dist/robots.txt
+          test -s dist/__staff_iphone/index.html
+          grep -q '<urlset' dist/sitemap.xml
+          ! grep -qi '<html' dist/sitemap.xml
+      - name: Report independent source-only validation
+        run: echo "PASS - existing TRAYDAQ Cloudflare Worker target validated in V2 Builder. No production deployment, staff/Android release, APK or AAB."
+# Do not use Cloudflare deployment credentials or publish any private source artifacts.

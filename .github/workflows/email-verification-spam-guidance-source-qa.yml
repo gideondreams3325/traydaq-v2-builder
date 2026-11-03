@@ -1,0 +1,59 @@
+name: TRAYDAQ V2 Email Verification Spam Guidance QA (Source Only)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/traydaq-email-spam-guidance-validation-request.txt"
+permissions:
+  contents: read
+jobs:
+  web:
+    name: Web tests and TypeScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/email-verification-spam-junk-guidance-20261103
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+      - name: Web and Android UI source regression checks
+        run: npm test
+      - name: Web TypeScript
+        if: always()
+        run: npm run typecheck
+  android:
+    name: Android source tests and TypeScript, no build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/email-verification-spam-junk-guidance-20261103
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --no-audit --no-fund
+      - name: Android native source regression tests
+        run: node --test tests/*.test.mjs
+      - name: Android TypeScript
+        if: always()
+        run: npm run typecheck
+# No Expo export, Gradle, APK, AAB, signing, release, or deployment.

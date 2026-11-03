@@ -1,0 +1,94 @@
+name: TRAYDAQ V2 Mobile Profile and Footer Validation (Source Only)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/web-profile-mobile-validation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  web-profile-mobile:
+    name: Validate private mobile profile and app footer
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: "true"
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - name: Verify read-only private access is configured
+        working-directory: .
+        env:
+          SOURCE_TOKEN_PRESENT: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$SOURCE_TOKEN_PRESENT" = "true"
+      - name: Check out private profile layout fix (read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/web-profile-footer-mobile-20261103
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Prepare Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Check mounted footer visibility and mobile profile markup
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'tdn-app-hydrated' src/native-parity/WebApp.tsx
+          grep -q 'html.tdn-app-hydrated .td-index-footer{display:none}' index.html
+          grep -q 'tdn-profile-tab-mobile' src/native-parity/Community.tsx
+          test -s src/native-parity/web-polish.css
+          test -s src/main.tsx
+          ! grep -q 'All done!' src/main.tsx
+          echo 'PASS: SEO footer hidden only when app mounts; mobile profile tabs present'
+      - name: Install dependency-locked packages without publishing source
+        shell: bash
+        run: |
+          if npm ci --no-audit --no-fund > "$RUNNER_TEMP/web-polish-install.log" 2>&1; then
+            echo 'PASS: dependency install'
+          else
+            echo 'FAIL: dependency install (details withheld from public log)'
+            exit 1
+          fi
+      - name: Typecheck web app
+        shell: bash
+        run: |
+          if npm run typecheck > "$RUNNER_TEMP/web-polish-typecheck.log" 2>&1; then
+            echo 'PASS: TypeScript'
+          else
+            echo 'FAIL: TypeScript (details withheld from public log)'
+            exit 1
+          fi
+      - name: Run web regression tests
+        shell: bash
+        run: |
+          if npm test > "$RUNNER_TEMP/web-polish-tests.log" 2>&1; then
+            echo 'PASS: web regression suite'
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/web-polish-tests.log" | tail -3 || true
+          else
+            echo 'FAIL: web regression suite (details withheld from public log)'
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/web-polish-tests.log" | tail -3 || true
+            exit 1
+          fi
+      - name: Compile web assets for Cloudflare (no deployment)
+        shell: bash
+        run: |
+          if npm run build > "$RUNNER_TEMP/web-polish-build.log" 2>&1 && test -s dist/index.html; then
+            echo 'PASS: Cloudflare-ready web build'
+          else
+            echo 'FAIL: web build (details withheld from public log)'
+            exit 1
+          fi
+      - name: Final source-only confirmation
+        run: |
+          echo 'PASS: private TRAYDAQ web user app validated. No APK, AAB, deployment or backend updates.'

@@ -88,4 +88,5 @@ jobs:
             exit 1
           fi
       - name: Final source-only confirmation
-        run: echo 'PASS: private TRAYDAQ web user app validated. No APK, AAB, deployment or backend updates.'
+        run: |
+          echo 'PASS: private TRAYDAQ web user app validated. No APK, AAB, deployment or backend updates.'

@@ -49,3 +49,11 @@ Proof: PR #79 merged; Builder workflow run 40680247398 passed private web/Androi
 Keep permanent original signing key, its Google OAuth fingerprint, no STAFF output.
 Generate signed AAB and companion APK with manifest and signing verification only.
 Do not upload to Play Console, publish to testers, or alter user data.
+
+Play closed-testing AAB build request — 2026-11-04
+Authorized user app only, package com.traydaq.app.
+Private validated and merged source: da2e3f9368dd6a71f5308889454bd3a5b2700ccf (PR #267).
+Version: 1.0.20, versionCode 22, target API 36.
+Prior 1.0.19 (21) APK successful; independent V2 Builder 1.0.20 source QA run 41870117679 passed.
+Build signed AAB with original verified TRAYDAQ user upload certificate; run native tests and bundle verification.
+Deliver Google Play AAB as Actions artifact. No Play upload/rollout, no production, no tester changes, no staff app.

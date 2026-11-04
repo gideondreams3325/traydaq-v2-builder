@@ -53,6 +53,13 @@ jobs:
           test -s dist-staff/_headers
           test -d dist-staff/assets
           echo "::notice::Staff iPhone-only assets and tests verified."
+      - name: Preserve verified Staff iPhone deployment package
+        uses: actions/upload-artifact@v4
+        with:
+          name: TRAYDAQ-Staff-iPhone-PWA-Cloudflare-Package
+          path: private-src/dist-staff/
+          retention-days: 14
+          if-no-files-found: error
       - name: Verify Cloudflare release credentials
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}

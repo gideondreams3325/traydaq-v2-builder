@@ -23,9 +23,9 @@ jobs:
       CI: "1"
       EXPO_NO_TELEMETRY: "1"
       NODE_OPTIONS: "--max-old-space-size=6144"
-      TRAYDAQ_RELEASE_VERSION: "1.0.20"
-      TRAYDAQ_RELEASE_CODE: "22"
-      TRAYDAQ_SOURCE_SHA: "f62dbdfee8b5fc3fdff22fda1ac0c0814ea6eaa2"
+      TRAYDAQ_RELEASE_VERSION: "1.0.21"
+      TRAYDAQ_RELEASE_CODE: "23"
+      TRAYDAQ_SOURCE_SHA: "09426d58464f9672fd4a5eb1bb220c0c29e846d4"
       # Public certificate from signed User APK run 40043905049 (v1.0.1/code 3).
       TRAYDAQ_EXPECTED_SIGNING_SHA256: "716a68f5734545bc9d9700f045d2bfb1b1087ffe732021f216b32a575f03f83d"
     defaults:
@@ -36,7 +36,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: "f62dbdfee8b5fc3fdff22fda1ac0c0814ea6eaa2"
+          ref: "09426d58464f9672fd4a5eb1bb220c0c29e846d4"
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -252,17 +252,17 @@ jobs:
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$APK"
           APK_CERT=$("$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -1)
           [[ "${APK_CERT,,}" == "$TRAYDAQ_EXPECTED_SIGNING_SHA256" ]]
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.traydaq.app' versionCode='22' versionName='1.0.20'"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.traydaq.app' versionCode='23' versionName='1.0.21'"
           mkdir -p play-release
           java -jar "$TOOL" dump manifest --bundle="$AAB" > play-release/AndroidManifest.xml
           keytool -exportcert -rfc -keystore "$TRAYDAQ_UPLOAD_KEYSTORE" -storepass:env STORE_PASS -alias "$TRAYDAQ_UPLOAD_ALIAS" > play-release/TRAYDAQ-public-signing-certificate.pem
-          cp "$AAB" play-release/TRAYDAQ-1.0.20-22.aab
-          cp "$APK" play-release/TRAYDAQ-1.0.20-22.apk
+          cp "$AAB" play-release/TRAYDAQ-1.0.21-23.aab
+          cp "$APK" play-release/TRAYDAQ-1.0.21-23.apk
           python3 - <<'PY'
           import zipfile,struct,hashlib,json,os,xml.etree.ElementTree as ET
           root=ET.parse('play-release/AndroidManifest.xml').getroot();ns='{http://schemas.android.com/apk/res/android}'
           assert root.attrib.get('package')=='com.traydaq.app'
-          assert root.attrib.get(ns+'versionCode')=='22'
+          assert root.attrib.get(ns+'versionCode')=='23'
           assert root.find('uses-sdk').attrib.get(ns+'targetSdkVersion')=='36'
           permissions=[x.attrib.get(ns+'name') for x in root.findall('uses-permission')]
           assert 'android.permission.SYSTEM_ALERT_WINDOW' not in permissions
@@ -278,8 +278,20 @@ jobs:
           assert 'com.google.android.gms.permission.AD_ID' not in permissions
           assert 'android.permission.READ_MEDIA_IMAGES' not in permissions
           assert 'android.permission.READ_MEDIA_VIDEO' not in permissions
+          # Verify optional hardware requirements in the final Play-delivered manifest.
+          optional_features=(
+              'android.hardware.camera','android.hardware.camera.any',
+              'android.hardware.camera.front','android.hardware.camera.autofocus',
+              'android.hardware.camera.flash','android.hardware.microphone',
+              'android.hardware.location','android.hardware.location.gps',
+              'android.hardware.location.network','android.hardware.fingerprint')
+          declared_features=root.findall('uses-feature')
+          for feature in optional_features:
+              entries=[x for x in declared_features if x.attrib.get(ns+'name')==feature]
+              assert len(entries)==1, 'Optional hardware declaration missing or duplicated: '+feature
+              assert entries[0].attrib.get(ns+'required')=='false', 'Google Play hardware filter still required: '+feature
           checked=[]
-          with zipfile.ZipFile('play-release/TRAYDAQ-1.0.20-22.aab') as z:
+          with zipfile.ZipFile('play-release/TRAYDAQ-1.0.21-23.aab') as z:
               for name in z.namelist():
                   if name.endswith('.so') and ('/arm64-v8a/' in name or '/x86_64/' in name):
                       b=z.read(name);phoff=struct.unpack_from('<Q',b,32)[0];esz,count=struct.unpack_from('<HH',b,54)
@@ -289,15 +301,16 @@ jobs:
                               assert struct.unpack_from('<Q',b,p+48)[0]>=16384, '16KiB alignment failure: '+name
                       checked.append(name)
           assert checked,'No 64-bit native libraries were verified'
-          info={'package':'com.traydaq.app','versionName':'1.0.20','versionCode':22,'targetSdk':36,
+          info={'package':'com.traydaq.app','versionName':'1.0.21','versionCode':23,'targetSdk':36,
                 'minSdk':int(root.find('uses-sdk').attrib[ns+'minSdkVersion']),
                 'privateSourceCommit':os.environ['TRAYDAQ_SOURCE_SHA'],
                 'signingCertificateSha256':os.environ['TRAYDAQ_EXPECTED_SIGNING_SHA256'],
                 'referenceApkRun':40043905049,'referenceApkVersion':'1.0.1 (3)',
                 'native64BitLibraries16KiBVerified':len(checked),'permissions':permissions,
+                'optionalHardwareFeaturesVerified':list(optional_features),
                 'playAppSigningConfigured':False,'uploadedToGooglePlay':False,'staffBuilt':False,
                 'files':{}}
-          for f in ['TRAYDAQ-1.0.20-22.aab','TRAYDAQ-1.0.20-22.apk']:
+          for f in ['TRAYDAQ-1.0.21-23.aab','TRAYDAQ-1.0.21-23.apk']:
               b=open('play-release/'+f,'rb').read();info['files'][f]={'size':len(b),'sha256':hashlib.sha256(b).hexdigest()}
           json.dump(info,open('play-release/release-verification.json','w'),indent=2)
           print('Verified same-certificate AAB/APK, target 36, permissions and',len(checked),'16KiB ELF libraries.')
@@ -305,9 +318,11 @@ jobs:
           cat > play-release/GOOGLE-PLAY-TESTING-NOTES.txt <<'NOTES'
           TRAYDAQ for Google Play testing
           Application ID: com.traydaq.app
-          Version: 1.0.20 (8)
+          Version: 1.0.21 (23)
           Release channel intended: Internal testing (or closed testing after internal verification)
           Changes:
+          - Makes camera, microphone, GPS and fingerprint hardware optional in Google Play to support more phones and tablets.
+          - Keeps on-demand permissions when the user chooses features that need those sensors.
           - Adds Android camera permission for selected verification and age-appeal photos.
           - Enables microphone access only when a user starts recording a chat voice note.
           - Enables foreground GPS, optional notification alerts, and supported device unlock.

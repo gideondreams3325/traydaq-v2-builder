@@ -1,0 +1,58 @@
+name: TRAYDAQ Account, ID and Store Notice — Source QA Only
+# Isolated source validation for the private feature branch.
+# NEVER build APK/AAB, upload artifacts, deploy Cloudflare, or create releases.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/account-id-store-notice-source-qa.yml"
+permissions:
+  contents: read
+jobs:
+  web:
+    name: Web notice tests and TypeScript (source-only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/account-id-access-notices-20261104
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - if: always()
+        run: npm run typecheck
+  android:
+    name: Android native notice tests and TypeScript (no APK)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/account-id-access-notices-20261104
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: node --test tests/*.test.mjs
+      - if: always()
+        run: npm run typecheck

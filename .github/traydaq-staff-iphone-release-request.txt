@@ -1,0 +1,4 @@
+OWNER-AUTHORIZED TRAYDAQ STAFF iPhone release — 2026-11-04
+Deploy the already validated standalone iPhone Staff PWA at private traydaq-v2 main commit beb786de596a19bd4efb136acb5ba168c24c17ca.
+Use only staff-iphone-cloudflare-release.yml with isolated Cloudflare Pages project traydaq-staff-iphone.
+Do not deploy traydaq.com user app, change staff.traydaq.com DNS, build customer APK/AAB, or expose private staff data.

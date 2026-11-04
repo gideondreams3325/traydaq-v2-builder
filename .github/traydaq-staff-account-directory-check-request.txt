@@ -2,3 +2,5 @@ TRAYDAQ Staff account-directory source check
 Requested 2026-11-04 following iPhone TypeScript import fix.
 Private refs: feat/staff-account-directory-20261104, feat/staff-account-directory-android-20261104.
 No APK, AAB, deployments or account enforcement.
+
+Rerun 2026-11-04 after preserving existing iPhone native-private-evidence contract wording.

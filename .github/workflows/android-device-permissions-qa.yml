@@ -8,7 +8,7 @@ on:
 permissions:
   contents: read
 env:
-  SOURCE_SHA: e1acf12d2ca037ca7ba219285af8643dcb7a2348
+  SOURCE_SHA: 5baf9657d743db582253e9d4c3db8f683ce48c74
 jobs:
   android-permissions:
     name: Verify native user permissions and Android manifest
@@ -44,7 +44,7 @@ jobs:
           node - <<'NODE'
           const app=require('./app.json').expo;
           if(app.android.package!=='com.traydaq.app')throw Error('Wrong app package');
-          if(app.version!=='1.0.21'||app.android.versionCode!==23)throw Error('Unexpected app version');
+          if(app.version!=='1.0.22'||app.android.versionCode!==24)throw Error('Unexpected app version');
           NODE
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
@@ -93,6 +93,15 @@ jobs:
           }
           const required=actual.filter(x=>!x.includes('android:required="false"'));
           if(required.length)console.log('Other declared required features:',required);
+          const props=fs.readFileSync('android/gradle.properties','utf8');
+          if(!/^android\\.enableMinifyInReleaseBuilds=true$/m.test(props))
+            throw Error('R8 release minification must be enabled');
+          if(!/^android\\.enableShrinkResourcesInReleaseBuilds=false$/m.test(props))
+            throw Error('Resource shrinking must remain disabled during initial R8 rollout');
+          const gradle=fs.readFileSync('android/app/build.gradle','utf8');
+          if(!/minifyEnabled enableMinifyInReleaseBuilds/.test(gradle))
+            throw Error('Gradle release build does not consume R8 minification flag');
+          console.log('PASS: release R8 mapping enabled without resource shrinking');
           console.log('PASS: all 10 optional hardware features present in generated Android manifest');
           console.log('PASS: camera, voice, location, notifications and secure device unlock permissions');
           NODE

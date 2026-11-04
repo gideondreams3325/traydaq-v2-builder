@@ -8,7 +8,7 @@ on:
 permissions:
   contents: read
 env:
-  SOURCE_SHA: 5baf9657d743db582253e9d4c3db8f683ce48c74
+  SOURCE_SHA: 11bcbfaa2b1b4281115e8b8191e1012c3ac9a2fe
 jobs:
   android-permissions:
     name: Verify native user permissions and Android manifest

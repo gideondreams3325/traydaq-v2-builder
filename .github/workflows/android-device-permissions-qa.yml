@@ -94,9 +94,9 @@ jobs:
           const required=actual.filter(x=>!x.includes('android:required="false"'));
           if(required.length)console.log('Other declared required features:',required);
           const props=fs.readFileSync('android/gradle.properties','utf8');
-          if(!/^android\\.enableMinifyInReleaseBuilds=true$/m.test(props))
+          if(!props.split('\n').includes('android.enableMinifyInReleaseBuilds=true'))
             throw Error('R8 release minification must be enabled');
-          if(!/^android\\.enableShrinkResourcesInReleaseBuilds=false$/m.test(props))
+          if(!props.split('\n').includes('android.enableShrinkResourcesInReleaseBuilds=false'))
             throw Error('Resource shrinking must remain disabled during initial R8 rollout');
           const gradle=fs.readFileSync('android/app/build.gradle','utf8');
           if(!/minifyEnabled enableMinifyInReleaseBuilds/.test(gradle))

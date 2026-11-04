@@ -85,8 +85,7 @@ jobs:
             'android.hardware.location','android.hardware.location.gps','android.hardware.location.network',
             'android.hardware.fingerprint'
           ];
-          const actual=Array.from(manifest.matchAll(/<uses-feature\\b([^>]*?)\\/?>(?:<\\/uses-feature>)?/g),
-            x=>x[1]);
+          const actual=Array.from(manifest.matchAll(/<uses-feature[^>]*>/g), x=>x[0]);
           for(const name of features){
             const matches=actual.filter(x=>x.includes('android:name="'+name+'"'));
             if(matches.length!==1||!matches[0].includes('android:required="false"'))

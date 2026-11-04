@@ -59,3 +59,8 @@ Build signed AAB with original verified TRAYDAQ user upload certificate; run nat
 Deliver Google Play AAB as Actions artifact. No Play upload/rollout, no production, no tester changes, no staff app.
 
 2026-11-04 verification-only rerun: prior run 41870531299 compiled the signed 1.0.20/22 AAB successfully; restore existing RECORD_AUDIO permission exclusion check (no app code/signing changes), and rebuild to publish verified artifact.
+
+2026-11-04 user-requested signed AAB after Android permissions update:
+Private main source f62dbdfee8b5fc3fdff22fda1ac0c0814ea6eaa2; merged PR #268; V2 Builder Android permissions QA run 41874848852 passed 669 native tests, Expo Doctor, TypeScript, Hermes export and generated manifest.
+Build package com.traydaq.app 1.0.20/versionCode22 with original verified user upload key and target API36. Verify AAB certificate, actual manifest including RECORD_AUDIO and CAMERA, 16KiB pages, and omit staff app.
+No Google Play upload, test-track rollout or configuration changes.

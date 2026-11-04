@@ -48,7 +48,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: feat/standalone-admin-native
+          ref: feat/staff-release-1015-account-directory-20261104
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
           path: private-src

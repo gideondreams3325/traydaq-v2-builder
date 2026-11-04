@@ -266,7 +266,7 @@ jobs:
           assert root.find('uses-sdk').attrib.get(ns+'targetSdkVersion')=='36'
           permissions=[x.attrib.get(ns+'name') for x in root.findall('uses-permission')]
           assert 'android.permission.SYSTEM_ALERT_WINDOW' not in permissions
-          assert 'android.permission.RECORD_AUDIO' in permissions, 'Voice-note microphone permission missing'
+          assert 'android.permission.RECORD_AUDIO' not in permissions
           assert 'android.permission.ACCESS_BACKGROUND_LOCATION' not in permissions
           assert 'com.google.android.gms.permission.AD_ID' not in permissions
           assert 'android.permission.READ_MEDIA_IMAGES' not in permissions

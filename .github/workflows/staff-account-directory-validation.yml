@@ -36,7 +36,7 @@ jobs:
         run: |
           set -euo pipefail
           npm ci --no-audit --no-fund > "$RUNNER_TEMP/staff-install.log" 2>&1 || { echo "::error::Staff dependencies failed"; exit 1; }
-          npm run typecheck:staff > "$RUNNER_TEMP/staff-types.log" 2>&1 || { echo "::error::iPhone Staff TypeScript failed"; exit 1; }
+          npm run typecheck:staff > "$RUNNER_TEMP/staff-types.log" 2>&1 || { echo "::error::iPhone Staff TypeScript failed"; grep -E "error TS[0-9]+:" "$RUNNER_TEMP/staff-types.log" | head -25 || true; exit 1; }
           node --test tests/staff-account-directory-security.test.mjs tests/staff-iphone-pwa.test.mjs tests/staff-iphone-notification-insights.test.mjs > "$RUNNER_TEMP/staff-tests.log" 2>&1 || { echo "::error::Staff tests failed"; tail -40 "$RUNNER_TEMP/staff-tests.log" | sed -E 's@/[^ ]+@<source>@g'; exit 1; }
           npm run build:staff > "$RUNNER_TEMP/staff-build.log" 2>&1 || { echo "::error::iPhone Staff build failed"; exit 1; }
           echo "::notice::Staff PWA source checks passed. No release or upload."

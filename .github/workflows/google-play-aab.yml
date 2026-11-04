@@ -23,9 +23,9 @@ jobs:
       CI: "1"
       EXPO_NO_TELEMETRY: "1"
       NODE_OPTIONS: "--max-old-space-size=6144"
-      TRAYDAQ_RELEASE_VERSION: "1.0.6"
-      TRAYDAQ_RELEASE_CODE: "8"
-      TRAYDAQ_SOURCE_SHA: "7e15e43ee942c3153bd7f77d62497c594253657c"
+      TRAYDAQ_RELEASE_VERSION: "1.0.20"
+      TRAYDAQ_RELEASE_CODE: "22"
+      TRAYDAQ_SOURCE_SHA: "da2e3f9368dd6a71f5308889454bd3a5b2700ccf"
       # Public certificate from signed User APK run 40043905049 (v1.0.1/code 3).
       TRAYDAQ_EXPECTED_SIGNING_SHA256: "716a68f5734545bc9d9700f045d2bfb1b1087ffe732021f216b32a575f03f83d"
     defaults:
@@ -36,7 +36,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: "7e15e43ee942c3153bd7f77d62497c594253657c"
+          ref: "da2e3f9368dd6a71f5308889454bd3a5b2700ccf"
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -252,27 +252,27 @@ jobs:
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$APK"
           APK_CERT=$("$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -1)
           [[ "${APK_CERT,,}" == "$TRAYDAQ_EXPECTED_SIGNING_SHA256" ]]
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.traydaq.app' versionCode='8' versionName='1.0.6'"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.traydaq.app' versionCode='22' versionName='1.0.20'"
           mkdir -p play-release
           java -jar "$TOOL" dump manifest --bundle="$AAB" > play-release/AndroidManifest.xml
           keytool -exportcert -rfc -keystore "$TRAYDAQ_UPLOAD_KEYSTORE" -storepass:env STORE_PASS -alias "$TRAYDAQ_UPLOAD_ALIAS" > play-release/TRAYDAQ-public-signing-certificate.pem
-          cp "$AAB" play-release/TRAYDAQ-1.0.6-8.aab
-          cp "$APK" play-release/TRAYDAQ-1.0.6-8.apk
+          cp "$AAB" play-release/TRAYDAQ-1.0.20-22.aab
+          cp "$APK" play-release/TRAYDAQ-1.0.20-22.apk
           python3 - <<'PY'
           import zipfile,struct,hashlib,json,os,xml.etree.ElementTree as ET
           root=ET.parse('play-release/AndroidManifest.xml').getroot();ns='{http://schemas.android.com/apk/res/android}'
           assert root.attrib.get('package')=='com.traydaq.app'
-          assert root.attrib.get(ns+'versionCode')=='8'
+          assert root.attrib.get(ns+'versionCode')=='22'
           assert root.find('uses-sdk').attrib.get(ns+'targetSdkVersion')=='36'
           permissions=[x.attrib.get(ns+'name') for x in root.findall('uses-permission')]
           assert 'android.permission.SYSTEM_ALERT_WINDOW' not in permissions
-          assert 'android.permission.RECORD_AUDIO' not in permissions
+          assert 'android.permission.RECORD_AUDIO' in permissions, 'Voice-note microphone permission missing'
           assert 'android.permission.ACCESS_BACKGROUND_LOCATION' not in permissions
           assert 'com.google.android.gms.permission.AD_ID' not in permissions
           assert 'android.permission.READ_MEDIA_IMAGES' not in permissions
           assert 'android.permission.READ_MEDIA_VIDEO' not in permissions
           checked=[]
-          with zipfile.ZipFile('play-release/TRAYDAQ-1.0.6-8.aab') as z:
+          with zipfile.ZipFile('play-release/TRAYDAQ-1.0.20-22.aab') as z:
               for name in z.namelist():
                   if name.endswith('.so') and ('/arm64-v8a/' in name or '/x86_64/' in name):
                       b=z.read(name);phoff=struct.unpack_from('<Q',b,32)[0];esz,count=struct.unpack_from('<HH',b,54)
@@ -282,7 +282,7 @@ jobs:
                               assert struct.unpack_from('<Q',b,p+48)[0]>=16384, '16KiB alignment failure: '+name
                       checked.append(name)
           assert checked,'No 64-bit native libraries were verified'
-          info={'package':'com.traydaq.app','versionName':'1.0.6','versionCode':8,'targetSdk':36,
+          info={'package':'com.traydaq.app','versionName':'1.0.20','versionCode':22,'targetSdk':36,
                 'minSdk':int(root.find('uses-sdk').attrib[ns+'minSdkVersion']),
                 'privateSourceCommit':os.environ['TRAYDAQ_SOURCE_SHA'],
                 'signingCertificateSha256':os.environ['TRAYDAQ_EXPECTED_SIGNING_SHA256'],
@@ -290,7 +290,7 @@ jobs:
                 'native64BitLibraries16KiBVerified':len(checked),'permissions':permissions,
                 'playAppSigningConfigured':False,'uploadedToGooglePlay':False,'staffBuilt':False,
                 'files':{}}
-          for f in ['TRAYDAQ-1.0.6-8.aab','TRAYDAQ-1.0.6-8.apk']:
+          for f in ['TRAYDAQ-1.0.20-22.aab','TRAYDAQ-1.0.20-22.apk']:
               b=open('play-release/'+f,'rb').read();info['files'][f]={'size':len(b),'sha256':hashlib.sha256(b).hexdigest()}
           json.dump(info,open('play-release/release-verification.json','w'),indent=2)
           print('Verified same-certificate AAB/APK, target 36, permissions and',len(checked),'16KiB ELF libraries.')
@@ -298,16 +298,16 @@ jobs:
           cat > play-release/GOOGLE-PLAY-TESTING-NOTES.txt <<'NOTES'
           TRAYDAQ for Google Play testing
           Application ID: com.traydaq.app
-          Version: 1.0.6 (8)
+          Version: 1.0.20 (8)
           Release channel intended: Internal testing (or closed testing after internal verification)
           Changes:
-          - Fix For You incorrectly showing “Feed temporarily unavailable” when a private member-block check loses its Realtime Database session lease.
-          - Verify blocked members using the live authenticated server and retry intermittent errors without showing blocked users’ posts.
-          - Improve block/unblock member preview and recheck the feed after a change.
-          - Add a Chats shortcut at the top-left of For You, opening Messages, New Chat and Gossips.
-          - Show loading, retry and empty states instead of a blank For You screen.
-          - Improve profile loading recovery and show the correct public member identity when full details are unavailable.
-          - Keep private content review, existing member blocks, and publishing rules.
+          - Includes the latest merged TRAYDAQ native user app: For You playback, first-frame behavior and startup improvements.
+          - Improved chat, voice notes, Gossips, blocked-member and message interactions.
+          - Refined Marketplace categories and compact Product, Service, Job and Event discovery.
+          - Improved profile and notification scrolling, loading and media behavior on slower devices.
+          - Account and content deletion experience updates, security and moderation consistency.
+          - Adds Spam/Junk folder guidance to Android email-verification screens.
+          - Uses existing TRAYDAQ identity, verified upload certificate and API 36.
           Safety:
           - Signed with the existing TRAYDAQ V2 Android upload certificate.
           - AAB has NOT been uploaded to Google Play.

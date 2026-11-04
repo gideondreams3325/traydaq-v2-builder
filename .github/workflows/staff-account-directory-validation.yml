@@ -1,0 +1,65 @@
+name: TRAYDAQ Staff Account Directory Source Validation
+# Explicit source-only QA. No Android/iOS packaging, app signing, deployments,
+# member enforcement or private source artifacts are created.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/staff-account-directory-validation.yml
+      - .github/traydaq-staff-account-directory-check-request.txt
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-staff-account-directory-validation
+  cancel-in-progress: true
+jobs:
+  iphone-staff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out private iPhone Staff source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/staff-account-directory-20261104
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Test private iPhone Staff without publishing source
+        working-directory: private-src
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/staff-install.log" 2>&1 || { echo "::error::Staff dependencies failed"; exit 1; }
+          npm run typecheck:staff > "$RUNNER_TEMP/staff-types.log" 2>&1 || { echo "::error::iPhone Staff TypeScript failed"; exit 1; }
+          node --test tests/staff-account-directory-security.test.mjs tests/staff-iphone-pwa.test.mjs tests/staff-iphone-notification-insights.test.mjs > "$RUNNER_TEMP/staff-tests.log" 2>&1 || { echo "::error::Staff tests failed"; tail -40 "$RUNNER_TEMP/staff-tests.log" | sed -E 's@/[^ ]+@<source>@g'; exit 1; }
+          npm run build:staff > "$RUNNER_TEMP/staff-build.log" 2>&1 || { echo "::error::iPhone Staff build failed"; exit 1; }
+          echo "::notice::Staff PWA source checks passed. No release or upload."
+  android-staff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out private Android Staff source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/staff-account-directory-android-20261104
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Test native source without building APK or AAB
+        working-directory: private-src/admin-native
+        run: |
+          set -euo pipefail
+          npm install --no-audit --no-fund > "$RUNNER_TEMP/native-install.log" 2>&1 || { echo "::error::Android Staff dependencies failed"; exit 1; }
+          node --test tests/account-directory.test.mjs > "$RUNNER_TEMP/native-tests.log" 2>&1 || { echo "::error::Android Staff contracts failed"; exit 1; }
+          npm run typecheck > "$RUNNER_TEMP/native-types.log" 2>&1 || { echo "::error::Android Staff TypeScript failed"; exit 1; }
+          echo "::notice::Android Staff source checks passed. No APK/AAB produced."

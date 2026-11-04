@@ -1,0 +1,92 @@
+name: TRAYDAQ Staff iPhone Cloudflare Standalone Release
+# Staff-only Pages project. Does not deploy traydaq.com or the user application.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/traydaq-staff-iphone-release-request.txt"
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-staff-iphone-release
+  cancel-in-progress: false
+jobs:
+  staff-iphone-pages:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout approved private iPhone Staff source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: beb786de596a19bd4efb136acb5ba168c24c17ca
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Verify exact approved Staff source
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "beb786de596a19bd4efb136acb5ba168c24c17ca"
+          test -f staff-pwa/src/StaffAccountDirectory.tsx
+          test -f staff-pwa/public/_headers
+          test -f staff-pwa/public/manifest.webmanifest
+          test -f tests/staff-account-directory-security.test.mjs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Validate and build the Staff iPhone-only site
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/staff-install.log" 2>&1 || { echo "::error::Staff dependencies failed"; exit 1; }
+          npm run typecheck:staff > "$RUNNER_TEMP/staff-types.log" 2>&1 || { echo "::error::Staff iPhone TypeScript failed"; exit 1; }
+          node --test tests/staff-account-directory-security.test.mjs tests/staff-iphone-pwa.test.mjs tests/staff-iphone-notification-insights.test.mjs > "$RUNNER_TEMP/staff-tests.log" 2>&1 || { echo "::error::Staff iPhone access/privacy tests failed"; exit 1; }
+          npm run build:staff > "$RUNNER_TEMP/staff-build.log" 2>&1 || { echo "::error::Staff iPhone build failed"; exit 1; }
+          test -s dist-staff/index.html
+          test -s dist-staff/manifest.webmanifest
+          test -s dist-staff/_headers
+          test -d dist-staff/assets
+          echo "::notice::Staff iPhone-only assets and tests verified."
+      - name: Verify Cloudflare release credentials
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${CF_API_TOKEN:-}" || -z "${CF_ACCOUNT_ID:-}" ]]; then
+            echo "::error::Existing Cloudflare token and account ID are required."
+            exit 1
+          fi
+      - name: Provision only the isolated Staff Pages project if missing
+        working-directory: private-src/staff-pwa
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm_config_yes=true npx --yes wrangler@4.45.0 pages project list --json > "$RUNNER_TEMP/staff-pages-projects.json"
+          if jq -e '.. | objects | select(.name? == "traydaq-staff-iphone")' "$RUNNER_TEMP/staff-pages-projects.json" >/dev/null; then
+            echo "Existing isolated Staff Pages project found."
+          else
+            npm_config_yes=true npx --yes wrangler@4.45.0 pages project create traydaq-staff-iphone --production-branch=main
+          fi
+      - name: Deploy Staff-only iPhone PWA to its own Cloudflare Pages project
+        working-directory: private-src/staff-pwa
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm_config_yes=true npx --yes wrangler@4.45.0 pages deploy ../dist-staff \
+            --project-name=traydaq-staff-iphone --branch=main \
+            --commit-hash=beb786de596a19bd4efb136acb5ba168c24c17ca \
+            --commit-message="TRAYDAQ Staff iPhone account directory release"
+          echo "::notice::Staff iPhone deployed separately. User app and existing custom DNS were not changed."

@@ -25,7 +25,7 @@ jobs:
       NODE_OPTIONS: "--max-old-space-size=6144"
       TRAYDAQ_RELEASE_VERSION: "1.0.20"
       TRAYDAQ_RELEASE_CODE: "22"
-      TRAYDAQ_SOURCE_SHA: "da2e3f9368dd6a71f5308889454bd3a5b2700ccf"
+      TRAYDAQ_SOURCE_SHA: "f62dbdfee8b5fc3fdff22fda1ac0c0814ea6eaa2"
       # Public certificate from signed User APK run 40043905049 (v1.0.1/code 3).
       TRAYDAQ_EXPECTED_SIGNING_SHA256: "716a68f5734545bc9d9700f045d2bfb1b1087ffe732021f216b32a575f03f83d"
     defaults:
@@ -36,7 +36,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: "da2e3f9368dd6a71f5308889454bd3a5b2700ccf"
+          ref: "f62dbdfee8b5fc3fdff22fda1ac0c0814ea6eaa2"
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -266,7 +266,14 @@ jobs:
           assert root.find('uses-sdk').attrib.get(ns+'targetSdkVersion')=='36'
           permissions=[x.attrib.get(ns+'name') for x in root.findall('uses-permission')]
           assert 'android.permission.SYSTEM_ALERT_WINDOW' not in permissions
-          assert 'android.permission.RECORD_AUDIO' not in permissions
+          assert 'android.permission.RECORD_AUDIO' in permissions, 'Voice-note recording permission missing'
+          for required in ('android.permission.CAMERA','android.permission.ACCESS_FINE_LOCATION',
+                           'android.permission.ACCESS_COARSE_LOCATION','android.permission.POST_NOTIFICATIONS',
+                           'android.permission.USE_BIOMETRIC'):
+              assert required in permissions, 'Missing feature permission: '+required
+          assert 'android.permission.READ_CONTACTS' not in permissions
+          assert 'android.permission.READ_SMS' not in permissions
+          assert 'android.permission.MANAGE_EXTERNAL_STORAGE' not in permissions
           assert 'android.permission.ACCESS_BACKGROUND_LOCATION' not in permissions
           assert 'com.google.android.gms.permission.AD_ID' not in permissions
           assert 'android.permission.READ_MEDIA_IMAGES' not in permissions
@@ -301,13 +308,12 @@ jobs:
           Version: 1.0.20 (8)
           Release channel intended: Internal testing (or closed testing after internal verification)
           Changes:
-          - Includes the latest merged TRAYDAQ native user app: For You playback, first-frame behavior and startup improvements.
-          - Improved chat, voice notes, Gossips, blocked-member and message interactions.
-          - Refined Marketplace categories and compact Product, Service, Job and Event discovery.
-          - Improved profile and notification scrolling, loading and media behavior on slower devices.
-          - Account and content deletion experience updates, security and moderation consistency.
-          - Adds Spam/Junk folder guidance to Android email-verification screens.
-          - Uses existing TRAYDAQ identity, verified upload certificate and API 36.
+          - Adds Android camera permission for selected verification and age-appeal photos.
+          - Enables microphone access only when a user starts recording a chat voice note.
+          - Enables foreground GPS, optional notification alerts, and supported device unlock.
+          - Adds Settings > Device Permissions with live statuses and Android settings shortcut.
+          - Uses Android's selected-photo picker for Gossips pictures without full media access.
+          - Includes other previously merged For You, messaging, Marketplace and performance updates.
           Safety:
           - Signed with the existing TRAYDAQ V2 Android upload certificate.
           - AAB has NOT been uploaded to Google Play.

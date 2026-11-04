@@ -1,6 +1,7 @@
 name: TRAYDAQ Account, ID and Store Notice — Source QA Only
 # Isolated source validation for the private feature branch.
 # Retry 2026-11-04 after fixing existing sign-in source-regression match and native TS rights shape: 61b4b57fd9de367a556056996a5eb5c20b291bf2
+# Additional source QA: posting gateway actions, store approval explanations and Android notice dismissal; private head 479a2054c3433b5cea027b6020f5adaed3823cd6
 # NEVER build APK/AAB, upload artifacts, deploy Cloudflare, or create releases.
 on:
   workflow_dispatch:

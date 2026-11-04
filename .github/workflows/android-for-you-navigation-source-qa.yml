@@ -1,5 +1,6 @@
 name: TRAYDAQ Android For You Subnavigation — Source QA
 # Android tests and TypeScript only. No APK/AAB, release or deployment.
+# Rerun after preserving existing keyboard-bar guard: head b718a30259d194a942ca8bfb33530813690ee752
 on:
   workflow_dispatch:
   push:

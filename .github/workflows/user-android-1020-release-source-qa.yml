@@ -1,0 +1,52 @@
+name: TRAYDAQ User Android 1.0.20 Source QA (no package)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/user-android-1020-release-source-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  SOURCE_SHA: bc2c2ac5cba0685cba141240665686b999fe05e3
+jobs:
+  android-source:
+    name: Validate user release, marketplace and Hermes JS
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - name: Require private source token
+        shell: bash
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check release identity, full native regressions and marketplace parity
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const a=require('./app.json').expo;
+          if(a.android.package!=='com.traydaq.app'||a.version!=='1.0.20'||a.android.versionCode!==22)
+            throw Error('Wrong user APK version or package');
+          console.log('PASS: User TRAYDAQ 1.0.20 build 22');
+          NODE
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/native-install.log" 2>&1 || { echo "::error::Native dependencies failed"; exit 1; }
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/native-test.log" 2>&1 || { echo "::error::Native regressions failed"; grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/native-test.log" | head -15 || true; exit 1; }
+          npm run typecheck
+          npx expo export --platform android > "$RUNNER_TEMP/native-export.log" 2>&1 || { echo "::error::Android JS export failed"; exit 1; }
+          echo "PASS: full native tests, typecheck and Android JS export."
+# Source-only: do not build APK/AAB, touch staff app, or publish to app stores.

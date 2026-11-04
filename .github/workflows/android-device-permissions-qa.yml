@@ -1,0 +1,78 @@
+name: TRAYDAQ Android Device Permissions Validation (No APK)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/android-device-permissions-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  SOURCE_SHA: 472f146d787264a1bd470d549cd69052e7a7121d
+jobs:
+  android-permissions:
+    name: Verify native user permissions and Android manifest
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - name: Ensure private source access
+        env:
+          SOURCE_ACCESS: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$SOURCE_ACCESS" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Confirm exact commit and package
+        run: |
+          test "$(git -C .. rev-parse HEAD)" = "$SOURCE_SHA"
+          node - <<'NODE'
+          const app=require('./app.json').expo;
+          if(app.android.package!=='com.traydaq.app')throw Error('Wrong app package');
+          if(app.version!=='1.0.20'||app.android.versionCode!==22)throw Error('Unexpected app version');
+          NODE
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Run complete native regression tests and TypeScript
+        run: |
+          node --test tests/*.test.mjs
+          npm run typecheck
+      - name: Verify Expo config and Hermes export
+        run: |
+          npx expo-doctor
+          npx expo export --platform android
+      - name: Generate native manifest without building APK or AAB
+        run: npx expo prebuild --platform android --non-interactive
+      - name: Verify effective Android permissions and denied broad access
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const app=require('./app.json').expo;
+          const manifest=fs.readFileSync('android/app/src/main/AndroidManifest.xml','utf8');
+          for(const name of ['CAMERA','RECORD_AUDIO','ACCESS_FINE_LOCATION','ACCESS_COARSE_LOCATION','POST_NOTIFICATIONS','USE_BIOMETRIC']){
+            const full='android.permission.'+name;
+            if(!manifest.includes(full))throw Error('Missing effective manifest permission '+full);
+          }
+          const picker=app.plugins.find(x=>Array.isArray(x)&&x[0]==='expo-image-picker');
+          if(picker[1].microphonePermission===false)throw Error('Image picker removes microphone access');
+          for(const name of ['READ_CONTACTS','READ_SMS','ACCESS_BACKGROUND_LOCATION','SYSTEM_ALERT_WINDOW','MANAGE_EXTERNAL_STORAGE']){
+            if(manifest.includes('android.permission.'+name))throw Error('Unexpected broad permission: '+name);
+          }
+          console.log('PASS: camera, voice, location, notifications and secure device unlock permissions');
+          NODE
+# This is a source-only validator; never upload a package or trigger Google Play.

@@ -68,9 +68,15 @@ jobs:
             const full='android.permission.'+name;
             if(!manifest.includes(full))throw Error('Missing effective manifest permission '+full);
           }
+          // Expo writes tools:node="remove" into this source manifest for blocked permissions.
+          // Confirm the overlay privilege is explicitly removed rather than treating that
+          // removal marker as an enabled manifest permission.
+          if(!app.android.blockedPermissions.includes('android.permission.SYSTEM_ALERT_WINDOW')){
+            throw Error('Android overlay permission must stay blocked');
+          }
           const picker=app.plugins.find(x=>Array.isArray(x)&&x[0]==='expo-image-picker');
           if(picker[1].microphonePermission===false)throw Error('Image picker removes microphone access');
-          for(const name of ['READ_CONTACTS','READ_SMS','ACCESS_BACKGROUND_LOCATION','SYSTEM_ALERT_WINDOW','MANAGE_EXTERNAL_STORAGE']){
+          for(const name of ['READ_CONTACTS','READ_SMS','ACCESS_BACKGROUND_LOCATION','MANAGE_EXTERNAL_STORAGE']){
             if(manifest.includes('android.permission.'+name))throw Error('Unexpected broad permission: '+name);
           }
           console.log('PASS: camera, voice, location, notifications and secure device unlock permissions');

@@ -71,3 +71,9 @@ Merged private main PR #269 commit 09426d58464f9672fd4a5eb1bb220c0c29e846d4; ver
 Source QA with 673 passing tests, TypeScript, Expo Doctor, JS export, optional-hardware native manifest checks: v2 builder run 41910963399 SUCCESS.
 Verify all 10 camera, microphone, location and fingerprint hardware features are android:required=false in actual signed final AAB. Keep runtime permissions on demand; do not modify original signing key, Firebase config, minSdk or app package.
 Produce signed AAB, companion APK and checksums, no staff build, no Google Play upload, publishing or rollout.
+
+TRAYDAQ Android Play deobfuscation warning fix request — 2026-11-04:
+User's Google Play internal-testing versionCode23 (1.0.21) accepted and restored device eligibility (zero lost, 471 newly supported) but warns deobfuscation file missing.
+Validated R8 release source private main commit fd9ad8e7eb362f2955c77b8b86fc94b1bf681fef, merged PR #270, v2 builder run 41916831373 success (native tests, TypeScript, Expo prebuild, R8 Gradle flag, optional hardware).
+Build new signed AAB version 1.0.22/code24 with original upload certificate. Require R8 mapping.txt plus matching BUNDLE-METADATA/com.android.tools.build.obfuscation/proguard.map inside final AAB, preserve 10 optional hardware declarations, package com.traydaq.app, API36, 16KiB libraries.
+Deliver Google Play AAB, companion APK, mapping.txt, verification.json in Actions artifact. Do not deploy or publish to Play; no staff build.

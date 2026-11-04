@@ -64,3 +64,10 @@ Deliver Google Play AAB as Actions artifact. No Play upload/rollout, no producti
 Private main source f62dbdfee8b5fc3fdff22fda1ac0c0814ea6eaa2; merged PR #268; V2 Builder Android permissions QA run 41874848852 passed 669 native tests, Expo Doctor, TypeScript, Hermes export and generated manifest.
 Build package com.traydaq.app 1.0.20/versionCode22 with original verified user upload key and target API36. Verify AAB certificate, actual manifest including RECORD_AUDIO and CAMERA, 16KiB pages, and omit staff app.
 No Google Play upload, test-track rollout or configuration changes.
+
+TRAYDAQ Android wider-device support signed AAB request — 2026-11-04:
+User requested a replacement AAB after Google Play warned of 6 previously supported devices excluded by version 1.0.20 (22).
+Merged private main PR #269 commit 09426d58464f9672fd4a5eb1bb220c0c29e846d4; version 1.0.21 (23), package com.traydaq.app, Android API 36.
+Source QA with 673 passing tests, TypeScript, Expo Doctor, JS export, optional-hardware native manifest checks: v2 builder run 41910963399 SUCCESS.
+Verify all 10 camera, microphone, location and fingerprint hardware features are android:required=false in actual signed final AAB. Keep runtime permissions on demand; do not modify original signing key, Firebase config, minSdk or app package.
+Produce signed AAB, companion APK and checksums, no staff build, no Google Play upload, publishing or rollout.

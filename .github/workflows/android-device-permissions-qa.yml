@@ -21,10 +21,6 @@ jobs:
       run:
         working-directory: private-src/mobile
     steps:
-      - name: Ensure private source access
-        env:
-          SOURCE_ACCESS: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
-        run: test "$SOURCE_ACCESS" = true
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
@@ -33,6 +29,10 @@ jobs:
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
           fetch-depth: 1
+      - name: Ensure private source access
+        env:
+          SOURCE_ACCESS: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$SOURCE_ACCESS" = true
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

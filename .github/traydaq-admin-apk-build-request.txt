@@ -177,3 +177,6 @@ Gradle assembleRelease, independent Staff signing key, Firebase SHA-1 and APK
 metadata verification; upload TRAYDAQ-V2-Admin-Native-Android-APK.
 Do not build or release any user app APK/AAB; no Google Play upload,
 account enforcement, or iPhone PWA deployment in the Android build workflow.
+
+RETRY OWNER-AUTHORIZED STAFF 1.0.15 RELEASE — 2026-11-04
+The first v1.0.15 dedicated builder run #41931919666 stopped on stale age-appeal release version assertion (204/205 tests passed). Fixed test PR #277 merged in private feat/standalone-admin-native at 6e8c9900733a11013da635e081b28ec0c549122c. Builder admin-native.yml pinned to this new exact SHA. Re-run only Staff native release, same package com.traydaq.admin, version 1.0.15 code 18, same original signing key. No user app build or Google Play upload.

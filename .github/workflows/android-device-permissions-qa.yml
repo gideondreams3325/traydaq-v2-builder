@@ -8,7 +8,7 @@ on:
 permissions:
   contents: read
 env:
-  SOURCE_SHA: 472f146d787264a1bd470d549cd69052e7a7121d
+  SOURCE_SHA: e1acf12d2ca037ca7ba219285af8643dcb7a2348
 jobs:
   android-permissions:
     name: Verify native user permissions and Android manifest
@@ -44,7 +44,7 @@ jobs:
           node - <<'NODE'
           const app=require('./app.json').expo;
           if(app.android.package!=='com.traydaq.app')throw Error('Wrong app package');
-          if(app.version!=='1.0.20'||app.android.versionCode!==22)throw Error('Unexpected app version');
+          if(app.version!=='1.0.21'||app.android.versionCode!==23)throw Error('Unexpected app version');
           NODE
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
@@ -79,6 +79,22 @@ jobs:
           for(const name of ['READ_CONTACTS','READ_SMS','ACCESS_BACKGROUND_LOCATION','MANAGE_EXTERNAL_STORAGE']){
             if(manifest.includes('android.permission.'+name))throw Error('Unexpected broad permission: '+name);
           }
+          const features=[
+            'android.hardware.camera','android.hardware.camera.any','android.hardware.camera.front',
+            'android.hardware.camera.autofocus','android.hardware.camera.flash','android.hardware.microphone',
+            'android.hardware.location','android.hardware.location.gps','android.hardware.location.network',
+            'android.hardware.fingerprint'
+          ];
+          const actual=Array.from(manifest.matchAll(/<uses-feature\\b([^>]*?)\\/?>(?:<\\/uses-feature>)?/g),
+            x=>x[1]);
+          for(const name of features){
+            const matches=actual.filter(x=>x.includes('android:name="'+name+'"'));
+            if(matches.length!==1||!matches[0].includes('android:required="false"'))
+              throw Error('Play hardware exclusion persists: '+name+' '+JSON.stringify(matches));
+          }
+          const required=actual.filter(x=>!x.includes('android:required="false"'));
+          if(required.length)console.log('Other declared required features:',required);
+          console.log('PASS: all 10 optional hardware features present in generated Android manifest');
           console.log('PASS: camera, voice, location, notifications and secure device unlock permissions');
           NODE
 # This is a source-only validator; never upload a package or trigger Google Play.

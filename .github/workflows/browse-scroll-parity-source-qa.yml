@@ -1,5 +1,6 @@
 name: TRAYDAQ Jobs Events Music — Browse Scroll Source QA
 # Validate private feature branch only. NEVER release, build APK/AAB or deploy Cloudflare.
+# Retry after updating legacy two-column assumptions in web + native regression tests (head fd3959852cc41fa625a3ef78d80013e1025fba59).
 on:
   workflow_dispatch:
   push:

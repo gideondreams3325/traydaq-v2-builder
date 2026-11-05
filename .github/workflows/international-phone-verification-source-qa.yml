@@ -85,7 +85,6 @@ jobs:
             # Strip terminal colours; print only diagnostic headlines, never code excerpts.
             sed -E 's/\x1B\[[0-9;]*[[:alpha:]]//g' "$RUNNER_TEMP/edge-types.log" |
               grep -Ei 'error|failed|cannot|TS[0-9]{4}|unresolved|not found' |
-              grep -Ev '^([[:space:]]*[0-9]+[[:space:]]*\\||[[:space:]]*\\^)' |
               head -10 | cut -c1-180 || true
             exit 1
           fi

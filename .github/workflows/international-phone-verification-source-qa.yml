@@ -1,0 +1,83 @@
+name: TRAYDAQ V2 International Phone Verification — Private Source Only
+# Never sends SMS, deploys Supabase/Cloudflare or creates Android APK/AAB.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/international-phone-verification-source-qa.yml']
+permissions:
+  contents: read
+jobs:
+  web:
+    name: V2 private web source tests and Cloudflare local build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/international-phone-verification-20261105
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate private web source, sanitize public logs
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Private revision: $(git rev-parse --short HEAD)"
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/web-install.log" 2>&1 || { echo "::error::Web install failed"; exit 1; }
+          npm test > "$RUNNER_TEMP/web-tests.log" 2>&1 || { echo "::error::Web tests failed"; grep -E '^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/web-tests.log" | tail -3 || true; exit 1; }
+          grep -E '^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/web-tests.log" | tail -3 || true
+          npm run typecheck > "$RUNNER_TEMP/web-types.log" 2>&1 || { echo "::error::Web typecheck failed"; exit 1; }
+          npm run build > "$RUNNER_TEMP/web-build.log" 2>&1 || { echo "::error::Cloudflare local asset build failed"; exit 1; }
+          echo "PASS: web tests, TypeScript, local assets"
+  android:
+    name: V2 private Android source tests and TypeScript — no builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/international-phone-verification-20261105
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate private Android source, sanitize public logs
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/native-install.log" 2>&1 || { echo "::error::Native install failed"; exit 1; }
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/native-tests.log" 2>&1 || { echo "::error::Native tests failed"; grep -E '^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/native-tests.log" | tail -3 || true; exit 1; }
+          grep -E '^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/native-tests.log" | tail -3 || true
+          npm run typecheck > "$RUNNER_TEMP/native-types.log" 2>&1 || { echo "::error::Native TypeScript failed"; exit 1; }
+          echo "PASS: native tests and TypeScript; no APK/AAB"
+  edge:
+    name: V2 private Supabase Edge TypeScript check — no deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/international-phone-verification-20261105
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Deno TypeScript validation, no Twilio calls
+        working-directory: private-src
+        shell: bash
+        run: |
+          deno check supabase/functions/traydaq-phone-verification/index.ts > "$RUNNER_TEMP/edge-types.log" 2>&1 || { echo "::error::Phone Edge TypeScript failed"; exit 1; }
+          echo "PASS: Edge TypeScript"

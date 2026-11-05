@@ -1,0 +1,64 @@
+name: TRAYDAQ V2 Android App Links Web QA (No APK)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/android-app-links-web-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  SOURCE_SHA: be67d6c2c477b16a8f55ceeeeb5c81d44c36aa35
+jobs:
+  app-links-web:
+    name: Verify production static association and Android manifest
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Verify source commit and token
+        working-directory: private-src
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test -f public/.well-known/assetlinks.json
+          test -f scripts/verify-android-app-links.mjs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install production dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Run web regressions and TypeScript
+        working-directory: private-src
+        run: |
+          npm test
+          npm run typecheck
+      - name: Build Cloudflare web and validate actual dist assetlinks
+        working-directory: private-src
+        run: |
+          npm run build
+          node scripts/verify-android-app-links.mjs dist
+      - name: Verify both domains are configured in Android app
+        working-directory: private-src
+        run: |
+          node --input-type=module - <<'NODE'
+          import fs from 'node:fs';
+          const app=JSON.parse(fs.readFileSync('mobile/app.json','utf8')).expo;
+          const hosts=app.android.intentFilters.flatMap(x=>x.autoVerify?x.data:[]).filter(x=>x.scheme==='https').map(x=>x.host);
+          if(app.android.package!=='com.traydaq.app'||!hosts.includes('traydaq.com')||!hosts.includes('www.traydaq.com')){
+            throw Error('Android App Links identity or domains mismatch');
+          }
+          console.log('PASS: both Android domains match association file intent');
+          NODE
+# No Cloudflare deployment or APK/AAB build in this workflow.

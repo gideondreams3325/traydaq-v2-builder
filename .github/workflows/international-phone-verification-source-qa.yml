@@ -4,7 +4,9 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['.github/workflows/international-phone-verification-source-qa.yml']
+    paths:
+      - '.github/workflows/international-phone-verification-source-qa.yml'
+      - '.github/traydaq-phone-verification-validation-request.txt'
 permissions:
   contents: read
 jobs:

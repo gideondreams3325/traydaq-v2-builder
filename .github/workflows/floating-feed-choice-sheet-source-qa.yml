@@ -1,0 +1,56 @@
+name: TRAYDAQ Floating Feed Notice & Global Choice Sheets — Source QA
+# Web + Android TypeScript and regression tests only; NEVER Expo/Gradle,
+# APK/AAB, release, signing, Cloudflare/Supabase deploy or app store upload.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/floating-feed-choice-sheet-source-qa.yml"
+permissions:
+  contents: read
+jobs:
+  web:
+    name: Web floating feed and popup regressions + TypeScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/immersive-feed-overlay-and-choice-sheets-20261105
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - if: always()
+        run: npm run typecheck
+  native:
+    name: Android native choice sheets, feed notices and typechecks (no APK)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/immersive-feed-overlay-and-choice-sheets-20261105
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: node --test tests/*.test.mjs
+      - if: always()
+        run: npm run typecheck

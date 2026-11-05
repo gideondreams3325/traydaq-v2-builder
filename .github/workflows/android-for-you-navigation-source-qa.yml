@@ -1,6 +1,7 @@
 name: TRAYDAQ Android For You Subnavigation — Source QA
 # Android tests and TypeScript only. No APK/AAB, release or deployment.
 # Follow-up: preserve For You-origin hidden navigation on account-scoped app restoration. Feature head 9bdbee548b7df341d805d12739fa14d1ed234a95
+# Rerun for corrected test source-pattern guard, head 6fbeb1bd8cb70f3348d6fd149db01867e0de052f.
 on:
   workflow_dispatch:
   push:

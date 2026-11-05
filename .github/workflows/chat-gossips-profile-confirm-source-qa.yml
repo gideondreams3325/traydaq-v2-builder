@@ -1,0 +1,55 @@
+name: TRAYDAQ Chats and Gossips — Profile Confirmation Source QA
+# No APK/AAB, native packaging, Play release, Supabase deployment or Cloudflare deployment.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/chat-gossips-profile-confirm-source-qa.yml"
+permissions:
+  contents: read
+jobs:
+  web:
+    name: Web chat profile-confirm tests and TypeScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/chat-gossips-profile-confirmation-20261105
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - if: always()
+        run: npm run typecheck
+  android:
+    name: Android chat profile-confirm tests and TypeScript (no build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/chat-gossips-profile-confirmation-20261105
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: node --test tests/*.test.mjs
+      - if: always()
+        run: npm run typecheck

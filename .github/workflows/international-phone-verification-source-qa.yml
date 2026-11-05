@@ -82,7 +82,11 @@ jobs:
           if ! deno check supabase/functions/traydaq-phone-verification/index.ts > "$RUNNER_TEMP/edge-types.log" 2>&1; then
             echo "::error::Phone Edge TypeScript failed"
             # Only error headers/TS codes: never output private code or secrets.
-            grep -E '^(error:|TS[0-9]{4})' "$RUNNER_TEMP/edge-types.log" | head -8 | cut -c1-160 || true
+            # Strip terminal colours; print only diagnostic headlines, never code excerpts.
+            sed -E 's/\x1B\[[0-9;]*[[:alpha:]]//g' "$RUNNER_TEMP/edge-types.log" |
+              grep -Ei 'error|failed|cannot|TS[0-9]{4}|unresolved|not found' |
+              grep -Ev '^([[:space:]]*[0-9]+[[:space:]]*\\||[[:space:]]*\\^)' |
+              head -10 | cut -c1-180 || true
             exit 1
           fi
           echo "PASS: Edge TypeScript"

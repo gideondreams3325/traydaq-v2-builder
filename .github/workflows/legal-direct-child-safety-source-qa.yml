@@ -1,0 +1,45 @@
+name: TRAYDAQ Legal Direct Child Safety URL Source QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/legal-direct-child-safety-source-qa.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  SOURCE_SHA: 7578406efcbf121c06130ddad9d60aafa8543feb
+jobs:
+  legal-route:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Confirm source and isolated legal assets
+        working-directory: private-src
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test -f scripts/build-standalone-legal.mjs
+          test -f tests/standalone-legal-cloudflare.test.mjs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run standalone legal site and routing tests
+        working-directory: private-src
+        run: |
+          node --test tests/standalone-legal-cloudflare.test.mjs
+          node scripts/build-standalone-legal.mjs dist-legal
+          test -s dist-legal/child-safety/index.html
+          test -s dist-legal/child-safety-standards.html
+          cmp dist-legal/child-safety/index.html dist-legal/child-safety-standards.html
+          grep -Fq 'support@traydaq.com' dist-legal/child-safety-standards.html
+          grep -Fq 'Child Safety Standards' dist-legal/child-safety-standards.html
+          echo "PASS: child-safety-standards.html is identical to existing approved policy"
+# No Android build or Cloudflare deployment occurs here.

@@ -1,6 +1,7 @@
 name: TRAYDAQ Floating Feed Notice & Global Choice Sheets — Source QA
 # Web + Android TypeScript and regression tests only; NEVER Expo/Gradle,
 # APK/AAB, release, signing, Cloudflare/Supabase deploy or app store upload.
+# Retry after retaining existing chat-control icon dimensions and aligning popup tests with reusable selector: branch head fea9885f6b4cbc4b3d0d96936a6d3453d4807394.
 on:
   workflow_dispatch:
   push:

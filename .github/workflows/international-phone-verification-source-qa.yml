@@ -79,5 +79,10 @@ jobs:
         working-directory: private-src
         shell: bash
         run: |
-          deno check supabase/functions/traydaq-phone-verification/index.ts > "$RUNNER_TEMP/edge-types.log" 2>&1 || { echo "::error::Phone Edge TypeScript failed"; exit 1; }
+          if ! deno check supabase/functions/traydaq-phone-verification/index.ts > "$RUNNER_TEMP/edge-types.log" 2>&1; then
+            echo "::error::Phone Edge TypeScript failed"
+            # Only error headers/TS codes: never output private code or secrets.
+            grep -E '^(error:|TS[0-9]{4})' "$RUNNER_TEMP/edge-types.log" | head -8 | cut -c1-160 || true
+            exit 1
+          fi
           echo "PASS: Edge TypeScript"

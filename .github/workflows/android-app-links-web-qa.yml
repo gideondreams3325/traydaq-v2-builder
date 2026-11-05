@@ -8,7 +8,7 @@ on:
 permissions:
   contents: read
 env:
-  SOURCE_SHA: be67d6c2c477b16a8f55ceeeeb5c81d44c36aa35
+  SOURCE_SHA: 8728527d6b0a87d3d346b87103f30919fb15ee1d
 jobs:
   app-links-web:
     name: Verify production static association and Android manifest

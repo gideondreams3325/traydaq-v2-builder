@@ -1,6 +1,7 @@
 name: TRAYDAQ Chat Keyboard History Time + Compact Notice — Source QA
 # Source regression and TypeScript validation only.
 # NEVER build or release Android APK/AAB, sign, upload artifacts or deploy Cloudflare.
+# Retry: repaired JSX empty-state block and updated keyboard/history expectations, head 9134fceabbdb030880021c710e3d07f1ae1326b2.
 on:
   workflow_dispatch:
   push:

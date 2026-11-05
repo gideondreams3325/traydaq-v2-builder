@@ -1,6 +1,6 @@
 name: TRAYDAQ Android For You Subnavigation — Source QA
 # Android tests and TypeScript only. No APK/AAB, release or deployment.
-# Rerun after preserving existing keyboard-bar guard: head b718a30259d194a942ca8bfb33530813690ee752
+# Follow-up: preserve For You-origin hidden navigation on account-scoped app restoration. Feature head 9bdbee548b7df341d805d12739fa14d1ed234a95
 on:
   workflow_dispatch:
   push:
@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: fix/android-hide-tab-bar-from-for-you-20261104
+          ref: fix/android-feed-nav-origin-resume-20261105
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false

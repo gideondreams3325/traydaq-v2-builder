@@ -1,0 +1,55 @@
+name: TRAYDAQ Global ID Choices and Compact For You Nav — Source QA
+# Source tests only: no Expo/Gradle APK/AAB, no app release, no Cloudflare/Supabase deployment.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/global-id-compact-feed-source-qa.yml"
+permissions:
+  contents: read
+jobs:
+  web:
+    name: Web + backend source regression and TypeScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/global-id-review-and-compact-feed-nav-20261105
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm test
+      - if: always()
+        run: npm run typecheck
+  native:
+    name: Android native regression and TypeScript (no APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/global-id-review-and-compact-feed-nav-20261105
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: node --test tests/*.test.mjs
+      - if: always()
+        run: npm run typecheck

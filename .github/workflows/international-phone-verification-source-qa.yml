@@ -79,7 +79,7 @@ jobs:
         working-directory: private-src
         shell: bash
         run: |
-          if ! deno check supabase/functions/traydaq-phone-verification/index.ts > "$RUNNER_TEMP/edge-types.log" 2>&1; then
+          if ! deno check --config supabase/functions/traydaq-phone-verification/deno.json supabase/functions/traydaq-phone-verification/index.ts > "$RUNNER_TEMP/edge-types.log" 2>&1; then
             echo "::error::Phone Edge TypeScript failed"
             # Only error headers/TS codes: never output private code or secrets.
             # Strip terminal colours; print only diagnostic headlines, never code excerpts.

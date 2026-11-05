@@ -180,3 +180,15 @@ account enforcement, or iPhone PWA deployment in the Android build workflow.
 
 RETRY OWNER-AUTHORIZED STAFF 1.0.15 RELEASE — 2026-11-04
 The first v1.0.15 dedicated builder run #41931919666 stopped on stale age-appeal release version assertion (204/205 tests passed). Fixed test PR #277 merged in private feat/standalone-admin-native at 6e8c9900733a11013da635e081b28ec0c549122c. Builder admin-native.yml pinned to this new exact SHA. Re-run only Staff native release, same package com.traydaq.admin, version 1.0.15 code 18, same original signing key. No user app build or Google Play upload.
+
+USER-REPORTED LIVE STAFF ACCOUNT BUTTONS AND PHOTO FIX — 2026-11-05
+Owner showed existing installed Android Staff buttons Warn/Restrict/Suspend/Block appeared unresponsive
+because review form was below the whole account list. Fixed as immediate accessible action dialog
+with explicit confirmation and retained CEO/Head approval. Real profile photos shown if uploaded;
+accounts without an avatar show initials and no-photo status, never an unrelated picture.
+Build signed TRAYDAQ STAFF 1.0.16 (versionCode 19), package com.traydaq.admin,
+from merged private feat/standalone-admin-native SHA a4f0a119b98f6f26914cc53b8e6e4295d371f4f0
+(PR #285). Full v2 builder source and security tests passed #41968942632.
+Use dedicated admin-native.yml with same Staff keystore and Firebase SHA-1, Expo, Gradle
+release APK verification and TRAYDAQ-V2-Admin-Native-Android-APK artifact.
+Do not touch Android user app, public marketplace, or Google Play.

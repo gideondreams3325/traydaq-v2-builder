@@ -1,5 +1,6 @@
 name: TRAYDAQ Chats and Gossips — Profile Confirmation Source QA
 # No APK/AAB, native packaging, Play release, Supabase deployment or Cloudflare deployment.
+# Rerun after replacing old immediate-profile tests with user-confirmed UID navigation. Feature head 0734ff85d607417b216f13fd46d52883172fef30.
 on:
   workflow_dispatch:
   push:

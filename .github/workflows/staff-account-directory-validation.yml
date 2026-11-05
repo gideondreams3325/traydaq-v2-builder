@@ -60,6 +60,6 @@ jobs:
         run: |
           set -euo pipefail
           npm install --no-audit --no-fund > "$RUNNER_TEMP/native-install.log" 2>&1 || { echo "::error::Android Staff dependencies failed"; exit 1; }
-          node --test tests/account-directory.test.mjs > "$RUNNER_TEMP/native-tests.log" 2>&1 || { echo "::error::Android Staff contracts failed"; exit 1; }
+          npm run test:security > "$RUNNER_TEMP/native-tests.log" 2>&1 || { echo "::error::Android Staff security tests failed"; tail -75 "$RUNNER_TEMP/native-tests.log" | sed -E 's@/[^ ]+@<source>@g'; exit 1; }
           npm run typecheck > "$RUNNER_TEMP/native-types.log" 2>&1 || { echo "::error::Android Staff TypeScript failed"; exit 1; }
           echo "::notice::Android Staff source checks passed. No APK/AAB produced."

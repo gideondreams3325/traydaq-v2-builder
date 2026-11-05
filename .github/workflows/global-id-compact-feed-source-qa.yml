@@ -2,6 +2,7 @@ name: TRAYDAQ Global ID Choices and Compact For You Nav — Source QA
 # Source tests only: no Expo/Gradle APK/AAB, no app release, no Cloudflare/Supabase deployment.
 # Retry after aligning all source regression checks, privacy policy JSON parity and legal syntax: branch head ce3ce7cc481a70603bc688ade80e9199695b8244.
 # Retry for regenerated international legal templates, web TS correction and updated runtime checks: feature head 2c67f341b46b9252ef7de20a66231968c89dd286.
+# Final source-only check after aligning remaining public legal policy dates, feature head c6a5d943c2044e1c37273b677bc71c6fa007cc1c.
 on:
   workflow_dispatch:
   push:

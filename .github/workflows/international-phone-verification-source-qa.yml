@@ -91,3 +91,30 @@ jobs:
             exit 1
           fi
           echo "PASS: Edge TypeScript"
+
+  catalog-readonly:
+    name: Live Supabase phone catalog smoke (read only, zero SMS)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Confirm 249 country choices and SMS disabled
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          const endpoint='https://qpcsruhwqhniprakpoox.supabase.co/functions/v1/traydaq-phone-verification';
+          const result=await fetch(endpoint,{
+            method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({action:'countries'}),
+            signal:AbortSignal.timeout(15000)
+          });
+          if(!result.ok)throw Error('Phone catalog unavailable (HTTP '+result.status+')');
+          const data=await result.json();
+          if(!Array.isArray(data.countries)||data.countries.length!==249)
+            throw Error('Country catalog did not return the full 249-region list');
+          if(data.enabled!==false||data.countries.some(row=>row.smsEnabled!==false))
+            throw Error('Phone verification must remain off until provider and erasure release approvals');
+          console.log('PASS: Supabase live catalog has 249 regions; SMS globally disabled; no SMS requested');
+          NODE

@@ -1,3 +1,5 @@
 TRAYDAQ global phone verification security/final erasure revalidation
 Source branch: feat/international-phone-verification-20261105
 Builder runs web, native, and Edge typecheck only. No SMS, deployment, APK or AAB.
+
+Post-migration final revalidation: Supabase table version 20261105214655 applied; phone function v2 deploy with erasure release gate. Source branch feat/international-phone-verification-20261105. No SMS or Android build.

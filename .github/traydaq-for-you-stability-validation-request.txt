@@ -1,1 +1,1 @@
-Source QA diagnostic follow-up 2026-11-06: private branch fix/for-you-stability-test-guard-20261106. Full web/native source tests and sanitized failing test names. No APK/AAB or deployment.
+For You full source QA diagnostic retry. Source branch fix/for-you-stability-test-guard-20261106. No APK, AAB or deployment. Request 3.

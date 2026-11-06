@@ -192,3 +192,12 @@ from merged private feat/standalone-admin-native SHA a4f0a119b98f6f26914cc53b8e6
 Use dedicated admin-native.yml with same Staff keystore and Firebase SHA-1, Expo, Gradle
 release APK verification and TRAYDAQ-V2-Admin-Native-Android-APK artifact.
 Do not touch Android user app, public marketplace, or Google Play.
+
+USER-AUTHORIZED STAFF RELEASE — 2026-11-06
+Build and sign TRAYDAQ STAFF native Android 1.0.17 (versionCode 20), package com.traydaq.admin.
+Exactly pinned private source: gideondreams3325/traydaq-v2 at c8ddd88d4dae3fbd873932678d63a3c8889b2263 (feat/standalone-admin-native).
+Features: authorized member account registered-country display, existing country service v5, previous action-dialog and profile-photo fixes, Expo compatibility.
+TRAYDAQ V2 source QA: https://github.com/gideondreams3325/traydaq-v2-builder/actions/runs/42304368429
+Private security/type/Expo QA: https://github.com/gideondreams3325/traydaq-v2/actions/runs/42304341773
+Run only the existing dedicated .github/workflows/admin-native.yml build. Preserve original Staff keystore and Firebase signing registration; upload staff APK artifact.
+Do not build users APK/AAB, change credentials, or release to any store.

@@ -1,0 +1,92 @@
+name: TRAYDAQ Profile Social Counters and Connections (V2 Source QA)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/profile-social-connections-20261106-qa.yml
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-profile-social-connections-source-qa
+  cancel-in-progress: true
+jobs:
+  web:
+    name: Web profile social tests, full tests, TypeScript and Cloudflare build
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/profile-social-stats-connections-20261106
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Targeted social profiles regression
+        run: node --test tests/profile-social-connections.test.mjs
+      - name: Full web tests
+        run: npm test
+      - name: Web TypeScript
+        if: always()
+        run: npm run typecheck
+      - name: Cloudflare bundle (NO DEPLOY)
+        run: npm run build
+  android:
+    name: Android profile social tests, full tests and TypeScript only (NO APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/profile-social-stats-connections-20261106
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Targeted social connections regression
+        run: node --test tests/profile-social-connections.test.mjs
+      - name: Full Android source tests
+        run: node --test tests/*.test.mjs
+      - name: Native TypeScript
+        if: always()
+        run: npm run typecheck
+  edge:
+    name: Native profile API Deno typecheck only (NO DEPLOY)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/profile-social-stats-connections-20261106
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Check profile API in isolation
+        working-directory: private-src
+        run: |
+          echo '{"nodeModulesDir":"auto"}' > deno.json
+          deno check --config deno.json supabase/functions/firebase-native-profile/index.ts
+# Read-only private source checkout. No Android build/release, no backend deployment.

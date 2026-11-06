@@ -1,0 +1,98 @@
+name: TRAYDAQ Country Translation 249-Country Coverage (Source QA)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/country-translation-coverage-20261106-qa.yml
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-country-translation-coverage-qa
+  cancel-in-progress: true
+jobs:
+  web:
+    name: Web username and OpenAI translation source tests, TS and Cloudflare build
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/country-translation-full-coverage-20261106
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install reproducible web dependencies
+        run: npm ci --no-audit --no-fund
+      - name: 249 country mapping + username / translation regressions
+        run: node --test tests/username-country-translation.test.mjs
+      - name: Full web tests
+        run: npm test
+      - name: Web TypeScript
+        if: always()
+        run: npm run typecheck
+      - name: Cloudflare web bundle (NO DEPLOY)
+        run: npm run build
+  android:
+    name: Native app source tests and TypeScript only (NO APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/country-translation-full-coverage-20261106
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install reproducible Android dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Targeted username and translation tests
+        run: node --test tests/username-country-translation.test.mjs
+      - name: Full native regression suite
+        run: node --test tests/*.test.mjs
+      - name: Native TypeScript
+        if: always()
+        run: npm run typecheck
+  edge:
+    name: Translation API Deno source validation (NO DEPLOY)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/country-translation-full-coverage-20261106
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Validate translation handler and profile username endpoint
+        working-directory: private-src
+        run: |
+          echo '{"nodeModulesDir":"auto"}' > deno.json
+          deno check --config deno.json supabase/functions/firebase-public-translation/index.ts
+          deno check --config deno.json supabase/functions/firebase-native-profile/index.ts
+          deno check --config deno.json supabase/functions/firebase-discussions/index.ts
+          deno check --config deno.json supabase/functions/firebase-native-content/index.ts
+# Source checks only. No Gradle build, APK/AAB or deployment.
+# Final regression run includes the normalized public @traydaq owner handle.

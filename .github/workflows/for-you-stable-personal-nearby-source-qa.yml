@@ -1,0 +1,61 @@
+name: TRAYDAQ V2 For You Stability + Personalization (source only)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/traydaq-for-you-stability-validation-request.txt"
+permissions:
+  contents: read
+concurrency:
+  group: for-you-stable-personal-nearby-source-qa
+  cancel-in-progress: true
+jobs:
+  validate:
+    name: Private web and Android For You tests and TypeScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout private feature branch without persisting credentials
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/for-you-gesture-owned-navigation-20261106
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install web dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/web-install.log" 2>&1 || { echo "::error::Web dependency installation failed (private diagnostics suppressed)"; exit 1; }
+      - name: Run web For You regression tests
+        working-directory: private-src
+        run: |
+          if node --test tests/for-you-personal-nearby-stability.test.mjs tests/feed.test.mjs tests/web-for-you-full-audit.test.mjs > "$RUNNER_TEMP/web-feed-tests.log" 2>&1; then
+            echo "PASS: web feed tests"; grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/web-feed-tests.log" | tail -3 || true
+          else
+            echo "::error::Web feed tests failed (private diagnostics suppressed)"; grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/web-feed-tests.log" | tail -3 || true; exit 1
+          fi
+      - name: Check web TypeScript
+        working-directory: private-src
+        run: npm run typecheck > "$RUNNER_TEMP/web-typecheck.log" 2>&1 || { echo "::error::Web typecheck failed (private diagnostics suppressed)"; exit 1; }
+      - name: Build Cloudflare web assets only (no deploy)
+        working-directory: private-src
+        run: npm run build > "$RUNNER_TEMP/web-build.log" 2>&1 || { echo "::error::Web asset build failed (private diagnostics suppressed)"; exit 1; }
+      - name: Install native source dependencies (no Android build)
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/native-install.log" 2>&1 || { echo "::error::Native dependency installation failed (private diagnostics suppressed)"; exit 1; }
+      - name: Run native For You regression tests
+        working-directory: private-src/mobile
+        run: |
+          if node --test tests/for-you-personalized-refresh.test.mjs tests/feed-live-updates.test.mjs tests/for-you-exclusive-video-session.test.mjs tests/for-you-complete-audit.test.mjs > "$RUNNER_TEMP/native-feed-tests.log" 2>&1; then
+            echo "PASS: native feed tests"; grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/native-feed-tests.log" | tail -3 || true
+          else
+            echo "::error::Native feed tests failed (private diagnostics suppressed)"; grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/native-feed-tests.log" | tail -3 || true; exit 1
+          fi
+      - name: Check Android TypeScript (no APK or AAB)
+        working-directory: private-src/mobile
+        run: npm run typecheck > "$RUNNER_TEMP/native-typecheck.log" 2>&1 || { echo "::error::Native TypeScript failed (private diagnostics suppressed)"; exit 1; }

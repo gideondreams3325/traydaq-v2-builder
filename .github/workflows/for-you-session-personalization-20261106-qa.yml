@@ -35,7 +35,7 @@ jobs:
       - name: Verify live For You route
         run: |
           grep -q 'NativeParityWeb' src/main.tsx
-          grep -q 'newPostCount' src/native-parity/Discover.tsx
+          grep -Fq 'const next=[...retained,...appended]' src/native-parity/Discover.tsx
       - name: Install locked web dependencies
         run: |
           if npm ci --no-audit --no-fund > "${RUNNER_TEMP}/web-install.log" 2>&1; then echo 'PASS web dependencies'; else echo 'FAIL web dependencies'; exit 1; fi
@@ -60,6 +60,7 @@ jobs:
             exit 1
           fi
       - name: Web TypeScript
+        if: always()
         run: |
           if npm run typecheck > "${RUNNER_TEMP}/web-tsc.log" 2>&1; then echo 'PASS web TS'; else
             echo 'FAIL web TS'; grep 'error TS' "${RUNNER_TEMP}/web-tsc.log" | cut -c1-200 | head -10 || true; exit 1
@@ -106,6 +107,7 @@ jobs:
             grep -E '^# (tests|pass|fail) [0-9]+$' "${RUNNER_TEMP}/native-tests.log" | tail -3 || true
           else echo 'FAIL native tests'; grep '^not ok ' "${RUNNER_TEMP}/native-tests.log" | head -12 || true; exit 1; fi
       - name: Native TypeScript
+        if: always()
         run: |
           if npm run typecheck > "${RUNNER_TEMP}/native-tsc.log" 2>&1; then echo 'PASS native TS'; else
             echo 'FAIL native TS'; grep 'error TS' "${RUNNER_TEMP}/native-tsc.log" | cut -c1-200 | head -10 || true; exit 1

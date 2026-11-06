@@ -53,10 +53,13 @@ jobs:
         run: |
           node --test tests/*.test.mjs > "$RUNNER_TEMP/native-tests.log" 2>&1 || {
             grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/native-tests.log" || true
+            # Print only assertion result fields, never private source excerpts.
+            grep -E '^  (error|actual|expected|code):' "$RUNNER_TEMP/native-tests.log" | head -24 || true
             grep -E '^# (tests|pass|fail) ' "$RUNNER_TEMP/native-tests.log" || true
             exit 1
           }
           grep -E '^# (tests|pass|fail) ' "$RUNNER_TEMP/native-tests.log" || true
       - name: Android TypeScript (no APK/AAB)
+        if: always()
         working-directory: private-src/mobile
         run: npm run typecheck > "$RUNNER_TEMP/native-typecheck.log" 2>&1

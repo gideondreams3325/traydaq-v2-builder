@@ -1,1 +1,1 @@
-Source QA request: 2026-11-06. Private branch fix/for-you-gesture-owned-navigation-20261106. Web tests, web typecheck, Cloudflare assets only, native tests, native typecheck. No APK, AAB, or deployment.
+Source QA follow-up 2026-11-06: private branch fix/for-you-stability-test-guard-20261106. Full web and native regression suites, TypeScript checks and Cloudflare web asset build only. No APK/AAB or deployment.

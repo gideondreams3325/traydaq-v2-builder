@@ -1,1 +1,1 @@
-Source QA follow-up 2026-11-06: private branch fix/for-you-stability-test-guard-20261106. Full web and native regression suites, TypeScript checks and Cloudflare web asset build only. No APK/AAB or deployment.
+Source QA diagnostic follow-up 2026-11-06: private branch fix/for-you-stability-test-guard-20261106. Full web/native source tests and sanitized failing test names. No APK/AAB or deployment.

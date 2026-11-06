@@ -95,3 +95,4 @@ jobs:
           deno check --config deno.json supabase/functions/firebase-discussions/index.ts
           deno check --config deno.json supabase/functions/firebase-native-content/index.ts
 # Source checks only. No Gradle build, APK/AAB or deployment.
+# Final regression run includes the normalized public @traydaq owner handle.

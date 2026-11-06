@@ -1,1 +1,1 @@
-For You QA followup fourth attempt: native render test profile mock, blocked author assertion. Full suites; no APK AAB release or deploy.
+For You bottom-up discovery validation 2026-11-06: source branch fix/for-you-stability-test-guard-20261106. Full web and Android regression suites; no floating new-post banner. No APK, AAB, release, deploy.

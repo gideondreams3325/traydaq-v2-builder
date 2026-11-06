@@ -1,0 +1,72 @@
+name: TRAYDAQ Country Relocation Six-Month Follow-up (Source QA)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/signup-country-six-month-followup-qa.yml
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-signup-country-six-month-followup-source-qa
+  cancel-in-progress: true
+jobs:
+  web:
+    name: Private web signup/ID/relocation tests, TypeScript and Cloudflare assets
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/country-relocation-six-month-qa-20261106
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Country and ID review regression checks
+        run: node --test tests/signup-country-lock-relocation.test.mjs
+      - name: Full web regression suite
+        run: npm test
+      - name: Web TypeScript
+        if: always()
+        run: npm run typecheck
+      - name: Check Cloudflare web bundle without deploying
+        run: npm run build
+  android:
+    name: Android signup/verification tests and TypeScript ONLY (no APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/country-relocation-six-month-qa-20261106
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked Android dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Full Android native regression suite
+        run: node --test tests/*.test.mjs
+      - name: Android TypeScript
+        if: always()
+        run: npm run typecheck
+# Source-only validation. No Gradle, Expo export, Play release or Cloudflare deploy.

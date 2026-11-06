@@ -1,0 +1,63 @@
+name: TRAYDAQ Staff Registered Country Source QA
+# Checks only private candidate branch source. No deployment, migration, APK/AAB, iOS package, or credentials exposed.
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/staff-registered-country-source-qa.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-staff-registered-country-source-qa
+  cancel-in-progress: false
+jobs:
+  iphone-and-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Read private staff candidate without exposing source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/staff-account-registration-country-20261106
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Verify staff-only registration-country mapping and iPhone UI
+        working-directory: private-src
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/ci-install.log" 2>&1 || { echo "::error::Dependency setup failed"; exit 1; }
+          node --test tests/staff-account-directory-security.test.mjs tests/staff-iphone-pwa.test.mjs tests/staff-iphone-notification-insights.test.mjs > "$RUNNER_TEMP/staff-tests.log" 2>&1 || { echo "::error::Staff tests failed"; tail -35 "$RUNNER_TEMP/staff-tests.log" | sed -E 's@/[^ ]+@<source>@g'; exit 1; }
+          npm run typecheck:staff > "$RUNNER_TEMP/typecheck.log" 2>&1 || { echo "::error::Staff TypeScript check failed"; grep -E 'error TS[0-9]+:' "$RUNNER_TEMP/typecheck.log" | head -20 || true; exit 1; }
+          npm run build:staff > "$RUNNER_TEMP/build.log" 2>&1 || { echo "::error::Staff PWA build failed"; exit 1; }
+          echo "::notice::Private candidate iPhone Staff, country contract and build passed. Not deployed."
+  android-staff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Read private Android Staff candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/staff-android-registration-country-20261106
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify native account country card and permissions
+        working-directory: private-src/admin-native
+        run: |
+          set -euo pipefail
+          npm install --no-audit --no-fund > "$RUNNER_TEMP/native-install.log" 2>&1 || { echo "::error::Native dependencies failed"; exit 1; }
+          npm run test:security > "$RUNNER_TEMP/native-tests.log" 2>&1 || { echo "::error::Native Staff tests failed"; tail -45 "$RUNNER_TEMP/native-tests.log" | sed -E 's@/[^ ]+@<source>@g'; exit 1; }
+          npm run typecheck > "$RUNNER_TEMP/native-types.log" 2>&1 || { echo "::error::Native Staff TypeScript failed"; grep -E 'error TS[0-9]+:' "$RUNNER_TEMP/native-types.log" | head -20 || true; exit 1; }
+          echo "::notice::Android Staff candidate passed source QA. No APK or AAB produced."

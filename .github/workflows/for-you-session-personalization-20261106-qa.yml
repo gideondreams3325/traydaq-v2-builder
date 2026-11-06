@@ -1,0 +1,113 @@
+name: TRAYDAQ For You Stable Sessions and Local Discovery (Source QA)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/for-you-session-personalization-20261106-qa.yml
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-for-you-session-personalization-source-qa
+  cancel-in-progress: true
+jobs:
+  web:
+    name: Private live web feed tests, typecheck and Cloudflare build
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - name: Read private source without persisting credentials
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/live-web-for-you-stable-nearby-20261106
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Verify live For You route
+        run: |
+          grep -q 'NativeParityWeb' src/main.tsx
+          grep -q 'newPostCount' src/native-parity/Discover.tsx
+      - name: Install locked web dependencies
+        run: |
+          if npm ci --no-audit --no-fund > "${RUNNER_TEMP}/web-install.log" 2>&1; then echo 'PASS web dependencies'; else echo 'FAIL web dependencies'; exit 1; fi
+      - name: Execute nearby/personalization and web parity tests
+        run: |
+          if node --test tests/live-for-you-personalization-stability.test.mjs tests/native-web-parity.test.mjs tests/tiktok-feed-paging.test.mjs > "${RUNNER_TEMP}/web-focused.log" 2>&1; then
+            echo 'PASS focused live web feed tests'
+            grep -E '^# (tests|pass|fail) [0-9]+$' "${RUNNER_TEMP}/web-focused.log" | tail -3 || true
+          else
+            echo 'FAIL focused live web feed tests'
+            grep '^not ok ' "${RUNNER_TEMP}/web-focused.log" | head -12 || true
+            exit 1
+          fi
+      - name: Run full web tests
+        run: |
+          if npm test > "${RUNNER_TEMP}/web-tests.log" 2>&1; then
+            echo 'PASS web tests'
+            grep -E '^# (tests|pass|fail) [0-9]+$' "${RUNNER_TEMP}/web-tests.log" | tail -3 || true
+          else
+            echo 'FAIL web tests'
+            grep '^not ok ' "${RUNNER_TEMP}/web-tests.log" | head -12 || true
+            exit 1
+          fi
+      - name: Web TypeScript
+        run: |
+          if npm run typecheck > "${RUNNER_TEMP}/web-tsc.log" 2>&1; then echo 'PASS web TS'; else
+            echo 'FAIL web TS'; grep 'error TS' "${RUNNER_TEMP}/web-tsc.log" | cut -c1-200 | head -10 || true; exit 1
+          fi
+      - name: Validate Cloudflare-targeted web assets without deploying
+        run: |
+          if npm run build > "${RUNNER_TEMP}/web-build.log" 2>&1 && test -f dist/index.html; then
+            echo 'PASS web assets'
+          else echo 'FAIL web assets'; exit 1; fi
+  android:
+    name: Private Android For You source tests and TypeScript (NO APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - name: Read private source without persisting credentials
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/live-web-for-you-stable-nearby-20261106
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked native dependencies
+        run: |
+          if npm ci --no-audit --no-fund > "${RUNNER_TEMP}/native-install.log" 2>&1; then echo 'PASS native dependencies'; else echo 'FAIL native dependencies'; exit 1; fi
+      - name: Run targeted Android For You regressions
+        run: |
+          if node --test tests/for-you-personalized-refresh.test.mjs tests/tiktok-feed-paging.test.mjs tests/feed-live-updates.test.mjs tests/for-you-exclusive-video-session.test.mjs > "${RUNNER_TEMP}/native-focused.log" 2>&1; then
+            echo 'PASS Android For You tests'
+            grep -E '^# (tests|pass|fail) [0-9]+$' "${RUNNER_TEMP}/native-focused.log" | tail -3 || true
+          else echo 'FAIL Android For You tests'; grep '^not ok ' "${RUNNER_TEMP}/native-focused.log" | head -12 || true; exit 1; fi
+      - name: Run all native regression tests
+        run: |
+          if node --test tests/*.test.mjs > "${RUNNER_TEMP}/native-tests.log" 2>&1; then
+            echo 'PASS native tests'
+            grep -E '^# (tests|pass|fail) [0-9]+$' "${RUNNER_TEMP}/native-tests.log" | tail -3 || true
+          else echo 'FAIL native tests'; grep '^not ok ' "${RUNNER_TEMP}/native-tests.log" | head -12 || true; exit 1; fi
+      - name: Native TypeScript
+        run: |
+          if npm run typecheck > "${RUNNER_TEMP}/native-tsc.log" 2>&1; then echo 'PASS native TS'; else
+            echo 'FAIL native TS'; grep 'error TS' "${RUNNER_TEMP}/native-tsc.log" | cut -c1-200 | head -10 || true; exit 1
+          fi
+# Read-only validation only. No Gradle, AAB, APK, signing, uploads or Cloudflare release.

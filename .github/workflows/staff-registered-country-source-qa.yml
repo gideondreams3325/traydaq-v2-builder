@@ -46,7 +46,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: feat/staff-android-registration-country-20261106
+          ref: da9755d1636c85fd0e993c3f3e15ab7e2abaa244
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
           path: private-src
@@ -60,4 +60,5 @@ jobs:
           npm install --no-audit --no-fund > "$RUNNER_TEMP/native-install.log" 2>&1 || { echo "::error::Native dependencies failed"; exit 1; }
           npm run test:security > "$RUNNER_TEMP/native-tests.log" 2>&1 || { echo "::error::Native Staff tests failed"; tail -45 "$RUNNER_TEMP/native-tests.log" | sed -E 's@/[^ ]+@<source>@g'; exit 1; }
           npm run typecheck > "$RUNNER_TEMP/native-types.log" 2>&1 || { echo "::error::Native Staff TypeScript failed"; grep -E 'error TS[0-9]+:' "$RUNNER_TEMP/native-types.log" | head -20 || true; exit 1; }
+          node -e 'const c=require("./app.config.js").expo;if(c.android.package!=="com.traydaq.admin"||c.version!=="1.0.17"||c.android.versionCode!==20)process.exit(1)'
           echo "::notice::Android Staff candidate passed source QA. No APK or AAB produced."

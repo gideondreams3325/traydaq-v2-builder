@@ -1,1 +1,1 @@
-For You bottom-up discovery validation 2026-11-06: source branch fix/for-you-stability-test-guard-20261106. Full web and Android regression suites; no floating new-post banner. No APK, AAB, release, deploy.
+For You bottom loading QA run #2. Full web and Android native tests with safe assertions, plus both typechecks and Cloudflare build. Source branch fix/for-you-stability-test-guard-20261106. No APK AAB or release.

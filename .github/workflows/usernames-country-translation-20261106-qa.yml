@@ -92,4 +92,6 @@ jobs:
           echo '{"nodeModulesDir":"auto"}' > deno.json
           deno check --config deno.json supabase/functions/firebase-public-translation/index.ts
           deno check --config deno.json supabase/functions/firebase-native-profile/index.ts
+          deno check --config deno.json supabase/functions/firebase-discussions/index.ts
+          deno check --config deno.json supabase/functions/firebase-native-content/index.ts
 # Source checks only. No Gradle build, APK/AAB or deployment.

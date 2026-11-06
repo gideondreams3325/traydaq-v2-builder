@@ -1,4 +1,4 @@
-name: TRAYDAQ Profile Social Counters and Connections (V2 Source QA)
+name: TRAYDAQ Profile Social Connections and Keyboard Navigation (V2 Source QA)
 on:
   workflow_dispatch:
   push:
@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: feat/profile-social-stats-connections-20261106
+          ref: fix/profile-connections-navigation-a11y-20261106
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -52,7 +52,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: feat/profile-social-stats-connections-20261106
+          ref: fix/profile-connections-navigation-a11y-20261106
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -77,7 +77,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: feat/profile-social-stats-connections-20261106
+          ref: fix/profile-connections-navigation-a11y-20261106
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false

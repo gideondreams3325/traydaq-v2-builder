@@ -1,1 +1,1 @@
-For You full source QA diagnostic retry. Source branch fix/for-you-stability-test-guard-20261106. No APK, AAB or deployment. Request 3.
+For You QA followup fourth attempt: native render test profile mock, blocked author assertion. Full suites; no APK AAB release or deploy.

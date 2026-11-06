@@ -54,7 +54,12 @@ jobs:
           if node --test tests/*.test.mjs > "$RUNNER_TEMP/native-feed-tests.log" 2>&1; then
             echo "PASS: native feed tests"; grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/native-feed-tests.log" | tail -3 || true
           else
-            echo "::error::Native feed tests failed (private diagnostics suppressed)"; grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/native-feed-tests.log" | tail -3 || true; exit 1
+            echo "::error::Native regressions failed (only test names shown)"; grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/native-feed-tests.log" | head -20 || true; grep -E '^# (tests|pass|fail) [0-9]+
+          fi
+      - name: Check Android TypeScript (no APK or AAB)
+        working-directory: private-src/mobile
+        run: npm run typecheck > "$RUNNER_TEMP/native-typecheck.log" 2>&1 || { echo "::error::Native TypeScript failed (private diagnostics suppressed)"; exit 1; }
+ "$RUNNER_TEMP/native-feed-tests.log" | tail -3 || true; exit 1
           fi
       - name: Check Android TypeScript (no APK or AAB)
         working-directory: private-src/mobile

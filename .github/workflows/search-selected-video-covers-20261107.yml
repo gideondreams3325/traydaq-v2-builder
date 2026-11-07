@@ -1,0 +1,83 @@
+name: TRAYDAQ Search Selected Video + Default Covers V2 QA
+# Tests source on the private feature branch; does not build Android packages or deploy.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/search-selected-video-covers-20261107.yml']
+permissions:
+  contents: read
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run: {working-directory: private-src}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/search-selected-video-cover-fallback-20261107
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install private web dependencies
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/web-install.log" 2>&1 || { echo 'Web install failed'; exit 1; }
+      - name: Selected green preview and media fallback web tests
+        run: node --test tests/search-selected-green-video-cover-fallback.test.mjs tests/search-covers-inline-muted-preview.test.mjs
+      - name: Run complete web regression suite
+        run: |
+          npm test > "$RUNNER_TEMP/web-tests.log" 2>&1 || {
+            echo 'Web regression failed'
+            grep -E '^not ok [0-9]+|^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/web-tests.log" | tail -24 || true
+            exit 1
+          }
+      - name: Web TypeScript and Cloudflare asset build
+        run: |
+          npm run typecheck > "$RUNNER_TEMP/web-types.log" 2>&1 || {
+            echo 'Web TypeScript failed'
+            grep -E 'error TS[0-9]+' "$RUNNER_TEMP/web-types.log" | cut -c1-170 | head -22 || true
+            exit 1
+          }
+          npm run build > "$RUNNER_TEMP/web-build.log" 2>&1 && test -s dist/index.html || { echo 'Cloudflare build failed'; exit 1; }
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run: {working-directory: private-src/mobile}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/search-selected-video-cover-fallback-20261107
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install Android source dependencies
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/native-install.log" 2>&1 || { echo 'Android dependencies failed'; exit 1; }
+      - name: Selected preview and real cover Android source tests
+        run: node --test tests/search-selected-green-video-cover-fallback.test.mjs tests/search-covers-inline-muted-preview.test.mjs
+      - name: Run complete Android source regression suite
+        run: |
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/native-tests.log" 2>&1 || {
+            echo 'Android source regression failed'
+            grep -E '^not ok [0-9]+|^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/native-tests.log" | tail -24 || true
+            exit 1
+          }
+      - name: Android TypeScript only (no APK or AAB)
+        run: |
+          npm run typecheck > "$RUNNER_TEMP/native-types.log" 2>&1 || {
+            echo 'Android source TypeScript failed'
+            grep -E 'error TS[0-9]+' "$RUNNER_TEMP/native-types.log" | cut -c1-170 | head -22 || true
+            exit 1
+          }

@@ -1,0 +1,64 @@
+name: TRAYDAQ Music Brand and Sheet Swipe Dismiss (V2 Source QA)
+# No deployment, APK, AAB or store release.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/music-brand-sheet-dismiss-20261107-qa.yml']
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-music-brand-sheet-dismiss-source
+  cancel-in-progress: true
+jobs:
+  web:
+    name: Web Music logo, drawer, popups, TypeScript and bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run: {working-directory: private-src}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/music-logo-dismissible-overlays-20261107
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: node --test tests/music-logo-dismiss-gestures.test.mjs
+      - run: npm test
+      - run: npm run typecheck
+        if: always()
+      - run: npm run build
+      - name: Verify logo packaged into web assets
+        run: test -s dist/traydaq-music-logo.webp
+  android:
+    name: Native Music logo, popup gestures and TypeScript (NO APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run: {working-directory: private-src/mobile}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/music-logo-dismissible-overlays-20261107
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: node --test tests/music-logo-dismiss-gestures.test.mjs
+      - run: node --test tests/*.test.mjs
+      - run: npm run typecheck
+        if: always()

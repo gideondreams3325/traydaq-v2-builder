@@ -81,4 +81,4 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - run: deno check supabase/functions/firebase-member-chat/index.ts supabase/functions/firebase-discussions/index.ts supabase/functions/firebase-store-reviews/index.ts
+      - run: deno check --node-modules-dir=auto supabase/functions/firebase-member-chat/index.ts supabase/functions/firebase-discussions/index.ts supabase/functions/firebase-store-reviews/index.ts

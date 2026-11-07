@@ -1,0 +1,75 @@
+name: TRAYDAQ Search Smooth Scrolling V2 QA
+# Validate private source only. No APK, AAB, release, or deployment.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/search-smooth-scrolling-20261107.yml']
+permissions:
+  contents: read
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run: {working-directory: private-src}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/search-scroll-performance-web-android-20261107
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install web dependencies
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { echo 'Web install failed'; exit 1; }
+      - name: Search smooth-scroll targeted tests
+        run: node --test tests/search-scroll-performance.test.mjs tests/search-selected-green-video-cover-fallback.test.mjs
+      - name: All web regression tests
+        run: |
+          npm test > "$RUNNER_TEMP/tests.log" 2>&1 || {
+            echo 'Web regression failure'
+            grep -E '^not ok [0-9]+|^# (pass|fail|tests) [0-9]+' "$RUNNER_TEMP/tests.log" | tail -24 || true
+            exit 1
+          }
+      - name: Web TypeScript and Cloudflare production asset build
+        run: |
+          npm run typecheck > "$RUNNER_TEMP/types.log" 2>&1 || { echo 'Web typecheck failure'; grep -E 'error TS[0-9]+' "$RUNNER_TEMP/types.log" | cut -c1-200 | head -25 || true; exit 1; }
+          npm run build > "$RUNNER_TEMP/build.log" 2>&1 && test -s dist/index.html || { echo 'Cloudflare asset build failed'; exit 1; }
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run: {working-directory: private-src/mobile}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/search-scroll-performance-web-android-20261107
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install Android source dependencies
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { echo 'Android install failed'; exit 1; }
+      - name: Search scroll/performance source tests
+        run: node --test tests/search-scroll-performance.test.mjs tests/search-selected-green-video-cover-fallback.test.mjs
+      - name: All native source regression tests
+        run: |
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/tests.log" 2>&1 || {
+            echo 'Android source regression failure'
+            grep -E '^not ok [0-9]+|^# (pass|fail|tests) [0-9]+' "$RUNNER_TEMP/tests.log" | tail -24 || true
+            exit 1
+          }
+      - name: Android TypeScript only - no APK or AAB
+        run: |
+          npm run typecheck > "$RUNNER_TEMP/types.log" 2>&1 || { echo 'Android typecheck failure'; grep -E 'error TS[0-9]+' "$RUNNER_TEMP/types.log" | cut -c1-200 | head -25 || true; exit 1; }

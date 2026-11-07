@@ -32,9 +32,9 @@ jobs:
       - name: Targeted search and Music tests
         run: node --test tests/compact-music-global-search.test.mjs
       - name: Full web tests
-        run: npm test > "$RUNNER_TEMP/web-tests.log" 2>&1 || { echo 'Web regression tests failed'; grep -E '^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/web-tests.log" | tail -3 || true; exit 1; }
+        run: npm test > "$RUNNER_TEMP/web-tests.log" 2>&1 || { echo 'Web regression tests failed'; grep -E '^# (tests|pass|fail) [0-9]+|^not ok [0-9]+' "$RUNNER_TEMP/web-tests.log" | tail -25 || true; exit 1; }
       - name: Web TypeScript
-        run: npm run typecheck > "$RUNNER_TEMP/web-tsc.log" 2>&1 || { echo 'Web TS check failed'; grep -oE 'TS[0-9]+' "$RUNNER_TEMP/web-tsc.log" | sort -u | head -20 || true; exit 1; }
+        run: npm run typecheck > "$RUNNER_TEMP/web-tsc.log" 2>&1 || { echo 'Web TS check failed'; grep -E 'error TS[0-9]+' "$RUNNER_TEMP/web-tsc.log" | sed -E 's/^(.*): error (TS[0-9]+).*$/\\1: \\2/' | head -25 || true; exit 1; }
       - name: Cloudflare-targeted web asset compilation
         run: npm run build > "$RUNNER_TEMP/web-build.log" 2>&1 && test -s dist/index.html || { echo 'Web bundle failed'; exit 1; }
   native:
@@ -62,4 +62,4 @@ jobs:
       - name: Full Android source tests
         run: node --test tests/*.test.mjs > "$RUNNER_TEMP/native-tests.log" 2>&1 || { echo 'Native source regressions failed'; grep -E '^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/native-tests.log" | tail -3 || true; exit 1; }
       - name: Native TypeScript only (no APK/AAB)
-        run: npm run typecheck > "$RUNNER_TEMP/native-tsc.log" 2>&1 || { echo 'Native TS check failed'; grep -oE 'TS[0-9]+' "$RUNNER_TEMP/native-tsc.log" | sort -u | head -20 || true; exit 1; }
+        run: npm run typecheck > "$RUNNER_TEMP/native-tsc.log" 2>&1 || { echo 'Native TS check failed'; grep -E 'error TS[0-9]+' "$RUNNER_TEMP/native-tsc.log" | sed -E 's/^(.*): error (TS[0-9]+).*$/\\1: \\2/' | head -25 || true; exit 1; }

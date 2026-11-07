@@ -1,0 +1,72 @@
+name: TRAYDAQ V2 Search Decoder Lifetime - Source Validation
+# Public controller; private source is never uploaded as an artifact.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/search-video-decoder-lifetime-20261107.yml']
+permissions:
+  contents: read
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run: {working-directory: private-src}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/search-video-decoder-lifetime-20261107
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install web dependencies
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/web-install.log" 2>&1 || { echo 'Web dependencies failed'; exit 1; }
+      - name: Targeted search decoder/scroll regression
+        run: node --test tests/search-decoder-lifetime.test.mjs tests/search-scroll-performance.test.mjs tests/search-touch-column-stable-posters.test.mjs tests/search-selected-green-video-cover-fallback.test.mjs
+      - name: All web tests
+        run: |
+          npm test > "$RUNNER_TEMP/web-tests.log" 2>&1 || {
+            grep -E '^not ok [0-9]+|^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/web-tests.log" | tail -24 || true
+            exit 1
+          }
+      - name: Web TypeScript
+        run: npm run typecheck > "$RUNNER_TEMP/web-types.log" 2>&1 || { grep -E 'error TS[0-9]+' "$RUNNER_TEMP/web-types.log" | cut -c1-200 | head -20 || true; exit 1; }
+      - name: Cloudflare production asset build, no deploy
+        run: npm run build > "$RUNNER_TEMP/web-build.log" 2>&1 && test -s dist/index.html || { echo 'Cloudflare asset build failed'; exit 1; }
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run: {working-directory: private-src/mobile}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/search-video-decoder-lifetime-20261107
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install Android source dependencies
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/native-install.log" 2>&1 || { echo 'Android source dependencies failed'; exit 1; }
+      - name: Native search runtime and selection regression
+        run: node --test tests/search-scroll-performance.test.mjs tests/search-touch-column-stable-posters.test.mjs
+      - name: All Android source tests
+        run: |
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/native-tests.log" 2>&1 || {
+            grep -E '^not ok [0-9]+|^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/native-tests.log" | tail -24 || true
+            exit 1
+          }
+      - name: Android TypeScript only, no APK or AAB
+        run: npm run typecheck > "$RUNNER_TEMP/native-types.log" 2>&1 || { grep -E 'error TS[0-9]+' "$RUNNER_TEMP/native-types.log" | cut -c1-200 | head -20 || true; exit 1; }

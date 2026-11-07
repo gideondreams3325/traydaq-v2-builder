@@ -1,0 +1,83 @@
+name: TRAYDAQ Public User Search, Unique Cards and Smooth Scroll - V2 QA
+# Source-only validation. No APK/AAB or Play release.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/public-users-search-dedup-scroll-20261107.yml']
+permissions:
+  contents: read
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run: {working-directory: private-src}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/search-users-duplicates-hover-scroll-20261107
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install web dependencies
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/web-install.log" 2>&1 || { echo 'Web install failed'; exit 1; }
+      - name: Search behavior and media regression tests
+        run: node --test tests/search-public-users-unique-hover.test.mjs tests/contextual-search-pages.test.mjs tests/search-covers-inline-muted-preview.test.mjs
+      - name: Full web regression tests
+        run: |
+          npm test > "$RUNNER_TEMP/web-tests.log" 2>&1 || {
+            echo 'Web tests failed'
+            grep -E '^not ok [0-9]+|^# (pass|fail|tests) [0-9]+' "$RUNNER_TEMP/web-tests.log" | tail -25 || true
+            exit 1
+          }
+      - name: Web TypeScript and Cloudflare build
+        run: |
+          npm run typecheck > "$RUNNER_TEMP/web-tsc.log" 2>&1 || {
+            echo 'Web TypeScript failed'
+            grep -E 'error TS[0-9]+' "$RUNNER_TEMP/web-tsc.log" | cut -c1-180 | head -25 || true
+            exit 1
+          }
+          npm run build > "$RUNNER_TEMP/web-build.log" 2>&1 && test -s dist/index.html || { echo 'Cloudflare build failed'; exit 1; }
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run: {working-directory: private-src/mobile}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/search-users-duplicates-hover-scroll-20261107
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install Android source dependencies
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/native-install.log" 2>&1 || { echo 'Android dependencies failed'; exit 1; }
+      - name: Public member and virtualized search tests
+        run: node --test tests/search-public-users-unique-scroll.test.mjs tests/contextual-search-pages.test.mjs tests/search-covers-inline-muted-preview.test.mjs
+      - name: Full Android source regression tests
+        run: |
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/native-tests.log" 2>&1 || {
+            echo 'Android source tests failed'
+            grep -E '^not ok [0-9]+|^# (pass|fail|tests) [0-9]+' "$RUNNER_TEMP/native-tests.log" | tail -25 || true
+            exit 1
+          }
+      - name: Android TypeScript (no APK/AAB)
+        run: |
+          npm run typecheck > "$RUNNER_TEMP/native-tsc.log" 2>&1 || {
+            echo 'Android TypeScript failed'
+            grep -E 'error TS[0-9]+' "$RUNNER_TEMP/native-tsc.log" | cut -c1-180 | head -25 || true
+            exit 1
+          }

@@ -1,0 +1,70 @@
+name: TRAYDAQ Web Keyboard, For You Pull Ranking and Safe Auto Update (V2 QA)
+# Only source checks and browser asset build; never publishes web, Android APK/AAB or backend.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/web-keyboard-pull-ranking-update-20261106-qa.yml'
+permissions:
+  contents: read
+jobs:
+  web:
+    name: Validate mobile web keyboard, fresh pull ranking and auto-versioning
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/web-keyboard-pull-ranking-safe-autoupdate-20261106
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Targeted regression checks
+        run: node --test tests/web-keyboard-for-you-live-update.test.mjs
+      - name: Full web regression suite
+        run: npm test
+      - name: Web TypeScript
+        if: always()
+        run: npm run typecheck
+      - name: Cloudflare-compatible source-only asset build (NO DEPLOY)
+        run: npm run build
+      - name: Verify noncacheable deployment manifest and hashed assets
+        run: |
+          node -e "const fs=require('node:fs'); const manifest=JSON.parse(fs.readFileSync('dist/app-version.json','utf8')); if(!/^[A-Za-z0-9._-]{6,64}$/.test(manifest.version||''))process.exit(1); console.log('Build revision:',manifest.version)"
+          grep -q "app-version.json" public/_headers
+  android:
+    name: Verify existing Android For You pull-to-rerank parity (NO APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/web-keyboard-pull-ranking-safe-autoupdate-20261106
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Android pull refresh regression tests
+        run: node --test tests/for-you-personalized-refresh.test.mjs tests/for-you-reference-refresh.test.mjs
+      - name: Native TypeScript source-only parity
+        run: npm run typecheck

@@ -1,0 +1,84 @@
+name: TRAYDAQ Keyboard Stickers - Web Android and Moderated Public Text (V2 QA)
+# Validate without Android APK/AAB builds, app-store releases, Cloudflare or Supabase deployment.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/keyboard-stickers-20261107-source-qa.yml'
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-keyboard-stickers-source
+  cancel-in-progress: true
+jobs:
+  web:
+    name: Web keyboard sticker, public moderation and Cloudflare bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/keyboard-sticker-input-web-android-20261107
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: node --test tests/keyboard-stickers-web-public-security.test.mjs
+      - run: npm test
+      - run: npm run typecheck
+        if: always()
+      - run: npm run build
+  android:
+    name: Native keyboard sticker source and TypeScript (NO APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/keyboard-sticker-input-web-android-20261107
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: node --test tests/keyboard-stickers-native.test.mjs
+      - run: node --test tests/*.test.mjs
+      - run: npm run typecheck
+        if: always()
+  backend:
+    name: Deno Edge Function typecheck, public sticker file authorization (NO DEPLOY)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/keyboard-sticker-input-web-android-20261107
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno check supabase/functions/firebase-member-chat/index.ts supabase/functions/firebase-discussions/index.ts supabase/functions/firebase-store-reviews/index.ts

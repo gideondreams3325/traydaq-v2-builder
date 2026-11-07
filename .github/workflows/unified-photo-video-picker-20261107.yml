@@ -1,0 +1,72 @@
+name: TRAYDAQ Unified Photo Video Picker - V2 Source QA
+# Read-only private source validation; no APK/AAB, Cloudflare deploy or Play release.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/unified-photo-video-picker-20261107.yml']
+permissions:
+  contents: read
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run: {working-directory: private-src}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/unified-photo-video-picker-web-android-20261107
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install web
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/web-install.log" 2>&1 || { echo 'Web dependencies failed'; exit 1; }
+      - name: Targeted unified media and creator regression
+        run: node --test tests/unified-photo-video-picker.test.mjs tests/creator-studio-android-parity.test.mjs tests/picture-compression-all-uploads.test.mjs
+      - name: Complete web regression
+        run: |
+          npm test > "$RUNNER_TEMP/web-tests.log" 2>&1 || {
+            grep -E '^not ok [0-9]+|^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/web-tests.log" | tail -24 || true
+            exit 1
+          }
+      - name: Web TypeScript
+        run: npm run typecheck > "$RUNNER_TEMP/web-types.log" 2>&1 || { grep -E 'error TS[0-9]+' "$RUNNER_TEMP/web-types.log" | head -24 || true; exit 1; }
+      - name: Cloudflare asset build only
+        run: npm run build > "$RUNNER_TEMP/web-build.log" 2>&1 && test -s dist/index.html || { echo 'Cloudflare build failed'; exit 1; }
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run: {working-directory: private-src/mobile}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/unified-photo-video-picker-web-android-20261107
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install Android sources
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/native-install.log" 2>&1 || { echo 'Android dependencies failed'; exit 1; }
+      - name: Targeted native unified media regression
+        run: node --test tests/unified-photo-video-picker.test.mjs tests/studios.test.mjs tests/studios-v2.test.mjs
+      - name: Complete Android source regression
+        run: |
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/native-tests.log" 2>&1 || {
+            grep -E '^not ok [0-9]+|^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/native-tests.log" | tail -24 || true
+            exit 1
+          }
+      - name: Android TypeScript only - never build APK or AAB
+        run: npm run typecheck > "$RUNNER_TEMP/native-types.log" 2>&1 || { grep -E 'error TS[0-9]+' "$RUNNER_TEMP/native-types.log" | head -24 || true; exit 1; }

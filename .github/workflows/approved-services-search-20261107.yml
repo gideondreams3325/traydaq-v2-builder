@@ -1,0 +1,79 @@
+name: TRAYDAQ Approved Services Search - Web and Android V2 QA
+# Source validation only. Do not deploy or generate APK/AAB.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/approved-services-search-20261107.yml']
+permissions:
+  contents: read
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run: {working-directory: private-src}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/public-services-search-completeness-20261107
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { echo 'Install failed'; exit 1; }
+      - name: Search-specific web tests
+        run: node --test tests/contextual-search-pages.test.mjs tests/public-services-search-completeness.test.mjs
+      - name: Web regressions
+        run: |
+          npm test > "$RUNNER_TEMP/tests.log" 2>&1 || {
+            echo 'Web tests failed'
+            grep -E '^not ok [0-9]+|^# (pass|fail|tests) [0-9]+' "$RUNNER_TEMP/tests.log" | tail -16 || true
+            exit 1
+          }
+      - name: Web TypeScript and Cloudflare asset build
+        run: |
+          npm run typecheck > "$RUNNER_TEMP/tsc.log" 2>&1 || { echo 'TypeScript failed'; grep -E 'error TS[0-9]+' "$RUNNER_TEMP/tsc.log" | cut -c1-180 | head -20 || true; exit 1; }
+          npm run build > "$RUNNER_TEMP/build.log" 2>&1 && test -s dist/index.html || { echo 'Cloudflare build failed'; exit 1; }
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run: {working-directory: private-src/mobile}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/public-services-search-completeness-20261107
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install source dependencies
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { echo 'Install failed'; exit 1; }
+      - name: Search-specific Android tests
+        run: node --test tests/contextual-search-pages.test.mjs tests/public-services-search-completeness.test.mjs
+      - name: All Android source tests
+        run: |
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/tests.log" 2>&1 || {
+            echo 'Android source tests failed'
+            grep -E '^not ok [0-9]+|^# (pass|fail|tests) [0-9]+' "$RUNNER_TEMP/tests.log" | tail -16 || true
+            exit 1
+          }
+      - name: Android TypeScript only, no APK/AAB
+        run: |
+          npm run typecheck > "$RUNNER_TEMP/tsc.log" 2>&1 || {
+            echo 'Android source TypeScript failed'
+            grep -E 'error TS[0-9]+' "$RUNNER_TEMP/tsc.log" | cut -c1-180 | head -20 || true
+            exit 1
+          }

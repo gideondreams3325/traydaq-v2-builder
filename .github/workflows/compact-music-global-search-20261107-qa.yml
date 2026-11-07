@@ -1,0 +1,65 @@
+name: TRAYDAQ Compact Music + Global Search (Web and Android Source QA)
+# Checks private feature source only. No APK, AAB, deployment or release.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/compact-music-global-search-20261107-qa.yml'
+permissions:
+  contents: read
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run: {working-directory: private-src}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/compact-music-unified-search-20261107
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install private web dependencies
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/web-install.log" 2>&1 || { echo 'Web install failed'; exit 1; }
+      - name: Targeted search and Music tests
+        run: node --test tests/compact-music-global-search.test.mjs
+      - name: Full web tests
+        run: npm test > "$RUNNER_TEMP/web-tests.log" 2>&1 || { echo 'Web regression tests failed'; grep -E '^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/web-tests.log" | tail -3 || true; exit 1; }
+      - name: Web TypeScript
+        run: npm run typecheck > "$RUNNER_TEMP/web-tsc.log" 2>&1 || { echo 'Web TS check failed'; grep -oE 'TS[0-9]+' "$RUNNER_TEMP/web-tsc.log" | sort -u | head -20 || true; exit 1; }
+      - name: Cloudflare-targeted web asset compilation
+        run: npm run build > "$RUNNER_TEMP/web-build.log" 2>&1 && test -s dist/index.html || { echo 'Web bundle failed'; exit 1; }
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run: {working-directory: private-src/mobile}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/compact-music-unified-search-20261107
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install native dependencies without packaging
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/native-install.log" 2>&1 || { echo 'Native install failed'; exit 1; }
+      - name: Targeted native search and Music tests
+        run: node --test tests/compact-music-global-search.test.mjs
+      - name: Full Android source tests
+        run: node --test tests/*.test.mjs > "$RUNNER_TEMP/native-tests.log" 2>&1 || { echo 'Native source regressions failed'; grep -E '^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/native-tests.log" | tail -3 || true; exit 1; }
+      - name: Native TypeScript only (no APK/AAB)
+        run: npm run typecheck > "$RUNNER_TEMP/native-tsc.log" 2>&1 || { echo 'Native TS check failed'; grep -oE 'TS[0-9]+' "$RUNNER_TEMP/native-tsc.log" | sort -u | head -20 || true; exit 1; }

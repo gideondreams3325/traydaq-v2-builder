@@ -1,0 +1,71 @@
+name: TRAYDAQ Professional Copy and Continuous For You Comments (V2 Source QA)
+# Source-only test and Cloudflare asset build. NO APK/AAB, NO release/deploy.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/professional-copy-continuous-comments-20261107-qa.yml']
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-professional-copy-video-comments
+  cancel-in-progress: true
+jobs:
+  web:
+    name: Web comments, wording, TypeScript and Cloudflare bundle (NO DEPLOY)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/professional-copy-and-inline-video-comments-20261107
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Targeted web continuous playback and copy regression
+        run: node --test tests/for-you-inline-comments-and-copy.test.mjs
+      - name: Full web tests
+        run: npm test
+      - name: Web TypeScript
+        if: always()
+        run: npm run typecheck
+      - name: Cloudflare-compatible asset build
+        run: npm run build
+  android:
+    name: Android continuous video comments, privacy and source parity (NO APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/professional-copy-and-inline-video-comments-20261107
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Targeted Android inline comments and copy regression
+        run: node --test tests/for-you-inline-comments-and-copy.test.mjs
+      - name: Full Android source tests
+        run: node --test tests/*.test.mjs
+      - name: Native TypeScript
+        if: always()
+        run: npm run typecheck

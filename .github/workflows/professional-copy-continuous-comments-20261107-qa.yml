@@ -69,3 +69,5 @@ jobs:
       - name: Native TypeScript
         if: always()
         run: npm run typecheck
+
+# Validate final keyboard-aware inline comments layout using the latest V2 source branch.

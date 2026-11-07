@@ -1,5 +1,5 @@
 name: TRAYDAQ Music Brand and Sheet Swipe Dismiss (V2 Source QA)
-# No deployment, APK, AAB or store release.
+# No deployment, APK, AAB or store release. Final source revalidation after draft-safe close protections.
 on:
   workflow_dispatch:
   push:

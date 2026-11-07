@@ -1,5 +1,5 @@
 name: TRAYDAQ Keyboard Stickers - Web Android and Moderated Public Text (V2 QA)
-# Validate without Android APK/AAB builds, app-store releases, Cloudflare or Supabase deployment.
+# Final source validation includes animated GIF playback in Expo Image; no APK/AAB or app-store release.
 on:
   workflow_dispatch:
   push:

@@ -1,0 +1,63 @@
+name: TRAYDAQ Android Phone Push Registration - 429 Recovery V2 QA
+# Read-only source validation: no APK/AAB builds, releases or deployments.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/phone-push-limit-20261107-qa.yml'
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-push-429-recovery
+  cancel-in-progress: true
+jobs:
+  backend:
+    name: Live-handler regression and Deno push typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/android-phone-notification-registration-limit-20261107
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: node --test tests/android-push-429-device-limit-recovery.test.mjs tests/push-unregister-safety.test.mjs
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno check --node-modules-dir=auto supabase/functions/firebase-native-push-register/index.ts
+  android:
+    name: Android notification UI regression and TypeScript (NO APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/android-phone-notification-registration-limit-20261107
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: node --test tests/push-settings-real-delivery.test.mjs tests/first-run-push-multi-account-categories.test.mjs tests/*.test.mjs
+      - run: npm run typecheck

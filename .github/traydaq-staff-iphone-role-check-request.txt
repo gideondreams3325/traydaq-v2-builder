@@ -1,0 +1,1 @@
+2026-11-08 iPhone STAFF role-specific screens, Analyst and Overall Head aggregate workspaces, CEO view selector, appointment-scoped Safari voice notes, audited signed storage. Validate feat/staff-iphone-role-voice-parity-20261108 at c2a62b6a39c9d6a36ca8a184694c6a813e94aea8. SOURCE ONLY NO APK/AAB and no deployment.

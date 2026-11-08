@@ -36,3 +36,5 @@ Validate STAFF promotion 503 handling, separate content search state, 38 native 
 2026-11-08 Analyst metrics and Overall Head supervision: validate private traydaq-v2 feat/standalone-admin-native commit 87194b22e3e21af0978ba541371de8bee0a7c030. Ensure staff-analyst-overall-head-insights tests, all security contracts, deletion checks, RN typecheck; new service and database migration are scoped service-role-only; CEO escalations require independent role authorization. SOURCE VALIDATION ONLY. NO APK/AAB BUILD, NO RELEASE.
 
 2026-11-08 Analyst and Overall Head dashboard regression adjustment commit b0153fcd513cd275c3deda91b4f9d725862ffb02. Re-run source-only V2 security, deletion, and RN TypeScript checks. No APK/AAB, no release.
+
+2026-11-08 Staff analytic dashboard legacy test text updated to real mounted component, commit f399d503d31599656e0f3084a3bd4123aa6b7a55. Re-run V2 builder security, deletion parity, React Native typecheck. Source only; no APK/AAB/release.

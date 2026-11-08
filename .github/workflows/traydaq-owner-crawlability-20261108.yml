@@ -1,0 +1,88 @@
+name: TRAYDAQ Owner Search Crawlability Audit (Read Only)
+# Live read-only checks. No private data, no deployment, no Android builds.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/traydaq-owner-crawlability-20261108.yml
+permissions:
+  contents: read
+jobs:
+  inspect-public-site:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Inspect owner page as anonymous crawler and parse JSON-LD
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, re, urllib.request
+          from html.parser import HTMLParser
+          class Info(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.robots=[]; self.can=[]; self.script=False; self.data=[]
+              def handle_starttag(self, tag, attrs):
+                  a=dict(attrs)
+                  if tag=='meta' and a.get('name','').lower()=='robots':
+                      self.robots.append(a.get('content',''))
+                  if tag=='link' and a.get('rel','').lower()=='canonical':
+                      self.can.append(a.get('href',''))
+                  if tag=='script' and a.get('type')=='application/ld+json':
+                      self.script=True
+              def handle_endtag(self, tag):
+                  if tag=='script':self.script=False
+              def handle_data(self, data):
+                  if self.script:self.data.append(data)
+          for path in ['/ownership/','/about/','/']:
+              req=urllib.request.Request('https://traydaq.com'+path,headers={'User-Agent':'Mozilla/5.0 (compatible; TRAYDAQ-SEO-ReadOnly-Audit/1.0)'})
+              with urllib.request.urlopen(req,timeout=25) as r:
+                  html=r.read().decode('utf-8','replace')
+                  http=r.status
+                  blocked=r.headers.get('X-Robots-Tag','')
+                  ctype=r.headers.get('Content-Type','')
+              parser=Info();parser.feed(html)
+              url='https://traydaq.com'+path
+              if http!=200 or 'text/html' not in ctype or 'noindex' in blocked.lower() or any('noindex' in s.lower() for s in parser.robots):
+                  raise SystemExit(f'ERROR: {path} failed crawlability: HTTP {http}, content-type {ctype}, robots {blocked}/{parser.robots}')
+              if not parser.can or parser.can[0]!=url:
+                  raise SystemExit(f'ERROR: canonical mismatch on {path}: {parser.can}')
+              if 'GIDEON MANU APPIAH FENYI FRIEMPONG' not in html:
+                  raise SystemExit(f'ERROR: expected public full owner name missing in {path}')
+              if not parser.data:
+                  raise SystemExit(f'ERROR: structured JSON-LD missing in {path}')
+              objs=[json.loads(x) for x in parser.data]
+              graphs=[o for x in objs for o in x.get('@graph',[x])]
+              people=[x for x in graphs if x.get('@type')=='Person' and x.get('name')=='GIDEON MANU APPIAH FENYI FRIEMPONG']
+              if not people:raise SystemExit(f'ERROR: owner schema missing in {path}')
+              print(f'PASS: {path} HTTP 200, no noindex, canonical OK, owner name and JSON-LD present')
+          PY
+      - name: Inspect live sitemap XML, robots rules and owner lastmod
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import urllib.request, xml.etree.ElementTree as ET
+          def get(path):
+              req=urllib.request.Request('https://traydaq.com'+path,headers={'User-Agent':'TRAYDAQ-SEO-ReadOnly-Audit/1.0'})
+              with urllib.request.urlopen(req,timeout=25) as r:return r.status,r.read().decode('utf-8','replace')
+          status,sitemap=get('/sitemap.xml')
+          assert status==200, 'Sitemap HTTP not 200'
+          root=ET.fromstring(sitemap)
+          ns={'s':'http://www.sitemaps.org/schemas/sitemap/0.9'}
+          assert root.tag.endswith('urlset'), 'Not an XML urlset'
+          owner=[u for u in root.findall('s:url',ns) if u.findtext('s:loc',namespaces=ns)=='https://traydaq.com/ownership/']
+          assert len(owner)==1, 'Owner page must occur exactly once in sitemap'
+          last=owner[0].findtext('s:lastmod',namespaces=ns)
+          if last:
+              print('PASS: ownership sitemap entry present with lastmod '+last)
+          else:
+              print('NOTICE: ownership sitemap entry present; optional lastmod absent in live response')
+          status,robots=get('/robots.txt')
+          assert status==200,'Robots HTTP not 200'
+          assert 'Sitemap: https://traydaq.com/sitemap.xml' in robots, 'Sitemap not advertised'
+          assert 'Disallow: /ownership' not in robots and 'Disallow: /about' not in robots,'Public ownership or About blocked by robots'
+          print('PASS: sitemap valid XML, owner URL listed once and robots file permits public ownership pages')
+          PY

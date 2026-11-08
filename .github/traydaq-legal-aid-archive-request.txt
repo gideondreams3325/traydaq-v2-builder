@@ -1,1 +1,3 @@
 2026-11-08 Revalidate Legal Aid private owner PDF field scope after exact-origin guarding and ISO country display. Source branch feat/legal-aid-archive-identity-contact-20261108, commit df9f322d15f744a99e9249fba943c3a82236d71b. Run all Legal Aid, consent and erasure safety contracts, customer TypeScript; no release, DB writes or Android package.
+
+2026-11-08 Final source validation owner Legal Aid self-archive: verified ID legal name, human country, Firebase email/phone, server-side consent, PDF UTF-8 attachment, private checksum and expiry. Branch feat/legal-aid-archive-identity-contact-20261108 commit 0e111b58b6c3a226b74f6b31f97d2500dfa394de. No APK/AAB, no automatic archive of deleted members.

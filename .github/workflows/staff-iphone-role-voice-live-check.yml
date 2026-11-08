@@ -1,0 +1,62 @@
+name: TRAYDAQ Staff iPhone role-voice live read-only smoke
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/staff-iphone-role-voice-live-check.yml"
+      - ".github/traydaq-staff-iphone-live-check-request.txt"
+permissions:
+  contents: read
+jobs:
+  live-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Confirm iPhone Staff backend denies unauthenticated and consumer-origin requests
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://qpcsruhwqhniprakpoox.supabase.co/functions/v1/firebase-staff-iphone'
+          for action in voice-departments voice-threads voice-messages voice-play role-report role-escalations overview; do
+            code=$(curl -sS --retry 2 --max-time 22 -w '%{http_code}' -o "$RUNNER_TEMP/response" -H 'Origin: https://staff.traydaq.com' "$BASE?action=$action")
+            test "$code" = 401 || { echo "::error::Unauthorized $action was $code instead of 401"; exit 1; }
+            code=$(curl -sS --retry 2 --max-time 22 -w '%{http_code}' -o "$RUNNER_TEMP/response" -H 'Origin: https://traydaq.com' "$BASE?action=$action")
+            test "$code" = 403 || { echo "::error::Consumer-origin $action was $code instead of 403"; exit 1; }
+          done
+          for action in voice-begin voice-complete role-escalate; do
+            code=$(curl -sS --retry 2 --max-time 22 -w '%{http_code}' -o "$RUNNER_TEMP/response" -X POST -H 'Origin: https://staff.traydaq.com' -H 'Content-Type: application/json' --data '{}' "$BASE?action=$action")
+            test "$code" = 401 || { echo "::error::Unauthorized POST $action returned $code"; exit 1; }
+          done
+          echo 'Authenticated boundary: verified. No Staff data or writes requested.'
+      - name: Inspect actual Staff hostname asset revision without signing in
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT='https://staff.traydaq.com'
+          curl -fsSL --retry 3 --max-time 25 "$ROOT/" -o "$RUNNER_TEMP/root.html"
+          if grep -Fq 'TRAYDAQ Staff — iPhone' "$RUNNER_TEMP/root.html"; then
+            PREFIX=''
+            cp "$RUNNER_TEMP/root.html" "$RUNNER_TEMP/staff.html"
+          else
+            PREFIX='/__staff_iphone'
+            curl -fsSL --retry 3 --max-time 25 "$ROOT$PREFIX/" -o "$RUNNER_TEMP/staff.html"
+            grep -Fq 'TRAYDAQ Staff — iPhone' "$RUNNER_TEMP/staff.html"
+          fi
+          grep -oE 'src="[^"]+[.]js"' "$RUNNER_TEMP/staff.html" | cut -d '"' -f2 > "$RUNNER_TEMP/paths"
+          test -s "$RUNNER_TEMP/paths"
+          : > "$RUNNER_TEMP/bundle.js"
+          while IFS= read -r path; do
+            case "$path" in
+              https://*) url="$path";;
+              /*) url="$ROOT$path";;
+              *) url="$ROOT$PREFIX/$path";;
+            esac
+            curl -fsSL --retry 2 --max-time 25 "$url" >> "$RUNNER_TEMP/bundle.js"
+          done < "$RUNNER_TEMP/paths"
+          for label in 'Overall Department Head Workspace' 'Analyst Insights Workspace' 'Open department voice notes' 'Record voice note'; do
+            grep -Fq "$label" "$RUNNER_TEMP/bundle.js" || {
+              echo "::error::The live Staff hostname does not yet serve $label"; exit 1;
+            }
+          done
+          echo 'The Staff hostname serves the new role and voice screens.'

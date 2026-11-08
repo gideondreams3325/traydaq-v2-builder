@@ -60,3 +60,5 @@ Validate STAFF promotion 503 handling, separate content search state, 38 native 
 2026-11-08 TRAYDAQ STAFF pre-merge source-only recheck after preserving Cloudflare SEO worker routing on feat/standalone-admin-native commit b55eb6ddad8f71f717c7d2eb25a7602fdaf428c3. Run complete Staff security and deletion parity tests, React Native TypeScript. NO APK/AAB, production deployment or cutover.
 
 2026-11-08 TRAYDAQ STAFF conflict-resolved merge integration: validate exact feat/standalone-admin-native commit d0af558f5d95b8193ea4eceaf8996b63fcc56591 against latest main. Check 239+ staff security contracts, deletion parity, React Native typecheck, server role-safe voice notes, privacy, and preserved member app/Cloudflare source. SOURCE ONLY, NO APK/AAB, signing, deployment, production cutover.
+
+2026-11-08 TRAYDAQ STAFF integration CI retry on conflict-resolved branch commit bd20ed9088824306fa195ee5d9e24624f0f5bf5d. Revalidate staff security, policy approval, legacy broadcast safety, private campaign notification routing, all delete parity tests, and native TypeScript. Current main web/Android files preserved. SOURCE ONLY NO APK/AAB OR RELEASE.

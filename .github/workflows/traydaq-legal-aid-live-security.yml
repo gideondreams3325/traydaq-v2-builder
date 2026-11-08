@@ -44,3 +44,22 @@ jobs:
             test "$code" = 403 || { echo "::error::Staff web origin may not access owner vault $action: $code"; exit 1; }
           done
           echo 'No owner records, private PDF or personal identity values were retrieved or modified.'
+      - name: V2 member contact consent and case preparation deny anonymous requests
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE='https://qpcsruhwqhniprakpoox.supabase.co/functions/v1'
+          for action in status consent-contact-archive withdraw-contact-archive; do
+            code=$(curl -sS --retry 2 --max-time 22 -o "$RUNNER_TEMP/result" -w '%{http_code}' \
+              -X POST -H 'Content-Type: application/json' --data "{\"action\":\"$action\"}" "$BASE/firebase-identity-review")
+            test "$code" = 401 || { echo "::error::Identity v2 anonymous action $action returned $code"; exit 1; }
+          done
+          code=$(curl -sS --retry 2 --max-time 22 -o "$RUNNER_TEMP/result" -w '%{http_code}' \
+              -X POST -H 'Content-Type: application/json' --data '{"action":"prepare"}' \
+              "$BASE/firebase-legal-aid-case-prepare")
+          case "$code" in 401|423|503) ;; *) echo "::error::Case preparation accepted unauthenticated request: $code"; exit 1;; esac
+          code=$(curl -sS --retry 2 --max-time 22 -o "$RUNNER_TEMP/result" -w '%{http_code}' \
+              -X POST -H 'Origin: https://staff.traydaq.com' -H 'Content-Type: application/json' --data '{"action":"prepare"}' \
+              "$BASE/firebase-legal-aid-case-prepare")
+          test "$code" = 403 || { echo "::error::Staff browser could call private case preparation: $code"; exit 1; }
+          echo 'New contact notice v2 and case preparation deny unauthenticated/browser use.'

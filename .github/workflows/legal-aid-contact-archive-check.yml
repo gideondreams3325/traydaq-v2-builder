@@ -42,5 +42,6 @@ jobs:
         run: |
           grep -Fq 'LEGAL_AID_PDF_RELEASE_VALIDATED=false' supabase/functions/_shared/legalAidEvidencePdf.mjs
           grep -Fq 'LEGAL_AID_CUSTODY_RELEASE_VALIDATED=false' supabase/functions/_shared/legalAidVerifiedCustody.mjs
-          grep -Fq "if(!ownerArchiveConsentAllowed(input))" supabase/functions/firebase-legal-aid-live-archive/index.ts
+          grep -Fq "contactDetailsConsent!==true" supabase/functions/firebase-legal-aid-live-archive/index.ts
+          grep -Fq "owner-profile-identity-contact-v1" supabase/functions/firebase-legal-aid-live-archive/index.ts
           echo 'Legal Aid source validation only. No Android build, archive of live members or deployment.'

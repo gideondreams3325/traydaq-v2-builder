@@ -1,0 +1,1 @@
+2026-11-08 Revalidate Legal Aid private owner PDF field scope after exact-origin guarding and ISO country display. Source branch feat/legal-aid-archive-identity-contact-20261108, commit df9f322d15f744a99e9249fba943c3a82236d71b. Run all Legal Aid, consent and erasure safety contracts, customer TypeScript; no release, DB writes or Android package.

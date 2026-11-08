@@ -40,3 +40,5 @@ Validate STAFF promotion 503 handling, separate content search state, 38 native 
 2026-11-08 Staff analytic dashboard legacy test text updated to real mounted component, commit f399d503d31599656e0f3084a3bd4123aa6b7a55. Re-run V2 builder security, deletion parity, React Native typecheck. Source only; no APK/AAB/release.
 
 2026-11-08 Staff Analyst/Overall Head React Native scope typing corrected commit f83d681924c62ca100b8da1d2168cc7cb6e4053d. Re-run complete V2 builder source security, deletion, TypeScript. Absolutely no APK/AAB or release.
+
+2026-11-08 Add Overall Department Head as fourth selection under CEO Staff appointment role alongside Specialized Team Head, Staff Member and Analyst, commit c7f0a0cebeebd1947fc5a6f0f4bff88623951451 on feat/standalone-admin-native. Validate new overall-head-role-selection tests, full native Staff security and deletion contracts, React Native TypeScript, ensure Overall role uses manage-division-head only and cannot grant specialist approval. SOURCE ONLY, NO APK/AAB/RELEASE.

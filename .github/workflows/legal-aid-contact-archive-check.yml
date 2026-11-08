@@ -17,7 +17,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: feat/legal-aid-consented-contact-20261108
+          ref: feat/legal-aid-case-retention-consent-v2-20261108
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
@@ -36,6 +36,12 @@ jobs:
         run: |
           npm run typecheck
           npm run typecheck:staff
+      - name: Install native source dependencies (source-check only)
+        working-directory: private-src
+        run: npm ci --prefix mobile --no-audit --no-fund
+      - name: Typecheck Android user source without APK or AAB
+        working-directory: private-src
+        run: npm run typecheck --prefix mobile
       - name: Verify no auto-release or private evidence export
         shell: bash
         working-directory: private-src
@@ -44,4 +50,6 @@ jobs:
           grep -Fq 'LEGAL_AID_CUSTODY_RELEASE_VALIDATED=false' supabase/functions/_shared/legalAidVerifiedCustody.mjs
           grep -Fq "contactDetailsConsent!==true" supabase/functions/firebase-legal-aid-live-archive/index.ts
           grep -Fq "owner-profile-identity-contact-v1" supabase/functions/firebase-legal-aid-live-archive/index.ts
+          grep -Fq "contactArchiveConsentAccepted" supabase/functions/firebase-identity-review/index.ts
+          grep -Fq "v2_legal_aid_capture_contact_snapshot" supabase/migrations/20261108174800_legal_aid_contact_notice_v2_and_guarded_snapshot.sql
           echo 'Legal Aid source validation only. No Android build, archive of live members or deployment.'

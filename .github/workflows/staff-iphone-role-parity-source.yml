@@ -1,0 +1,45 @@
+name: TRAYDAQ Staff iPhone role and voice source validation (no APK)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/staff-iphone-role-parity-source.yml"
+      - ".github/traydaq-staff-iphone-role-check-request.txt"
+permissions:
+  contents: read
+jobs:
+  iphone-source-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout current private iPhone Staff integration branch
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/staff-iphone-role-voice-parity-20261108
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install locked source dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: iPhone Staff role/voice and existing browser security contracts
+        working-directory: private-src
+        run: node --test tests/staff-iphone-*.test.mjs
+      - name: Typecheck user and independent iPhone Staff React sources
+        working-directory: private-src
+        run: |
+          npm run typecheck:staff
+          npm run typecheck
+      - name: Validate iPhone Staff build
+        working-directory: private-src
+        run: npm run build:staff
+      - name: Verify no APK AAB or production deployment
+        run: |
+          test -f private-src/staff-pwa/src/StaffIphoneVoice.tsx
+          test -f private-src/staff-pwa/src/StaffRolePanels.tsx
+          echo "Source checks only. No Android build, signing, database writes or deployment."

@@ -37,4 +37,10 @@ jobs:
               -X POST -H 'Content-Type: application/json' --data "{\"action\":\"$action\"}" "$BASE")
             test "$code" = 401 || { echo "::error::Unauthorized archive POST $action returned $code"; exit 1; }
           done
+          for action in archive list verify delete; do
+            code=$(curl -sS --retry 2 --max-time 22 -o "$RUNNER_TEMP/result" -w '%{http_code}' \
+              -X POST -H 'Origin: https://staff.traydaq.com' \
+              -H 'Content-Type: application/json' --data "{\"action\":\"$action\"}" "$BASE")
+            test "$code" = 403 || { echo "::error::Staff web origin may not access owner vault $action: $code"; exit 1; }
+          done
           echo 'No owner records, private PDF or personal identity values were retrieved or modified.'

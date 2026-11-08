@@ -49,6 +49,6 @@ jobs:
       - name: Render no-personal-data PDF (no storage write)
         working-directory: private-src
         run: |
-          deno eval --allow-net 'import {renderSyntheticLegalAidPreview} from "./supabase/functions/_shared/legalAidSamplePdf.mjs";const b=await renderSyntheticLegalAidPreview();if(b.length<100||String.fromCharCode(...b.slice(0,5))!=="%PDF-")throw Error("Invalid sample PDF"); console.log("Verified sample PDF header and bytes",b.length);'
+          deno eval --node-modules-dir=auto --allow-net 'import {renderSyntheticLegalAidPreview} from "./supabase/functions/_shared/legalAidSamplePdf.mjs";const b=await renderSyntheticLegalAidPreview();if(b.length<100||String.fromCharCode(...b.slice(0,5))!=="%PDF-")throw Error("Invalid sample PDF"); console.log("Verified sample PDF header and bytes",b.length);'
       - name: Ensure no Android build, signing, deployment or case archiving
         run: echo "Source-only tests; no APK/AAB or real member PDF generated."

@@ -48,3 +48,5 @@ Validate STAFF promotion 503 handling, separate content search state, 38 native 
 2026-11-08 Mixed Overall Head and Specialist Head role metadata contract corrections, commit eb4d30673f901eea2977a61ff8bee7bb33c5ccb5 on feat/standalone-admin-native. Run full native Staff role isolation tests, deletion security, RN TS source-only. No APK/AAB, no mobile release.
 
 2026-11-08 STAFF cross-department private voice notes source-only validation, private traydaq-v2 feat/standalone-admin-native at 812b594e95a46e1e3b03b838cfc1e7e28ba5d0b9. Run full Staff tests incl staff-department-voice.test.mjs, deletion parity and React Native TS. Verify recording, voice notifications, 2-minute cap, short-lived private signed playback and department-only permissions. Do not build APK/AAB or merge/release.
+
+2026-11-08 STAFF voice-note test contract corrections on feat/standalone-admin-native commit 8647be063ec4c4bd0c4a37fc16b69feb8080e3ac. Re-run full Staff security, voice private destination routing, deletion, RN TypeScript. Source only, NO APK/AAB/release.

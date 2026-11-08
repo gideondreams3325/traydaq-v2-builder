@@ -1,0 +1,72 @@
+name: TRAYDAQ V2 Search History and Default Frames - Source QA
+# Only source tests and Cloudflare asset build; no releases, APK, AAB or deployments.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/search-history-default-frames-20261108.yml']
+permissions:
+  contents: read
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run: {working-directory: private-src}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/search-default-media-frames-history-20261108
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { echo 'Web dependencies unavailable'; exit 1; }
+      - name: Targeted frame and history regressions
+        run: node --test tests/search-history-default-frames.test.mjs tests/search-decoder-lifetime.test.mjs tests/search-selected-green-video-cover-fallback.test.mjs tests/search-touch-column-stable-posters.test.mjs
+      - name: Full web regression
+        run: |
+          npm test > "$RUNNER_TEMP/tests.log" 2>&1 || {
+            grep -E '^not ok [0-9]+|^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/tests.log" | tail -25 || true
+            exit 1
+          }
+      - name: Web TypeScript
+        run: npm run typecheck > "$RUNNER_TEMP/types.log" 2>&1 || { grep -E 'error TS[0-9]+' "$RUNNER_TEMP/types.log" | head -25 || true; exit 1; }
+      - name: Cloudflare asset build only, no deploy
+        run: npm run build > "$RUNNER_TEMP/build.log" 2>&1 && test -s dist/index.html || { echo 'Cloudflare asset build failed'; exit 1; }
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run: {working-directory: private-src/mobile}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/search-default-media-frames-history-20261108
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install native dependencies
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { echo 'Android dependencies unavailable'; exit 1; }
+      - name: Targeted native search regressions
+        run: node --test tests/search-history-default-frames.test.mjs tests/search-selected-green-video-cover-fallback.test.mjs tests/search-touch-column-stable-posters.test.mjs
+      - name: Full native regression
+        run: |
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/tests.log" 2>&1 || {
+            grep -E '^not ok [0-9]+|^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/tests.log" | tail -25 || true
+            exit 1
+          }
+      - name: Native TypeScript only, no APK or AAB
+        run: npm run typecheck > "$RUNNER_TEMP/types.log" 2>&1 || { grep -E 'error TS[0-9]+' "$RUNNER_TEMP/types.log" | head -25 || true; exit 1; }

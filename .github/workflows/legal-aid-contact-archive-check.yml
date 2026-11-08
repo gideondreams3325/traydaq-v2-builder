@@ -42,6 +42,12 @@ jobs:
       - name: Typecheck Android user source without APK or AAB
         working-directory: private-src
         run: npm run typecheck --prefix mobile
+      - name: Run full TRAYDAQ web and native-parity security suite
+        working-directory: private-src
+        run: npm test
+      - name: Validate Staff iPhone source build (no deployment)
+        working-directory: private-src
+        run: npm run build:staff
       - name: Verify no auto-release or private evidence export
         shell: bash
         working-directory: private-src

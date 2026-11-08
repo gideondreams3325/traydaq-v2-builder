@@ -16,3 +16,5 @@ Validate STAFF promotion 503 handling, separate content search state, 38 native 
 2026-10-30 Official Owner/CEO recommendation and same-actor approval across 12 departments: validate 30-function SQL parity migration, admin-native review UI, privilege routing, audit and all node + TypeScript tests. Source-only. NO APK / AAB / Android build.
 
 2026-10-30 CEO own posts/products/vacancies/events/music: validate evidence for self-owned listings/store/music and direct Owner promotion + 6 new regression tests. SOURCE-ONLY; no APK, AAB, signing or Android release.
+
+2026-11-08 STAFF header settings: validate feat/standalone-admin-native at f10d1598cab3c819b68d680bb6dd19e2de9a8db8. Assert gear opens private settings sheet; lock remains blocking on resume; controls (biometric/device unlock), department refresh and logout are in settings. Run all native tests + TypeScript. SOURCE ONLY: never build/sign/publish APK or AAB.

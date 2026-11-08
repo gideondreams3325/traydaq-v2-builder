@@ -1,0 +1,54 @@
+name: TRAYDAQ Legal Aid archive source safety (no APK)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/traydaq-legal-aid-archive-source.yml"
+      - ".github/traydaq-legal-aid-check-request.txt"
+permissions:
+  contents: read
+jobs:
+  legal-aid:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout private TRAYDAQ V2 Legal Aid patch
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/legal-aid-archive-name-country-20261108
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Legal Aid case, PDF, consent, expiry and account erasure regression contracts
+        working-directory: private-src
+        run: |
+          node --test tests/legal-aid-*.test.mjs \
+            tests/fraud-evidence-erasure-holds.test.mjs \
+            tests/identity-fraud-archive-database.test.mjs \
+            tests/ordinary-identity-erasure-policy.test.mjs \
+            tests/account-owner-self-service-erasure.test.mjs \
+            admin-native/tests/legal-aid-readiness.test.mjs \
+            admin-native/tests/deletion-parity.test.mjs
+      - name: Typecheck customer web and native Staff source
+        working-directory: private-src
+        run: |
+          npm run typecheck
+          npm run typecheck:staff
+      - name: Verify the synthetic PDF can be rendered using the Deno engine
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Render no-personal-data PDF (no storage write)
+        working-directory: private-src
+        run: |
+          deno eval --allow-net 'import {renderSyntheticLegalAidPreview} from "./supabase/functions/_shared/legalAidSamplePdf.mjs";const b=await renderSyntheticLegalAidPreview();if(b.length<100||String.fromCharCode(...b.slice(0,5))!=="%PDF-")throw Error("Invalid sample PDF"); console.log("Verified sample PDF header and bytes",b.length);'
+      - name: Ensure no Android build, signing, deployment or case archiving
+        run: echo "Source-only tests; no APK/AAB or real member PDF generated."

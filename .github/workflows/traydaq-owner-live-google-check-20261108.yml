@@ -38,8 +38,18 @@ jobs:
           test "$about_code" = 200
           test "$sitemap_code" = 200
           test "$robots_code" = 200
-          grep -Fq 'GIDEON MANU APPIAH FENYI FRIEMPONG' "$about"
-          grep -Fq '<loc>https://traydaq.com/ownership/</loc>' "$sitemap"
-          grep -Fq '<lastmod>2026-11-08</lastmod>' "$sitemap"
-          grep -Fq 'Sitemap: https://traydaq.com/sitemap.xml' "$robots"
-          echo "PASS: About attribution, sitemap ownership URL and robots sitemap link are live"
+          failed=0
+          check_marker() {
+            if grep -Fq "$2" "$1"; then
+              echo "PASS: $3"
+            else
+              echo "::error::Missing $3"
+              failed=1
+            fi
+          }
+          check_marker "$about" 'GIDEON MANU APPIAH FENYI FRIEMPONG' 'About ownership attribution'
+          check_marker "$sitemap" '<loc>https://traydaq.com/ownership/</loc>' 'ownership URL in live sitemap'
+          check_marker "$sitemap" '<lastmod>2026-11-08</lastmod>' '2026-11-08 lastmod in live sitemap'
+          check_marker "$robots" 'Sitemap: https://traydaq.com/sitemap.xml' 'sitemap link in robots'
+          test "$failed" = 0
+          echo "PASS: all live Google discovery markers are available"

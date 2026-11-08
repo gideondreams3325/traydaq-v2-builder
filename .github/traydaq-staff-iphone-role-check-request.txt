@@ -1,1 +1,3 @@
 2026-11-08 iPhone STAFF role-specific screens, Analyst and Overall Head aggregate workspaces, CEO view selector, appointment-scoped Safari voice notes, audited signed storage. Validate feat/staff-iphone-role-voice-parity-20261108 at c2a62b6a39c9d6a36ca8a184694c6a813e94aea8. SOURCE ONLY NO APK/AAB and no deployment.
+
+2026-11-08 Revalidate private iPhone Staff role and voice feature branch 7f7db66128e9e6b4a748d95a3aa74a161749c9e7 after TypeScript import correction. Run all 28+ iPhone contract tests, both TypeScript checks and iPhone build only. NO APK, AAB, release or database changes.

@@ -1,0 +1,45 @@
+name: TRAYDAQ Official Owner Live Google Readiness (Read Only)
+# Live production URL inspection. No login, DNS changes, deployment or APK/AAB.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/traydaq-owner-live-google-check-20261108.yml
+permissions:
+  contents: read
+jobs:
+  live-owner-seo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Verify official owner page and Google-readable HTML
+        run: |
+          set -euo pipefail
+          page="$(mktemp)"
+          code="$(curl -sSL --retry 2 --max-time 25 -w '%{http_code}' -o "$page" 'https://traydaq.com/ownership/')"
+          echo "Ownership page HTTP $code"
+          test "$code" = 200
+          grep -Fq 'GIDEON MANU APPIAH FENYI FRIEMPONG' "$page"
+          grep -Fq 'rel="canonical" href="https://traydaq.com/ownership/"' "$page"
+          grep -Fq 'application/ld+json' "$page"
+          grep -Fq '"@type":"Person"' "$page"
+          echo "PASS: official owner full name, canonical and schema.org Person are live"
+      - name: Verify About TRAYDAQ and public sitemap
+        run: |
+          set -euo pipefail
+          about="$(mktemp)"
+          sitemap="$(mktemp)"
+          robots="$(mktemp)"
+          about_code="$(curl -sSL --retry 2 --max-time 25 -w '%{http_code}' -o "$about" 'https://traydaq.com/about/')"
+          sitemap_code="$(curl -sSL --retry 2 --max-time 25 -w '%{http_code}' -o "$sitemap" 'https://traydaq.com/sitemap.xml')"
+          robots_code="$(curl -sSL --retry 2 --max-time 25 -w '%{http_code}' -o "$robots" 'https://traydaq.com/robots.txt')"
+          echo "About HTTP $about_code; sitemap HTTP $sitemap_code; robots HTTP $robots_code"
+          test "$about_code" = 200
+          test "$sitemap_code" = 200
+          test "$robots_code" = 200
+          grep -Fq 'GIDEON MANU APPIAH FENYI FRIEMPONG' "$about"
+          grep -Fq '<loc>https://traydaq.com/ownership/</loc>' "$sitemap"
+          grep -Fq '<lastmod>2026-11-08</lastmod>' "$sitemap"
+          grep -Fq 'Sitemap: https://traydaq.com/sitemap.xml' "$robots"
+          echo "PASS: About attribution, sitemap ownership URL and robots sitemap link are live"

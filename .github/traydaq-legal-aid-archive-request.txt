@@ -3,3 +3,5 @@
 2026-11-08 Final source validation owner Legal Aid self-archive: verified ID legal name, human country, Firebase email/phone, server-side consent, PDF UTF-8 attachment, private checksum and expiry. Branch feat/legal-aid-archive-identity-contact-20261108 commit 0e111b58b6c3a226b74f6b31f97d2500dfa394de. No APK/AAB, no automatic archive of deleted members.
 
 2026-11-08 Validate newest Legal Aid dual-approved case preflight and revocable v2 member contact consent on web/Android. Branch feat/legal-aid-case-retention-consent-v2-20261108 at 84af028ad0663419d1d24e77ea02e212428ada82. Run all Legal Aid tests, web/Staff/Android typechecks. Source only; do not build APK/AAB or enable case export/erasure.
+
+2026-11-08 TRAYDAQ Legal Aid full source-safety validation: v2 contact consent + withdrawal, independently approved verified snapshots, exact-case worker, locked case PDF/custody, atomic retention-expiry claim and verified private PDF destruction. Feature branch feat/legal-aid-case-retention-consent-v2-20261108 commit caa1925d50486cb691ddf302d672e7de4e22715e. Check web, Staff and Android TypeScript, tests, NO APK/AAB/release.

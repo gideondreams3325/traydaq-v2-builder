@@ -1,0 +1,44 @@
+name: TRAYDAQ Legal Aid consent and archive source validation (no release)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/legal-aid-contact-archive-check.yml"
+      - ".github/traydaq-legal-aid-archive-request.txt"
+permissions:
+  contents: read
+jobs:
+  private-archive-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout private Legal Aid source branch
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/legal-aid-archive-identity-contact-20261108
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install source dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Verify Legal Aid archive and erasure safety
+        working-directory: private-src
+        run: |
+          node --test tests/legal-aid-*.test.mjs tests/identity-fraud-consent-age-policy.test.mjs tests/account-erasure-release-lock.test.mjs tests/ordinary-identity-erasure-policy.test.mjs tests/fraud-evidence-erasure-holds.test.mjs
+      - name: Verify TypeScript
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Verify no auto-release or private evidence export
+        shell: bash
+        working-directory: private-src
+        run: |
+          grep -Fq 'LEGAL_AID_PDF_RELEASE_VALIDATED=false' supabase/functions/_shared/legalAidEvidencePdf.mjs
+          grep -Fq 'LEGAL_AID_CUSTODY_RELEASE_VALIDATED=false' supabase/functions/_shared/legalAidVerifiedCustody.mjs
+          grep -Fq "if(!ownerArchiveConsentAllowed(input))" supabase/functions/firebase-legal-aid-live-archive/index.ts
+          echo 'Legal Aid source validation only. No Android build, archive of live members or deployment.'

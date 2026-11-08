@@ -30,3 +30,5 @@ Validate STAFF promotion 503 handling, separate content search state, 38 native 
 2026-11-08 TRAYDAQ STAFF distinct role screens: validate feat/standalone-admin-native commit 8e2f580010f928a6590a285a29bca6c8014adece. Analyst, Staff Member, Specialized Head, Overall Head pages are isolated; only CEO can switch all role pages. Validate UI + backend access test, all native security contracts, TypeScript. SOURCE ONLY NO APK/AAB OR RELEASE.
 
 2026-11-08 Staff role-isolation contract adjustment commit 2042ccd9552e77322bd218cb6dbf37c2f10912e1: run all Admin security tests, multi-team Analyst access tests, and native TypeScript; distinct per-role pages only, CEO may switch. Source-only no APK/AAB.
+
+2026-11-08 Staff role UI fail-closed rendering commit 875245d20bc1f74420e3766cac9b6ad18a7711e2. All native Staff security tests, per-role screen, restricted analyst API permissions, and TypeScript. No APK/AAB/release/deploy actions.

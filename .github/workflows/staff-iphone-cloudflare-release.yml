@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: beb786de596a19bd4efb136acb5ba168c24c17ca
+          ref: fb767bd72f7241ec696f0a5d5382b08d2c8f205c
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
           path: private-src
@@ -29,7 +29,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "beb786de596a19bd4efb136acb5ba168c24c17ca"
+          test "$(git rev-parse HEAD)" = "fb767bd72f7241ec696f0a5d5382b08d2c8f205c"
           test -f staff-pwa/src/StaffAccountDirectory.tsx
           test -f staff-pwa/public/_headers
           test -f staff-pwa/public/manifest.webmanifest
@@ -94,6 +94,6 @@ jobs:
           set -euo pipefail
           npm_config_yes=true npx --yes wrangler@4.45.0 pages deploy ../dist-staff \
             --project-name=traydaq-staff-iphone --branch=main \
-            --commit-hash=beb786de596a19bd4efb136acb5ba168c24c17ca \
-            --commit-message="TRAYDAQ Staff iPhone account directory release"
+            --commit-hash=fb767bd72f7241ec696f0a5d5382b08d2c8f205c \
+            --commit-message="TRAYDAQ Staff iPhone current source release with role, voice and directory"
           echo "::notice::Staff iPhone deployed separately. User app and existing custom DNS were not changed."

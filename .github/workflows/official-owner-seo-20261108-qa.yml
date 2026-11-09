@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: fix/cloudflare-policy-extensionless-asset-routing-20261109
+          ref: fix/inline-official-policy-documents-worker-20261109
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -43,12 +43,13 @@ jobs:
       - name: Check bundled standalone Privacy and Terms documents
         run: |
           set -euo pipefail
-          test -s dist/privacy-document.txt
-          test -s dist/terms-document.txt
-          grep -Fq '<h1>Privacy Notice</h1>' dist/privacy-document.txt
-          grep -Fq '<h1>Terms of Service</h1>' dist/terms-document.txt
-          grep -Fq 'support@traydaq.com' dist/privacy-document.txt
-          grep -Fq 'support@traydaq.com' dist/terms-document.txt
+          test -s dist/privacy/index.html
+          test -s dist/terms/index.html
+          grep -Fq '<h1>Privacy Notice</h1>' dist/privacy/index.html
+          grep -Fq '<h1>Terms of Service</h1>' dist/terms/index.html
+          grep -Fq 'support@traydaq.com' dist/privacy/index.html
+          grep -Fq 'support@traydaq.com' dist/terms/index.html
+          grep -Fq 'PUBLIC_POLICY_HTML' worker/publicPolicyDocuments.js
           test -s dist/traydaq-owner-gideon-manu-appiah-fenyi-friempong-hd.webp
           echo "PASS: Cloudflare build contains full legal documents and owner portrait"
 

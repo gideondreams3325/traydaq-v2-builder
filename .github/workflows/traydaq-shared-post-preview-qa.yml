@@ -1,0 +1,54 @@
+name: TRAYDAQ shared post previews - private V2 source QA (No APK)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/traydaq-shared-post-preview-qa.yml'
+permissions:
+  contents: read
+jobs:
+  preview-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - name: Checkout TRAYDAQ V2 private fix branch using read-only credential
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fix/shared-post-media-preview-20261109
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { echo 'Private source dependency install failed'; exit 1; }
+      - name: Check Worker JavaScript syntax and focused share previews
+        run: |
+          node --check worker/publicSearch.js
+          node --check worker/seo.js
+          node --test tests/shared-post-link-preview.test.mjs tests/google-public-indexing.test.mjs > "$RUNNER_TEMP/preview-tests.log" 2>&1 || {
+            echo 'Share preview tests failed'
+            grep -E '^not ok [0-9]+|^# (tests|pass|fail) ' "$RUNNER_TEMP/preview-tests.log" | tail -20 || true
+            exit 1
+          }
+      - name: All web regression tests
+        run: npm test > "$RUNNER_TEMP/web-tests.log" 2>&1 || { echo 'Web regression tests failed'; grep -E '^not ok [0-9]+|^# (tests|pass|fail) ' "$RUNNER_TEMP/web-tests.log" | tail -25 || true; exit 1; }
+      - name: Website TypeScript
+        run: npm run typecheck > "$RUNNER_TEMP/types.log" 2>&1 || { echo 'Website TypeScript failed'; exit 1; }
+      - name: Cloudflare web asset build only
+        run: npm run build > "$RUNNER_TEMP/build.log" 2>&1 || { echo 'Cloudflare production asset build failed'; exit 1; }
+      - name: Show safe test totals
+        if: success()
+        run: |
+          grep -E '^# (tests|pass|fail) ' "$RUNNER_TEMP/preview-tests.log" | tail -3
+          grep -E '^# (tests|pass|fail) ' "$RUNNER_TEMP/web-tests.log" | tail -3
+          echo 'Source-only preview checks passed. No deployment or APK/AAB build.'

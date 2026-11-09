@@ -1,0 +1,58 @@
+name: TRAYDAQ Staff official branding source validation (No APK)
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/staff-official-logo-source-qa.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  staff-iphone-branding:
+    name: Validate private iPhone Staff branding (source only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout exact private Staff branding candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 5ed031d4dec61894da8805853d8a4dd1fcf4dbae
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install locked dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Check Staff TypeScript and privacy/branding tests
+        working-directory: private-src
+        run: |
+          npm run typecheck:staff
+          node --test tests/staff-iphone-pwa.test.mjs tests/staff-account-directory-security.test.mjs tests/staff-iphone-notification-insights.test.mjs
+      - name: Build isolated iPhone Staff PWA
+        working-directory: private-src
+        run: |
+          npm run build:staff
+          test -s dist-staff/index.html
+          test -s dist-staff/manifest.webmanifest
+          test -s dist-staff/staff-icon.png
+          test -s dist-staff/traydaq-staff-official.webp
+          node --input-type=module - <<'NODE'
+          import {readFileSync} from 'node:fs';
+          const manifest=JSON.parse(readFileSync('dist-staff/manifest.webmanifest','utf8'));
+          const icons=manifest.icons.map(x=>x.src);
+          if(!icons.includes('./staff-icon.png')||!icons.includes('./traydaq-staff-official.webp'))
+            throw Error('Official TRAYDAQ STAFF PWA icons missing');
+          const html=readFileSync('dist-staff/index.html','utf8');
+          if(!html.includes('staff-icon.png')||html.includes('href="./staff-icon.svg"'))
+            throw Error('Legacy Staff icon used');
+          console.log('Official Staff brand assets and PWA manifest passed');
+          NODE
+          echo 'All checks are source-only. No APK, AAB or deployment was triggered.'

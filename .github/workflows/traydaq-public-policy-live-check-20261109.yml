@@ -1,0 +1,61 @@
+name: TRAYDAQ Public Privacy and Terms Live Check (Read Only)
+# Independent production check. No credentials, deployment or app builds.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/traydaq-public-policy-live-check-20261109.yml
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Check that the existing official documents are actually live
+        shell: bash
+        run: |
+          set -euo pipefail
+          complete=0
+          for attempt in 1 2 3 4 5 6 7 8; do
+            echo "Live policy verification attempt $attempt"
+            complete=1
+            for slug in privacy terms; do
+              body="$(mktemp)"
+              headers="$(mktemp)"
+              status="$(curl -sSL --retry 1 --max-time 20 -A 'Mozilla/5.0 (compatible; TRAYDAQ-Public-Policy-Audit/1.0)' -D "$headers" -o "$body" -w '%{http_code}' "https://traydaq.com/$slug/?policy-audit=$attempt" || true)"
+              echo "$slug HTTP $status"
+              if [ "$status" != 200 ]; then
+                echo "ERROR: $slug is not HTTP 200"
+                complete=0
+              elif ! grep -Fq "<h1>$( [ "$slug" = privacy ] && echo 'Privacy Notice' || echo 'Terms of Service' )</h1>" "$body"; then
+                echo "ERROR: $slug returned an app shell or public-content fallback instead of its full policy"
+                complete=0
+              elif ! grep -Fq 'support@traydaq.com' "$body"; then
+                echo "ERROR: $slug official policy text missing"
+                complete=0
+              elif ! grep -Fq 'Version 2026-11-05' "$body"; then
+                echo "ERROR: $slug old or unexpected policy edition"
+                complete=0
+              else
+                sections="$(grep -o 'class="policy-section"' "$body" | wc -l | tr -d ' ')"
+                expected="$( [ "$slug" = privacy ] && echo 14 || echo 17 )"
+                echo "$slug sections=$sections expected=$expected"
+                if [ "$sections" != "$expected" ]; then
+                  echo "ERROR: $slug does not contain the full original policy"
+                  complete=0
+                else
+                  echo "PASS: $slug serves the existing app policy"
+                fi
+              fi
+              rm -f "$body" "$headers"
+            done
+            if [ "$complete" = 1 ]; then
+              echo "PASS: Both existing TRAYDAQ Privacy and Terms are published and readable."
+              exit 0
+            fi
+            if [ "$attempt" != 8 ]; then sleep 15; fi
+          done
+          echo "::error::Live Cloudflare policy routes still do not serve the original approved documents. Verify customer Worker Git build/deployment for traydaq-v2."
+          exit 1

@@ -1,0 +1,53 @@
+name: TRAYDAQ multi-content link previews - live Cloudflare smoke (No APK)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/traydaq-multi-share-cloudflare-smoke.yml'
+permissions:
+  contents: read
+jobs:
+  live-og:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Verify real live product, job, professional service and store Open Graph cards
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import html,urllib.parse,urllib.request,time
+          host='https://traydaq.com/'
+          cases=[
+           ('product','afe0e772-ddbc-4aa7-a508-a88279fba79a'),
+           ('job','a63f6a00-60d0-4d42-ab1f-ad6277fd6ecf'),
+           ('service','13659b59-6244-477d-a153-4c03c04db9a1'),
+           ('store','ec4067bf-488b-48ac-9f43-50faa0ca79e0'),
+           ('post','0f0c1098-aab1-40b8-b1d3-d2a08e81ac85')
+          ]
+          def get(url):
+            req=urllib.request.Request(url,headers={'User-Agent':'WhatsApp/2.24.10.78 A'})
+            with urllib.request.urlopen(req,timeout=25) as r:
+              return r.status,r.headers.get('content-type',''),r.read(150000).decode('utf-8','replace')
+          for name,id in cases:
+            target=host+'?'+urllib.parse.urlencode({name:id})
+            result,ctype,page=get(target)
+            if result!=200 or 'text/html' not in ctype:
+              raise ValueError('Cannot load shared '+name)
+            if 'property="og:image" content="https://traydaq.com/traydaq-logo.png"' in page:
+              raise ValueError('Still using generic logo for '+name)
+            if 'property="og:image" content="https://' not in page or
+               'name="twitter:card" content="summary_large_image"' not in page:
+              raise ValueError('Actual published media preview missing for '+name)
+            print('PASS: live shared '+name+' uses its approved media')
+          for kind,id in [('products','afe0e772-ddbc-4aa7-a508-a88279fba79a'),
+                          ('services','13659b59-6244-477d-a153-4c03c04db9a1'),
+                          ('stores','ec4067bf-488b-48ac-9f43-50faa0ca79e0')]:
+            status,_,page=get(host+'discover/'+kind+'/'+id)
+            if status!=200 or 'og:image' not in page:raise ValueError('Unusable '+kind+' discovery page')
+            print('PASS: '+kind+' discovery page includes approved media')
+          with urllib.request.urlopen(host+'traydaq-music-logo.webp',timeout=25) as r:
+            raw=r.read(16)
+            if raw[:4]!=b'RIFF' or raw[8:12]!=b'WEBP':raise ValueError('Official TRAYDAQ Music asset not served')
+          print('PASS: official TRAYDAQ Music logo available on production.')
+          PY

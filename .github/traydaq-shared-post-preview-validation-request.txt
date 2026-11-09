@@ -14,3 +14,5 @@ Retry validation using simplified existing V2 builder job.
 2026-11-09: Retry after legacy SEO compatibility fallback and web Share buttons for jobs/events/products/services/stores/music. Verify 23+ focused, 900+ web tests, web/mobile TypeScript, and no app binary creation.
 
 2026-11-09: Final run for feat/approved-share-cards-music-player-20261109 including Open in TRAYDAQ Music loop prevention, official logo asset verification, and all web share controls. Full unit suite, web TS, native TS, Cloudflare build. No APK/AAB.
+
+2026-11-09: Final canonical polish: approved stores canonical /discover/stores/ID, TRAYDAQ Music official logo fallback on songs with no cover, plus two regression tests. Rerun complete web/native TypeScript and Cloudflare source-only QA. No APK/AAB.

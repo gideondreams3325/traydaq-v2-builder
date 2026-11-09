@@ -40,3 +40,15 @@ jobs:
         run: npm run typecheck
       - name: Build Cloudflare site with SEO output validation (no Android builds)
         run: npm run build
+      - name: Check bundled standalone Privacy and Terms documents
+        run: |
+          set -euo pipefail
+          test -s dist/privacy-document.html
+          test -s dist/terms-document.html
+          grep -Fq '<h1>Privacy Notice</h1>' dist/privacy-document.html
+          grep -Fq '<h1>Terms of Service</h1>' dist/terms-document.html
+          grep -Fq 'support@traydaq.com' dist/privacy-document.html
+          grep -Fq 'support@traydaq.com' dist/terms-document.html
+          test -s dist/traydaq-owner-gideon-manu-appiah-fenyi-friempong.webp
+          echo "PASS: Cloudflare build contains full legal documents and owner portrait"
+

@@ -4,3 +4,6 @@ Use only staff-iphone-cloudflare-release.yml with isolated Cloudflare Pages proj
 Do not deploy traydaq.com user app, change staff.traydaq.com DNS, build customer APK/AAB, or expose private staff data.
 
 SECOND ATTEMPT — 2026-11-04: Package the validated iPhone Staff PWA as a release artifact; then deploy only if Cloudflare credentials exist. Current builder configuration has no API token or account ID. Do not touch customer app or existing custom DNS.
+
+OWNER-AUTHORIZED NEW STAFF RELEASE — 2026-11-09 18:31 UTC
+Run only staff-iphone-cloudflare-release.yml for approved merged source fb767bd72f7241ec696f0a5d5382b08d2c8f205c. Build Staff iPhone PWA, keep Staff Cloudflare Pages isolated. No customer site release, no customer APK/AAB, no custom DNS edit, no private data exposure. Verify tests and publication before reporting success.

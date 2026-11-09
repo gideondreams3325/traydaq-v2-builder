@@ -51,3 +51,5 @@ jobs:
             if raw[:4]!=b'RIFF' or raw[8:12]!=b'WEBP':raise ValueError('Official TRAYDAQ Music asset not served')
           print('PASS: official TRAYDAQ Music logo available on production.')
           PY
+
+# Post-deploy verification: existing customer traydaq-v2 Worker build 72cfdec3 passed.

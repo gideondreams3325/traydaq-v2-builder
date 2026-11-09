@@ -36,3 +36,5 @@ jobs:
         run: python3 .github/scripts/traydaq_shared_post_poster.py
 
 # No Android build, APK/AAB, application release, or credentials.
+
+# Source-only preview service now active; run public video poster check after rollout.

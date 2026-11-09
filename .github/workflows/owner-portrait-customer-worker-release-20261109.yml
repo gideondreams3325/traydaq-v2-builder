@@ -23,14 +23,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 781a798011749f9265b9dc92b9164b961a643917
+          ref: f86cac81391ecc4d6a32bdf78fd94b61f792c6f3
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
       - name: Confirm fixed source and customer Worker target
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "781a798011749f9265b9dc92b9164b961a643917"
+          test "$(git rev-parse HEAD)" = "f86cac81391ecc4d6a32bdf78fd94b61f792c6f3"
           node --input-type=module -e "
             import {readFileSync} from 'node:fs';
             const c=JSON.parse(readFileSync('wrangler.jsonc','utf8'));
@@ -51,15 +51,19 @@ jobs:
         run: |
           node --input-type=module -e "
             import {readFileSync,existsSync} from 'node:fs';
-            const file='dist/traydaq-owner-gideon-manu-appiah-fenyi-friempong.webp';
+            const file='dist/traydaq-owner-gideon-manu-appiah-fenyi-friempong-hd.webp';
             if(!existsSync(file))throw Error('Owner portrait missing from build');
             const b=readFileSync(file);
-            if(b.length<5000||b.toString('ascii',0,4)!=='RIFF'||b.toString('ascii',8,12)!=='WEBP')throw Error('Invalid owner portrait asset');
+            if(b.length<100000||b.toString('ascii',0,4)!=='RIFF'||b.toString('ascii',8,12)!=='WEBP')throw Error('Invalid owner portrait asset');
             for(const page of ['dist/about/index.html','dist/ownership/index.html']) {
               if(!readFileSync(page,'utf8').includes('GIDEON MANU APPIAH FENYI FRIEMPONG'))throw Error('Owner name missing from '+page);
             }
             console.log('PASS: owner portrait asset, About and Ownership included in Cloudflare build');
           "
+          test -s dist/privacy-document.html
+          test -s dist/terms-document.html
+          grep -Fq '<h1>Privacy Notice</h1>' dist/privacy-document.html
+          grep -Fq '<h1>Terms of Service</h1>' dist/terms-document.html
           node scripts/verify-public-search-output.mjs dist
       - name: Verify credentials and read-only existing Worker access; fail closed
         env:
@@ -77,4 +81,4 @@ jobs:
           wranglerVersion: 4.156.2
           command: deploy --config wrangler.jsonc
       - name: Confirm exact authorized website release
-        run: echo 'Customer traydaq-v2 Worker deployed from approved commit 781a798011749f9265b9dc92b9164b961a643917. No staff/legal Worker or Android app deployed.'
+        run: echo 'Customer traydaq-v2 Worker deployed from approved commit f86cac81391ecc4d6a32bdf78fd94b61f792c6f3. No staff/legal Worker or Android app deployed.'

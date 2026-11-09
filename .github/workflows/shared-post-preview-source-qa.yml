@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: fix/public-video-poster-deletion-tracking-20261109
+          ref: feat/approved-share-cards-music-player-20261109
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -29,11 +29,17 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Check share metadata source
         run: node --check worker/seo.js && node --check worker/publicSearch.js
-      - name: Test public link previews
-        run: node --test tests/shared-post-link-preview.test.mjs tests/google-public-indexing.test.mjs
+      - name: Test all content share cards and official TRAYDAQ Music player
+        run: node --test tests/all-content-shared-previews.test.mjs tests/shared-post-link-preview.test.mjs tests/google-public-indexing.test.mjs
+      - name: Check native Android share-link regressions
+        run: node --test mobile/tests/verified-content-links.test.mjs
       - name: All web tests
         run: npm test
       - name: Web typecheck
         run: npm run typecheck
       - name: Web build without deployment
         run: npm run build
+      - name: Install Android TypeScript dependencies (no APK/AAB)
+        run: npm ci --prefix mobile --no-audit --no-fund
+      - name: Android TypeScript verification only (no APK/AAB)
+        run: npm --prefix mobile run typecheck

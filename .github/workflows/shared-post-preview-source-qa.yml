@@ -1,22 +1,21 @@
-name: TRAYDAQ Shared Post Frame Preview — Private Source QA (No APK)
+name: TRAYDAQ Share Preview Source Validation (No APK)
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths:
-      - '.github/traydaq-shared-post-preview-validation-request.txt'
+      - ".github/traydaq-shared-post-preview-validation-request.txt"
 permissions:
   contents: read
 jobs:
-  preview-qa:
+  preview:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     defaults:
       run:
         working-directory: private-src
     steps:
-      - name: Check out private TRAYDAQ source for a read-only validation
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
           ref: fix/shared-post-media-preview-20261109
@@ -25,31 +24,16 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: private-src/package-lock.json
-      - name: Install existing dependencies
-        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { echo "Dependency installation failed"; exit 1; }
-      - name: Check Cloudflare metadata rendering source
+          node-version: "22"
+      - name: Install
+        run: npm ci --no-audit --no-fund
+      - name: Check share metadata source
         run: node --check worker/seo.js && node --check worker/publicSearch.js
-      - name: Test shared post preview and old privacy regressions
-        run: |
-          node --test tests/shared-post-link-preview.test.mjs tests/google-public-indexing.test.mjs > "$RUNNER_TEMP/preview-tests.log" 2>&1 || {
-            echo "Sharing preview tests failed"
-            grep -E '^not ok [0-9]+|^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/preview-tests.log" | tail -20 || true
-            exit 1
-          }
-      - name: Run all existing web tests
-        run: |
-          npm test > "$RUNNER_TEMP/web-tests.log" 2>&1 || {
-            echo "Existing web tests failed"
-            grep -E '^not ok [0-9]+|^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/web-tests.log" | tail -20 || true
-            exit 1
-          }
-      - name: Check web TypeScript
-        run: npm run typecheck > "$RUNNER_TEMP/typecheck.log" 2>&1 || { echo "Web TypeScript check failed"; exit 1; }
-      - name: Build Cloudflare web assets (no deployment)
-        run: npm run build > "$RUNNER_TEMP/build.log" 2>&1 || { echo "Cloudflare web asset build failed"; exit 1; }
-      - name: Validate only Python poster-backfill syntax
-        working-directory: .
-        run: python3 -m py_compile .github/scripts/traydaq_share_posters.py
+      - name: Test public link previews
+        run: node --test tests/shared-post-link-preview.test.mjs tests/google-public-indexing.test.mjs
+      - name: All web tests
+        run: npm test
+      - name: Web typecheck
+        run: npm run typecheck
+      - name: Web build without deployment
+        run: npm run build

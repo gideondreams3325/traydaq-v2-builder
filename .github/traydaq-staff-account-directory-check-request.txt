@@ -7,3 +7,6 @@ Rerun 2026-11-04 after preserving existing iPhone native-private-evidence contra
 
 TRAYDAQ STAFF NEW RELEASE PRE-FLIGHT — 2026-11-09 18:25 UTC
 Validate latest private main iPhone Staff role, voice, directory, native-only security and PWA; separately validate Staff Android branch feat/standalone-admin-native (ancestor of main). No APK/AAB or deployment in this source QA step.
+
+FINAL RELEASE VALIDATION — 2026-11-09 18:35 UTC
+Source main 0548a77ec99fe7371b775b722fcf4b443795a726 includes verified Android 1.0.18 code 21 and aligned source tests. Re-run BOTH Android/iPhone staff source checks. No APK/AAB production in this QA workflow.

@@ -10,3 +10,5 @@ Retry validation using simplified existing V2 builder job.
 2026-11-09: Validate approved-video JPG poster lifecycle tracking fix branch fix/public-video-poster-deletion-tracking-20261109, including new public-post-preview-erasure regression tests; no app build/deploy.
 
 2026-11-09: Verify branch feat/approved-share-cards-music-player-20261109: native products/jobs/services/stores/music/events, server Open Graph cards, official TRAYDAQ Music player with 30s preview; all web + Android TypeScript and both share suites. Source-only, NO APK/AAB or deployments.
+
+2026-11-09: Retry after legacy SEO compatibility fallback and web Share buttons for jobs/events/products/services/stores/music. Verify 23+ focused, 900+ web tests, web/mobile TypeScript, and no app binary creation.

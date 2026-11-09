@@ -4,3 +4,5 @@ Run complete web tests, public indexing tests, TypeScript, and Cloudflare asset 
 Do not deploy anything and do not build APK/AAB or touch Play Store.
 
 Retry validation using simplified existing V2 builder job.
+
+2026-11-09 final verified Edge OIDC workflow identity + approved-only poster source. Revalidate private fix branch; source checks only, no deploy or APK/AAB.

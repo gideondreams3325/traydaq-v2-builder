@@ -1,0 +1,36 @@
+name: TRAYDAQ shared video link card — live Cloudflare smoke check
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/traydaq-shared-post-live-preview-smoke.yml'
+permissions:
+  contents: read
+jobs:
+  live-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Verify shared public post shows its own generated JPEG on production
+        shell: bash
+        run: |
+          set -euo pipefail
+          POST_ID='0f0c1098-aab1-40b8-b1d3-d2a08e81ac85'
+          URL="https://traydaq.com/?post=$POST_ID&preview=2"
+          TARGET="$RUNNER_TEMP/traydaq-shared-post-preview.html"
+          curl -fLSs --max-time 25 --retry 2 -o "$TARGET" "$URL"
+          if ! grep -Fq 'og:image" content="https://qpcsruhwqhniprakpoox.supabase.co/storage/v1/object/public/traydaq-native-creator-public/0f0c1098-aab1-40b8-b1d3-d2a08e81ac85/share-poster.jpg"' "$TARGET"; then
+            echo 'ERROR: Live shared post link is not advertising its video frame.'
+            exit 1
+          fi
+          if ! grep -Fq 'name="twitter:card" content="summary_large_image"' "$TARGET"; then
+            echo 'ERROR: Large preview card metadata is missing.'
+            exit 1
+          fi
+          if grep -Fq 'og:image" content="https://traydaq.com/traydaq-logo.png"' "$TARGET"; then
+            echo 'ERROR: Shared post is still advertising the generic logo.'
+            exit 1
+          fi
+          echo 'PASS: production Cloudflare shares the actual approved video frame, not the TRAYDAQ logo.'
+# Read-only HTTP verification. No app build, APK/AAB, secret, or deployment.

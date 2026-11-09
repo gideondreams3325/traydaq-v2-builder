@@ -12,12 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:
-      - name: Verify shared public post shows its own generated JPEG on production
+      - name: Verify the exact link shared by existing Android apps shows its video poster
         shell: bash
         run: |
           set -euo pipefail
           POST_ID='0f0c1098-aab1-40b8-b1d3-d2a08e81ac85'
-          URL="https://traydaq.com/?post=$POST_ID&preview=2"
+          URL="https://traydaq.com/?post=$POST_ID"
           TARGET="$RUNNER_TEMP/traydaq-shared-post-preview.html"
           curl -fLSs --max-time 25 --retry 2 -o "$TARGET" "$URL"
           if ! grep -Fq 'og:image" content="https://qpcsruhwqhniprakpoox.supabase.co/storage/v1/object/public/traydaq-native-creator-public/0f0c1098-aab1-40b8-b1d3-d2a08e81ac85/share-poster.jpg"' "$TARGET"; then

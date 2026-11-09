@@ -36,8 +36,8 @@ jobs:
               raise ValueError('Cannot load shared '+name)
             if 'property="og:image" content="https://traydaq.com/traydaq-logo.png"' in page:
               raise ValueError('Still using generic logo for '+name)
-            if 'property="og:image" content="https://' not in page or
-               'name="twitter:card" content="summary_large_image"' not in page:
+            if ('property="og:image" content="https://' not in page or
+                'name="twitter:card" content="summary_large_image"' not in page):
               raise ValueError('Actual published media preview missing for '+name)
             print('PASS: live shared '+name+' uses its approved media')
           for kind,id in [('products','afe0e772-ddbc-4aa7-a508-a88279fba79a'),

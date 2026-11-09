@@ -68,7 +68,7 @@ jobs:
           from html.parser import HTMLParser
           photo='https://traydaq.com/traydaq-owner-gideon-manu-appiah-fenyi-friempong.webp'
           for page in ['/ownership/','/about/']:
-              with urllib.request.urlopen('https://traydaq.com'+page,timeout=25) as page_response:
+              with urllib.request.urlopen(urllib.request.Request('https://traydaq.com'+page,headers={'User-Agent':'Mozilla/5.0 (compatible; TRAYDAQ-SEO-ReadOnly-Audit/1.0)'}),timeout=25) as page_response:
                   current_html=page_response.read().decode('utf-8','replace')
               print('LIVE CONTENT '+page+': portrait reference='+str('/traydaq-owner-gideon-manu-appiah-fenyi-friempong.webp' in current_html))
           req=urllib.request.Request(photo,headers={'User-Agent':'TRAYDAQ-Portrait-Audit/1.0'})
@@ -81,7 +81,7 @@ jobs:
           assert 'image/webp' in ctype,(ctype,photo)
           assert len(binary)>5000 and binary[:4]==b'RIFF' and binary[8:12]==b'WEBP','File is not a real WebP portrait'
           for page in ['/ownership/','/about/']:
-              with urllib.request.urlopen('https://traydaq.com'+page,timeout=25) as response:
+              with urllib.request.urlopen(urllib.request.Request('https://traydaq.com'+page,headers={'User-Agent':'Mozilla/5.0 (compatible; TRAYDAQ-SEO-ReadOnly-Audit/1.0)'}),timeout=25) as response:
                   html=response.read().decode('utf-8','replace')
               assert '/traydaq-owner-gideon-manu-appiah-fenyi-friempong.webp' in html,'Visible portrait URL missing on '+page
               marker='<script type="application/ld+json">'

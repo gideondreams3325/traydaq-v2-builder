@@ -95,6 +95,26 @@ jobs:
               print('PASS: owner portrait image and Person JSON-LD on '+page)
           print(f'PASS: official portrait HTTP {code}, {ctype}, {len(binary)} bytes')
           PY
+      - name: Verify full Privacy and Terms documents on production customer site
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import urllib.request
+          for slug,title in [('privacy','Privacy Notice'),('terms','Terms of Service')]:
+              for variant in ['/'+slug,'/'+slug+'/']:
+                  req=urllib.request.Request('https://traydaq.com'+variant,headers={'User-Agent':'Mozilla/5.0 (compatible; TRAYDAQ-SEO-ReadOnly-Audit/1.0)'})
+                  with urllib.request.urlopen(req,timeout=25) as resp:
+                      body=resp.read().decode('utf-8','replace')
+                      code=resp.status
+                      ctype=resp.headers.get('Content-Type','')
+                  assert code==200,(variant,code)
+                  assert 'text/html' in ctype,(variant,ctype)
+                  assert '<h1>'+title+'</h1>' in body,variant+' returned SPA or wrong document instead of '+title
+                  assert 'support@traydaq.com' in body,variant+' missing policy contact'
+                  assert '<div id="root">' not in body,variant+' returned app shell'
+                  print('PASS: '+variant+' serves full '+title+' HTML')
+          PY
       - name: Inspect live sitemap XML, robots rules and owner lastmod
         shell: bash
         run: |

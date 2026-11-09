@@ -1,0 +1,75 @@
+name: TRAYDAQ approved multi-share cards - existing Cloudflare customer Worker only
+# Owner-authorized release of main 3bc9...; never deploy staff/legal, APK/AAB, DNS or Pages.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/traydaq-multi-share-customer-worker-release.yml'
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-v2-customer-worker-only-shared-cards
+  cancel-in-progress: false
+jobs:
+  deploy-verified-customer-worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - name: Checkout exact merged TRAYDAQ V2 website source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 3bc9efeae5a539b4a571de95082bac84e095b848
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Confirm exact authorized main SHA and existing customer Worker target
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "3bc9efeae5a539b4a571de95082bac84e095b848"
+          node --input-type=module -e "
+            import {readFileSync} from 'node:fs';
+            const c=JSON.parse(readFileSync('wrangler.jsonc','utf8'));
+            if(c.name!=='traydaq-v2'||c.main!=='./worker/seo.js'||
+              c.assets?.directory!=='./dist'||!c.assets?.run_worker_first?.includes('/'))
+              throw Error('Not the original TRAYDAQ V2 customer Worker');
+            if(!readFileSync('worker/seo.js','utf8').includes('renderMusicSharePlayer'))
+              throw Error('Reviewed shared music player not in source');
+          "
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify public sharing regression tests
+        run: node --test tests/all-content-shared-previews.test.mjs tests/shared-post-link-preview.test.mjs tests/google-public-indexing.test.mjs
+      - name: Verify entire web app
+        run: npm test && npm run typecheck && npm run build
+      - name: Verify official music branding in deployable assets
+        run: |
+          test -s dist/traydaq-music-logo.webp
+          node scripts/verify-public-search-output.mjs dist
+      - name: Authenticate only to existing customer Cloudflare Worker (read-only)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          node scripts/verify-existing-customer-worker.mjs
+      - name: Deploy only TRAYDAQ existing customer Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          workingDirectory: private-src
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: 4.156.2
+          command: deploy --config wrangler.jsonc
+      - name: Report only verified production deploy
+        if: success()
+        run: echo "Existing traydaq-v2 customer Worker was deployed at source 3bc9efeae5a539b4a571de95082bac84e095b848. No APK/AAB or staff/legal Worker changes."

@@ -1,0 +1,4 @@
+Source-only validation for TRAYDAQ shared-post video/photo Open Graph cards.
+Private branch: fix/shared-post-media-preview-20261109
+Run complete web tests, public indexing tests, TypeScript, and Cloudflare asset build.
+Do not deploy anything and do not build APK/AAB or touch Play Store.

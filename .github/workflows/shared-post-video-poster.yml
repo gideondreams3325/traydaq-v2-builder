@@ -38,3 +38,5 @@ jobs:
 # No Android build, APK/AAB, application release, or credentials.
 
 # Source-only preview service now active; run public video poster check after rollout.
+
+# Retry after approved-only Supabase preview function v2 safely records each poster for deletion.

@@ -1,0 +1,38 @@
+name: TRAYDAQ approved post video share preview frames (No APK)
+
+# Extracts a still frame only from already-approved, public MP4 posts.
+# The private TRAYDAQ source is never checked out or copied into this repo.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/shared-post-video-poster.yml'
+  schedule:
+    - cron: '17,47 * * * *'
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: traydaq-public-post-frame-generation
+  cancel-in-progress: false
+
+jobs:
+  public-video-frame:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout public TRAYDAQ builder scripts (not private app source)
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check ffmpeg availability
+        run: |
+          command -v ffmpeg >/dev/null
+          command -v ffprobe >/dev/null
+      - name: Create still frames for reviewed public posts only
+        run: python3 .github/scripts/traydaq_shared_post_poster.py
+
+# No Android build, APK/AAB, application release, or credentials.

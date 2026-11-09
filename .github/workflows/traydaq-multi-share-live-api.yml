@@ -1,0 +1,48 @@
+name: TRAYDAQ multi-content share previews - live approved-only API (No APK)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/traydaq-multi-share-live-api.yml'
+permissions:
+  contents: read
+jobs:
+  public-share-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Validate actual approved product, job, service and store previews
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json,urllib.parse,urllib.request,urllib.error
+          host='https://qpcsruhwqhniprakpoox.supabase.co/functions/v1/firebase-public-share-preview'
+          published=[
+            ('products','afe0e772-ddbc-4aa7-a508-a88279fba79a'),
+            ('jobs','a63f6a00-60d0-4d42-ab1f-ad6277fd6ecf'),
+            ('services','13659b59-6244-477d-a153-4c03c04db9a1'),
+            ('stores','ec4067bf-488b-48ac-9f43-50faa0ca79e0')
+          ]
+          def fetch(kind,id):
+            url=host+'?'+urllib.parse.urlencode(dict(kind=kind,id=id))
+            try:
+              with urllib.request.urlopen(url,timeout=20) as res:
+                return res.status,json.loads(res.read())
+            except urllib.error.HTTPError as error:
+              return error.code,json.loads(error.read())
+          for kind,id in published:
+            status,item=fetch(kind,id)
+            if status!=200 or item.get('id')!=id or item.get('kind')!=kind or not item.get('title'):
+              raise ValueError('Approved '+kind+' share metadata not available')
+            url=item.get('imageUrl','')
+            if url and not (url.startswith('https://') and 'token=' not in url.lower()):
+              raise ValueError('Unsafe publicly shared image URL')
+            for disallowed in ['author_email','contact','audio_path','cover_path','identityDocument','verification']:
+              if disallowed in item:raise ValueError('Unexpected private share metadata')
+            print('PASS: approved '+kind+' exact-ID card')
+          for kind in ['music','products','services','events']:
+            status,_=fetch(kind,'11111111-2222-4333-8444-555555555555')
+            if status!=404:raise ValueError('Unavailable '+kind+' must not expose content')
+          print('PASS: unpublished/missing records are not public; no APK/AAB or deployment.')
+          PY

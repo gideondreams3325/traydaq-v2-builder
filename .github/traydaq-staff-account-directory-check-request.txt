@@ -4,3 +4,6 @@ Private refs: feat/staff-account-directory-20261104, feat/staff-account-director
 No APK, AAB, deployments or account enforcement.
 
 Rerun 2026-11-04 after preserving existing iPhone native-private-evidence contract wording.
+
+TRAYDAQ STAFF NEW RELEASE PRE-FLIGHT — 2026-11-09 18:25 UTC
+Validate latest private main iPhone Staff role, voice, directory, native-only security and PWA; separately validate Staff Android branch feat/standalone-admin-native (ancestor of main). No APK/AAB or deployment in this source QA step.

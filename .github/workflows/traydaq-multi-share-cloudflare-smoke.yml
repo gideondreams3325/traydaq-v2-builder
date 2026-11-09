@@ -46,9 +46,18 @@ jobs:
             status,_,page=get(host+'discover/'+kind+'/'+id)
             if status!=200 or 'og:image' not in page:raise ValueError('Unusable '+kind+' discovery page')
             print('PASS: '+kind+' discovery page includes approved media')
-          with urllib.request.urlopen(host+'traydaq-music-logo.webp',timeout=25) as r:
-            raw=r.read(16)
-            if raw[:4]!=b'RIFF' or raw[8:12]!=b'WEBP':raise ValueError('Official TRAYDAQ Music asset not served')
+          image_request=urllib.request.Request(host+'traydaq-music-logo.webp',headers={
+            'User-Agent':'Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36 Chrome/126.0 Mobile Safari/537.36',
+            'Accept':'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+            'Referer':'https://traydaq.com/?music=11111111-2222-4333-8444-555555555555'
+          })
+          try:
+            with urllib.request.urlopen(image_request,timeout=25) as r:
+              raw=r.read(16)
+              if raw[:4]!=b'RIFF' or raw[8:12]!=b'WEBP':
+                raise ValueError('Official TRAYDAQ Music asset was not delivered as WebP')
+          except urllib.error.HTTPError as error:
+            raise ValueError('Official music logo blocked over HTTPS (HTTP '+str(error.code)+')') from None
           print('PASS: official TRAYDAQ Music logo available on production.')
           PY
 

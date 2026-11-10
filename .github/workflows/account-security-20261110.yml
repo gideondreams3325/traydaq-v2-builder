@@ -1,0 +1,47 @@
+name: Account security source validation
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/account-security-20261110.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: account-security-20261110
+  cancel-in-progress: true
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: c929e912f6887cc77103b961c1701203622c46d1
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install private source dependencies
+        run: |
+          npm ci --no-audit --no-fund >/tmp/account-security-install.log 2>&1 || { echo "::error::Dependency installation failed; private logs suppressed."; exit 1; }
+      - name: Check web and iPhone staff types
+        run: |
+          npm run typecheck >/tmp/account-security-types.log 2>&1 && npm run typecheck:staff >>/tmp/account-security-types.log 2>&1 || { echo "::error::Typecheck failed; private logs suppressed."; exit 1; }
+      - name: Verify cryptography and database protections
+        run: |
+          node --test tests/account-security-crypto.test.mjs tests/account-security-database.test.mjs >/tmp/account-security-tests.log 2>&1 || { echo "::error::Cryptographic or database verification failed."; exit 1; }
+          echo "Passed passkey registration, authentication, phishing/replay rejection, RLS and erasure inventory checks."
+      - name: Run all root tests and Cloudflare build
+        run: |
+          npm run check >/tmp/account-security-check.log 2>&1 || { echo "::error::Existing root checks or Cloudflare build failed; private source logs suppressed."; exit 1; }
+      - name: Typecheck native user source without building an app
+        working-directory: mobile
+        run: |
+          npm ci --no-audit --no-fund >/tmp/account-security-mobile-install.log 2>&1 || { echo "::error::Native dependency installation failed."; exit 1; }
+          npm run typecheck >/tmp/account-security-mobile-types.log 2>&1 || { echo "::error::Native source typecheck failed; private logs suppressed."; exit 1; }
+      - name: Confirm validation scope
+        run: |
+          echo "Validated source c929e912f6887cc77103b961c1701203622c46d1. No APK, AAB, native build, deployment or release requested."

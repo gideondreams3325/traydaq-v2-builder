@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 env:
-  PRIVATE_SOURCE_SHA: 2fba75cb1e75d84ad3f19cf1daa844f3300c1061
+  PRIVATE_SOURCE_SHA: feat/instant-engagement-all-sections-20261110
 jobs:
   web:
     runs-on: ubuntu-latest
@@ -23,7 +23,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Test immediate web music reactions and full web build
+      - name: Test all instant web content reactions and full web build
         shell: bash
         working-directory: private-src
         run: |
@@ -48,7 +48,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Test For You Music Jobs Events immediate reactions and Android export
+      - name: Test instant Android post product service music job event reactions and Android export
         shell: bash
         working-directory: private-src/mobile
         env:

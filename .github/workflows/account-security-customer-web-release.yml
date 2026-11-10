@@ -1,0 +1,57 @@
+name: Account security - existing TRAYDAQ Cloudflare web
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/account-security-customer-web-release.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-v2-customer-worker-account-security
+  cancel-in-progress: false
+jobs:
+  deploy-existing-customer-worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 02d94dad3cc353470b5aa576429b7a406c9a982c
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Confirm exact merged source and original customer Worker
+        run: |
+          test "$(git rev-parse HEAD)" = "02d94dad3cc353470b5aa576429b7a406c9a982c"
+          node --input-type=module -e "import {readFileSync} from 'node:fs';const c=JSON.parse(readFileSync('wrangler.jsonc','utf8'));if(c.name!=='traydaq-v2'||c.main!=='./worker/seo.js'||c.assets?.directory!=='./dist')throw Error('Unexpected Cloudflare target');"
+      - name: Install locked source dependencies
+        run: |
+          npm ci --no-audit --no-fund >/tmp/security-web-install.log 2>&1 || { echo "::error::Dependency installation failed; private logs suppressed."; exit 1; }
+      - name: Validate entire web source and build Cloudflare assets
+        run: |
+          npm run check >/tmp/security-web-check.log 2>&1 || { echo "::error::Web validation failed; private logs suppressed."; exit 1; }
+          npm run typecheck:staff >/tmp/security-web-staff.log 2>&1 || { echo "::error::Staff typecheck failed; private logs suppressed."; exit 1; }
+      - name: Verify existing customer Cloudflare Worker without modification
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/verify-existing-customer-worker.mjs
+      - name: Deploy existing customer Worker only
+        uses: cloudflare/wrangler-action@v3
+        with:
+          workingDirectory: private-src
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: 4.156.2
+          command: deploy --config wrangler.jsonc
+      - name: Confirm scope
+        run: echo "Published source 02d94dad3cc353470b5aa576429b7a406c9a982c to existing traydaq-v2 customer Worker. No native app builds/releases, separate staff/legal Worker changes or DNS changes."

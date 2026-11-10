@@ -1,0 +1,67 @@
+name: TRAYDAQ V2 User Scroll and Navigation QA (No APK)
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/user-scroll-navigation-performance-20261110.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-user-scroll-navigation-20261110
+  cancel-in-progress: true
+env:
+  PRIVATE_SOURCE_SHA: baac4ff71a51940b4f6bdf880f77f987bbb8ca4b
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout private V2 source at exact PR SHA
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run all web regressions, types and Cloudflare-targeted bundle only
+        shell: bash
+        working-directory: private-src
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { echo "::error::Web install failed"; exit 1; }
+          npm test > "$RUNNER_TEMP/tests.log" 2>&1 || { echo "::error::Web tests failed"; grep -E '^not ok [0-9]+' "$RUNNER_TEMP/tests.log" | head -20 || true; exit 1; }
+          npm run typecheck > "$RUNNER_TEMP/types.log" 2>&1 || { echo "::error::Web TypeScript failed"; exit 1; }
+          npm run build > "$RUNNER_TEMP/build.log" 2>&1 || { echo "::error::Web production build failed"; exit 1; }
+          echo "PASS web: source tests, TypeScript, production bundle. No Cloudflare deployment."
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - name: Checkout private V2 Android user source at exact PR SHA
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run all native regressions, types and Android JavaScript export only
+        shell: bash
+        working-directory: private-src/mobile
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { echo "::error::Native install failed"; exit 1; }
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/tests.log" 2>&1 || { echo "::error::Native tests failed"; grep -E '^not ok [0-9]+' "$RUNNER_TEMP/tests.log" | head -20 || true; exit 1; }
+          npm run typecheck > "$RUNNER_TEMP/types.log" 2>&1 || { echo "::error::Native TypeScript failed"; exit 1; }
+          npx expo export --platform android > "$RUNNER_TEMP/export.log" 2>&1 || { echo "::error::Android JavaScript export failed"; exit 1; }
+          echo "PASS Android: source tests, TypeScript, JavaScript export. No APK, AAB, Gradle or release."

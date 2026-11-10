@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: c929e912f6887cc77103b961c1701203622c46d1
+          ref: 2b8425ed7efee7fab45f5e725a93627bc8fc1dc1
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
       - uses: actions/setup-node@v4
@@ -32,7 +32,7 @@ jobs:
           npm run typecheck >/tmp/account-security-types.log 2>&1 && npm run typecheck:staff >>/tmp/account-security-types.log 2>&1 || { echo "::error::Typecheck failed; private logs suppressed."; exit 1; }
       - name: Verify cryptography and database protections
         run: |
-          node --test tests/account-security-crypto.test.mjs tests/account-security-database.test.mjs >/tmp/account-security-tests.log 2>&1 || { echo "::error::Cryptographic or database verification failed."; exit 1; }
+          node --test tests/account-security-crypto.test.mjs tests/account-security-database.test.mjs tests/account-security-recovery.test.mjs >/tmp/account-security-tests.log 2>&1 || { echo "::error::Cryptographic or database verification failed."; exit 1; }
           echo "Passed passkey registration, authentication, phishing/replay rejection, RLS and erasure inventory checks."
       - name: Run all root tests and Cloudflare build
         run: |
@@ -44,4 +44,4 @@ jobs:
           npm run typecheck >/tmp/account-security-mobile-types.log 2>&1 || { echo "::error::Native source typecheck failed; private logs suppressed."; exit 1; }
       - name: Confirm validation scope
         run: |
-          echo "Validated source c929e912f6887cc77103b961c1701203622c46d1. No APK, AAB, native build, deployment or release requested."
+          echo "Validated source 2b8425ed7efee7fab45f5e725a93627bc8fc1dc1. No APK, AAB, native build, deployment or release requested."

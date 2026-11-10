@@ -63,3 +63,4 @@ jobs:
           npx expo export --platform android > "$RUNNER_TEMP/export.log" 2>&1 || { echo "::error::Android JS export failed"; exit 1; }
           echo 'PASS: full Android tests, typecheck, JS export'
 # Source-only validation; no APK/AAB, no Play upload or staff build.
+# 2026-11-10 retry: assert optimistic content counts, native product server save and revised service deep link tests.

@@ -1,0 +1,71 @@
+name: TRAYDAQ Glass UI Customer Web Android QA (No APK)
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/customer-glassmorphism-20261110.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: traydaq-glass-ui-20261110
+  cancel-in-progress: true
+
+env:
+  PRIVATE_SOURCE_SHA: f34f890691e9e36ada0b4ee0de09d49b9cc0375d
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout reviewed private user app source only
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate all web tests, types, Cloudflare build without deployment
+        shell: bash
+        working-directory: private-src
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { echo "::error::Web source install failed"; exit 1; }
+          npm test > "$RUNNER_TEMP/tests.log" 2>&1 || { echo "::error::Web regressions failed"; grep -E '^not ok [0-9]+' "$RUNNER_TEMP/tests.log" | head -15 || true; exit 1; }
+          npm run typecheck > "$RUNNER_TEMP/types.log" 2>&1 || { echo "::error::Web TypeScript failed"; exit 1; }
+          npm run build > "$RUNNER_TEMP/build.log" 2>&1 || { echo "::error::Web Cloudflare-targeted bundle failed"; exit 1; }
+          echo "PASS: web regression suite, TypeScript, static bundle (no Cloudflare deployment)."
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - name: Checkout reviewed private Android user source only
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate Android source tests, types and JavaScript export (no APK)
+        shell: bash
+        working-directory: private-src/mobile
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { echo "::error::Android source install failed"; exit 1; }
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/tests.log" 2>&1 || { echo "::error::Android regressions failed"; grep -E '^not ok [0-9]+' "$RUNNER_TEMP/tests.log" | head -15 || true; exit 1; }
+          npm run typecheck > "$RUNNER_TEMP/types.log" 2>&1 || { echo "::error::Android TypeScript failed"; exit 1; }
+          npx expo export --platform android > "$RUNNER_TEMP/export.log" 2>&1 || { echo "::error::Android JavaScript export failed"; exit 1; }
+          echo "PASS: Android source suite, TypeScript and JS export. No APK/AAB."

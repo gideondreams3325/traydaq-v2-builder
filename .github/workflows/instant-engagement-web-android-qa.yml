@@ -64,3 +64,4 @@ jobs:
           echo 'PASS: full Android tests, typecheck, JS export'
 # Source-only validation; no APK/AAB, no Play upload or staff build.
 # 2026-11-10 retry: assert optimistic content counts, native product server save and revised service deep link tests.
+# 2026-11-10 final recheck: immediate feed follow, strict web SavedKind types; full tests, TS, web/Android JS exports, no app release.

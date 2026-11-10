@@ -1,0 +1,71 @@
+name: TRAYDAQ V2 Hybrid Customer UI Source Validation (No APK)
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/user-hybrid-soft-ui-20261110.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: traydaq-hybrid-soft-ui-20261110
+  cancel-in-progress: true
+
+env:
+  PRIVATE_SOURCE_SHA: e501dc33116d43d6255137575ff4bff99dfd61c4
+
+jobs:
+  web-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout private source at reviewed PR head (read only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Web tests, types and Cloudflare-targeted build (not deployment)
+        shell: bash
+        working-directory: private-src
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { echo "::error::Private web dependency install failed"; exit 1; }
+          npm test > "$RUNNER_TEMP/tests.log" 2>&1 || { echo "::error::Web tests failed"; grep -E '^not ok [0-9]+' "$RUNNER_TEMP/tests.log" | head -12 || true; exit 1; }
+          npm run typecheck > "$RUNNER_TEMP/types.log" 2>&1 || { echo "::error::Web TypeScript validation failed"; exit 1; }
+          npm run build > "$RUNNER_TEMP/build.log" 2>&1 || { echo "::error::Cloudflare-targeted web bundle failed"; exit 1; }
+          echo "PASS web tests, TypeScript, and static bundle at pinned SHA. No deployment."
+  android-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - name: Checkout private native customer source (read only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Native tests, types and Android JavaScript export (no native build)
+        shell: bash
+        working-directory: private-src/mobile
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { echo "::error::Private native dependency install failed"; exit 1; }
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/tests.log" 2>&1 || { echo "::error::Native source tests failed"; grep -E '^not ok [0-9]+' "$RUNNER_TEMP/tests.log" | head -12 || true; exit 1; }
+          npm run typecheck > "$RUNNER_TEMP/types.log" 2>&1 || { echo "::error::Native TypeScript validation failed"; exit 1; }
+          npx expo export --platform android > "$RUNNER_TEMP/export.log" 2>&1 || { echo "::error::Android JavaScript export failed"; exit 1; }
+          echo "PASS native source tests, types and JS export. No APK/AAB or release."

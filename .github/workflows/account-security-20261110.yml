@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 70f28e60fcdbebfd3c6c53c80dc33c308e476a1a
+          ref: d55027cb101a19030dbeb59a886058af123f6eb3
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
       - uses: actions/setup-node@v4
@@ -44,4 +44,4 @@ jobs:
           npm run typecheck >/tmp/account-security-mobile-types.log 2>&1 || { echo "::error::Native source typecheck failed; private logs suppressed."; exit 1; }
       - name: Confirm validation scope
         run: |
-          echo "Validated source 70f28e60fcdbebfd3c6c53c80dc33c308e476a1a. No APK, AAB, native build, deployment or release requested."
+          echo "Validated source d55027cb101a19030dbeb59a886058af123f6eb3. No APK, AAB, native build, deployment or release requested."

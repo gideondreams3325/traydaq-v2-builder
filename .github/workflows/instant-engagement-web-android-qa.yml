@@ -65,3 +65,5 @@ jobs:
 # Source-only validation; no APK/AAB, no Play upload or staff build.
 # 2026-11-10 retry: assert optimistic content counts, native product server save and revised service deep link tests.
 # 2026-11-10 final recheck: immediate feed follow, strict web SavedKind types; full tests, TS, web/Android JS exports, no app release.
+
+# Final source-only validation: include instant very-first For You tap before engagement preload, with full rollback to null when rejected.

@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PRIVATE_SOURCE_SHA: f34f890691e9e36ada0b4ee0de09d49b9cc0375d
+  PRIVATE_SOURCE_SHA: 7db84f1f1fcd9f5b9a899327ffaa130088c51319
 
 jobs:
   web:

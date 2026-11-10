@@ -10,7 +10,7 @@ concurrency:
   group: traydaq-user-scroll-navigation-20261110
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: baac4ff71a51940b4f6bdf880f77f987bbb8ca4b
+  PRIVATE_SOURCE_SHA: 376c2a0fb7de1a5e05fc18b35ee0ab2ea6ccee9d
 jobs:
   web:
     runs-on: ubuntu-latest

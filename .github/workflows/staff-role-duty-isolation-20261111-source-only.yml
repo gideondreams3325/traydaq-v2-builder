@@ -1,0 +1,60 @@
+name: TRAYDAQ STAFF role and duty isolation source QA (no release)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/staff-role-duty-isolation-20261111-source-only.yml'
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-staff-role-isolation-source-20261111
+  cancel-in-progress: false
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Read exact private Staff role-isolation candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 738fe523294cb996c12ee9e06d4be0de581e53a4
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Confirm exact role-isolation source and no APK request
+        working-directory: private-src
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "738fe523294cb996c12ee9e06d4be0de581e53a4"
+          test -f tests/staff-strict-role-duty-isolation.test.mjs
+          test -f admin-native/src/staffRoleScreens.ts
+          test -f staff-pwa/src/StaffRolePanels.tsx
+      - name: Test new cross-platform security contracts
+        working-directory: private-src
+        run: node --test tests/staff-strict-role-duty-isolation.test.mjs
+      - name: Install iPhone Staff source dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Typecheck iPhone Staff without deployment
+        working-directory: private-src
+        run: npm run typecheck:staff
+      - name: Test iPhone Staff source contracts
+        working-directory: private-src
+        run: node --test tests/staff-iphone-pwa.test.mjs
+      - name: Install Android Staff source dependencies
+        working-directory: private-src/admin-native
+        run: npm install --no-audit --no-fund
+      - name: Typecheck Android Staff without native packaging
+        working-directory: private-src/admin-native
+        run: npm run typecheck
+      - name: Run all native Staff security regressions
+        working-directory: private-src/admin-native
+        run: npm run test:security
+      - name: Confirm this workflow did not build an app
+        run: |
+          echo 'Staff source validation only: no APK, AAB, IPA, deployment or signing.'

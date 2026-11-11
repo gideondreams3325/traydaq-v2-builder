@@ -132,6 +132,10 @@ jobs:
         run: |
           set -euo pipefail
           npm install --no-audit --no-fund
+          # Expo SDK 57 expects newer compatible patch releases of eight Expo modules.
+          # Apply Expo's own SDK-compatible dependency fix before required validations.
+          # This only changes the isolated build checkout, never signs with a new key.
+          npx expo install --fix --npm
           node --test tests/*.test.mjs
           npx expo-doctor
           npm run typecheck

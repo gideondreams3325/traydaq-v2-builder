@@ -1,0 +1,38 @@
+name: TRAYDAQ Web Settings Cart Unchanged Main Baseline (NO RELEASE)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/web-settings-cart-baseline-20261111-no-release.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compare-existing-android-staff-test-expectations:
+    name: Check four pre-existing Android and staff test files on unchanged main
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - name: Checkout unchanged main (before web Settings/cart PR)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 7f2923209696375c8b48c475da03f79a792bd4c6
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install dependency lockfile
+        run: npm ci --no-audit --no-fund
+      - name: Run same Android and Staff tests on unchanged main
+        run: node --test tests/android-push-429-device-limit-recovery.test.mjs tests/device-lock-platform-support.test.mjs tests/staff-compact-navigation.test.mjs tests/staff-iphone-role-voice.test.mjs
+      - name: No deployment or packages
+        if: always()
+        run: echo 'Read-only baseline; no release, Android build, Cloudflare deploy or source mutation.'

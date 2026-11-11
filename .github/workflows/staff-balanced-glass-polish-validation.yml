@@ -1,0 +1,51 @@
+name: TRAYDAQ Staff Glass Polish Source QA - No APK
+on:
+  push:
+    branches: [validation/staff-balanced-glass-polish-20261111]
+    paths:
+      - ".github/workflows/staff-balanced-glass-polish-validation.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-staff-glass-polish-no-apk
+  cancel-in-progress: true
+jobs:
+  staff-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout exact reviewed private Staff source (read only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: b2d31955a0cf38443208fab0e26d1df8c00b0c94
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install browser source dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Verify Staff brand colors, glass scope, role isolation and security sources
+        working-directory: private-src
+        run: |
+          node --test tests/staff-balanced-glass-theme.test.mjs tests/staff-balanced-glass-polish.test.mjs
+          node --test admin-native/tests/staff-role-screen-isolation.test.mjs admin-native/tests/staff-mixed-role-contract.test.mjs admin-native/tests/native-only-security-hub.test.mjs
+      - name: Typecheck and compile iPhone Staff PWA (not deploy)
+        working-directory: private-src
+        run: |
+          npm run typecheck:staff
+          npm run build:staff
+      - name: Native Staff source TypeScript only (no APK/AAB)
+        working-directory: private-src/admin-native
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run typecheck
+      - name: Confirm no release or deployment
+        run: |
+          echo "PASS: Staff UI source and tests only."
+          echo "No Gradle, Expo EAS, Play Store, APK, AAB, App Store, Cloudflare deploy or release step."

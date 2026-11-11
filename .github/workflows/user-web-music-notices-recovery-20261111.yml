@@ -12,7 +12,7 @@ concurrency:
   group: traydaq-user-music-notices-recovery-20261111
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: f90da1177849ac7149abda36306aa6bd2d23b0a7
+  PRIVATE_SOURCE_SHA: 8fe8c438194ee8402c8378ec54104957833a012e
 jobs:
   web:
     name: Web tests, types, Cloudflare-targeted build (no deploy)

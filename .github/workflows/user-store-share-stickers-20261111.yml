@@ -12,7 +12,7 @@ concurrency:
   group: traydaq-ui-store-share-stickers-20261111
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: e3eede2e503b9c7de739d98d4559aeb79c2d9acb
+  PRIVATE_SOURCE_SHA: c747173a7f7ed9d3705da67e8d8543f51aac8e32
 jobs:
   web:
     name: Web tests, types, Cloudflare-targeted build (no deploy)

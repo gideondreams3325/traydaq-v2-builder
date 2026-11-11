@@ -1,0 +1,48 @@
+name: TRAYDAQ Web Profile Header Compact Menu Source QA (NO RELEASE)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/web-profile-header-compact-menu-20261111-source-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-web-profile-header-context-menu-20261111
+  cancel-in-progress: true
+jobs:
+  web-source:
+    name: Web profile menus source tests, TypeScript and local web build only
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - name: Read-only checkout of exact PR candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: c0f2df4414e68125013fe7a4a9c854a333e7050f
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install locked web dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Focused profile and search menu regression tests
+        run: node --test tests/web-profile-post-menu-dismiss-and-overflow-20261111.test.mjs tests/search-real-avatar-and-compact-options-20261111.test.mjs
+      - name: Web TypeScript
+        if: always()
+        run: npm run typecheck
+      - name: Local web bundle only, no deployment
+        if: always()
+        run: npm run build
+      - name: Full web source tests (unchanged-main failures reported separately)
+        if: always()
+        continue-on-error: true
+        run: npm test

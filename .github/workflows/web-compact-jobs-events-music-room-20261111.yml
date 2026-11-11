@@ -52,7 +52,14 @@ jobs:
       - name: Check TypeScript
         working-directory: private-src
         shell: bash
-        run: npm run typecheck > "$RUNNER_TEMP/web-typecheck.log" 2>&1 || { echo "::error::TypeScript failed"; exit 1; }
+        run: |
+          if npm run typecheck > "$RUNNER_TEMP/web-typecheck.log" 2>&1; then
+            echo "PASS web TypeScript"
+          else
+            echo "::error::TypeScript failed"
+            grep -E 'error TS[0-9]+' "$RUNNER_TEMP/web-typecheck.log" | head -25 || true
+            exit 1
+          fi
       - name: Bundle Cloudflare-targeted web assets (no deploy)
         working-directory: private-src
         shell: bash

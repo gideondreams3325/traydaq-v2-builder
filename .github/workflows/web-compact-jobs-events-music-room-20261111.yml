@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-compact-jobs-events-web-music-room-20261111
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 56b49fe2a69f1c94f7517c62f5dd733f7d36fd8a
+  PRIVATE_SOURCE_SHA: f390d0d34367c68695c8fd965da5e7280f76e25c
 jobs:
   web:
     name: Web source regressions, TypeScript, production web bundle (no release)

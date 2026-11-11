@@ -1,0 +1,106 @@
+name: TRAYDAQ Web Android Music Persistence + Local Search QA (No Release)
+# Validate one pinned commit from the private TRAYDAQ V2 source, read-only.
+# No Cloudflare deploy, APK/AAB, signing keys, Play Store submission, or source artifacts.
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/user-continuous-music-local-search-20261111.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-user-music-local-search-20261111
+  cancel-in-progress: true
+env:
+  PRIVATE_SOURCE_SHA: 27b79b6602846b04413e73a73591cc04e0a17f06
+jobs:
+  web:
+    name: Web tests, TypeScript, Cloudflare-targeted build only
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: "1"
+    steps:
+      - name: Checkout exact private source commit (read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install dependencies
+        working-directory: private-src
+        shell: bash
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/web-install.log" 2>&1 || { echo "::error::Web install failed"; exit 1; }
+      - name: Run all web tests
+        working-directory: private-src
+        shell: bash
+        run: |
+          if npm test > "$RUNNER_TEMP/web-tests.log" 2>&1; then
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/web-tests.log" | tail -3 || true
+          else
+            echo "::error::Web tests failed"
+            grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/web-tests.log" | head -25 || true
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/web-tests.log" | tail -3 || true
+            exit 1
+          fi
+      - name: Check web TypeScript
+        working-directory: private-src
+        shell: bash
+        run: npm run typecheck > "$RUNNER_TEMP/web-types.log" 2>&1 || { echo "::error::Web TypeScript failed"; grep -E 'error TS[0-9]+' "$RUNNER_TEMP/web-types.log" | sed -E 's#^.*(src/[A-Za-z0-9_./-]+)\(([0-9]+),([0-9]+)\): error (TS[0-9]+):.*#\1:\2:\3 \4#' | head -20 || true; exit 1; }
+      - name: Build Cloudflare-ready web assets only
+        working-directory: private-src
+        shell: bash
+        run: npm run build > "$RUNNER_TEMP/web-build.log" 2>&1 || { echo "::error::Web build failed"; exit 1; }
+  android:
+    name: Android source tests, TypeScript, JS export (NO APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - name: Checkout exact private source commit (read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install native source packages
+        working-directory: private-src/mobile
+        shell: bash
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/native-install.log" 2>&1 || { echo "::error::Android install failed"; exit 1; }
+      - name: Run Android source tests
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          if node --test tests/*.test.mjs > "$RUNNER_TEMP/native-tests.log" 2>&1; then
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/native-tests.log" | tail -3 || true
+          else
+            echo "::error::Android tests failed"
+            grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/native-tests.log" | head -25 || true
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/native-tests.log" | tail -3 || true
+            exit 1
+          fi
+      - name: Check Android TypeScript
+        working-directory: private-src/mobile
+        shell: bash
+        run: npm run typecheck > "$RUNNER_TEMP/native-types.log" 2>&1 || { echo "::error::Android TypeScript failed"; exit 1; }
+      - name: Export Android JavaScript only (no APK/AAB)
+        working-directory: private-src/mobile
+        shell: bash
+        run: npx expo export --platform android > "$RUNNER_TEMP/native-export.log" 2>&1 || { echo "::error::Android JS export failed"; exit 1; }

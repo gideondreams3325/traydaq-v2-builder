@@ -1,0 +1,45 @@
+name: TRAYDAQ Android User UI Fixes Source QA (NO RELEASE)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/android-user-ui-stickers-music-video-20261111-source-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-user-ui-fixes-20261111-source-only
+  cancel-in-progress: true
+jobs:
+  android-source-only:
+    name: Native source regression tests and TypeScript (no APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - name: Checkout tested source candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 56b213d4347cb086a3d183ceb7552559a50b3229
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install pinned Android source dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Run full Android source regression suite
+        run: node --test tests/*.test.mjs
+      - name: Validate native TypeScript
+        run: npm run typecheck
+      - name: Confirm source validation only
+        run: echo 'No native build, APK, AAB, signing, upload, rollout or deployment was requested.'

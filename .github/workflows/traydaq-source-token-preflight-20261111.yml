@@ -1,0 +1,52 @@
+name: TRAYDAQ Private Source Token Read-Access Diagnostic
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/traydaq-source-token-preflight-20261111.yml'
+permissions:
+  contents: read
+jobs:
+  verify-source-token:
+    name: Validate Builder-to-private-V2 read access (no release)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify token is configured and accepted by GitHub
+        shell: bash
+        env:
+          V2_READ_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$V2_READ_TOKEN" ]]; then
+            echo "::error::TRAYDAQ_V2_SOURCE_READ_TOKEN is empty or missing from this Builder repository."
+            exit 1
+          fi
+          echo "Source token is configured."
+          CODE=$(curl --silent --show-error --location --max-time 20 --output "$RUNNER_TEMP/access-check.json" --write-out '%{http_code}' \
+            --header 'Accept: application/vnd.github+json' \
+            --header "Authorization: Bearer $V2_READ_TOKEN" \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            https://api.github.com/repos/gideondreams3325/traydaq-v2) || {
+            echo "::error::GitHub API connection failed (no credentials printed)."
+            exit 1
+          }
+          rm -f "$RUNNER_TEMP/access-check.json"
+          case "$CODE" in
+            200) echo "PASS: Builder source token has API read access to the private V2 repository.";;
+            401) echo "::error::Source token is invalid or expired (GitHub HTTP 401)."; exit 1;;
+            403) echo "::error::Source token lacks permission or needs approval (GitHub HTTP 403)."; exit 1;;
+            404) echo "::error::Source token cannot see traydaq-v2 (GitHub HTTP 404). Verify repository selection and token ownership."; exit 1;;
+            *) echo "::error::GitHub API source access returned HTTP $CODE."; exit 1;;
+          esac
+      - name: Confirm Git checkout of current user release source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 4ed9df4771345b57e5a7362114f835afa43cf357
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Confirm exact source SHA
+        run: test "$(git -C private-src rev-parse HEAD)" = '4ed9df4771345b57e5a7362114f835afa43cf357'

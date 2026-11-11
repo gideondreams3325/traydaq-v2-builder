@@ -51,7 +51,14 @@ jobs:
       - name: Check web TypeScript
         working-directory: private-src
         shell: bash
-        run: npm run typecheck > "$RUNNER_TEMP/web-typecheck.log" 2>&1 || { echo "::error::Web TypeScript failed"; exit 1; }
+        run: |
+          if npm run typecheck > "$RUNNER_TEMP/web-typecheck.log" 2>&1; then
+            echo "PASS web TypeScript"
+          else
+            echo "::error::Web TypeScript failed. Reporting only sanitized file coordinates and TS diagnostic codes."
+            grep -E 'error TS[0-9]+' "$RUNNER_TEMP/web-typecheck.log" | sed -E 's#^.*(src/[A-Za-z0-9_./-]+)\(([0-9]+),([0-9]+)\): error (TS[0-9]+):.*#\1:\2:\3 \4#' | head -20 || true
+            exit 1
+          fi
       - name: Verify production web assets without deploying
         working-directory: private-src
         shell: bash

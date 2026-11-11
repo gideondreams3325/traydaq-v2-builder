@@ -12,7 +12,7 @@ concurrency:
   group: traydaq-music-upload-preview-20261111
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 03c874743adcebac3329022b9443efdbf36eaecd
+  PRIVATE_SOURCE_SHA: 0c2bb3bdebe3af9b6c681e3105c4a91d4296c246
 jobs:
   web:
     name: Web tests, types, Cloudflare-targeted build (no deploy)

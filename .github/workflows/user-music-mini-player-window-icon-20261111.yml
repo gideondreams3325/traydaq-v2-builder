@@ -1,0 +1,61 @@
+name: TRAYDAQ Web Music Mini Player and Window Navigation QA (No Release)
+# Read-only source validation of an exact private TRAYDAQ V2 commit.
+# Never deploy, sign, or produce an Android APK or AAB.
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/user-music-mini-player-window-icon-20261111.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-user-music-mini-player-window-20261111
+  cancel-in-progress: true
+env:
+  PRIVATE_SOURCE_SHA: 3d68e687a0a3ea09b3f30a9ad3e1b4b6cc7ad0dd
+jobs:
+  web-source:
+    name: Web tests + TypeScript + Cloudflare bundle (no deployment)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout exact private source SHA (read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install dependencies
+        working-directory: private-src
+        shell: bash
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/web-install.log" 2>&1 || { echo "::error::Web npm ci failed"; exit 1; }
+      - name: Run web regression suite
+        working-directory: private-src
+        shell: bash
+        run: |
+          if npm test > "$RUNNER_TEMP/web-tests.log" 2>&1; then
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/web-tests.log" | tail -3 || true
+          else
+            echo "::error::Web tests failed"
+            grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/web-tests.log" | head -25 || true
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/web-tests.log" | tail -3 || true
+            exit 1
+          fi
+      - name: Verify TypeScript
+        working-directory: private-src
+        shell: bash
+        run: npm run typecheck > "$RUNNER_TEMP/web-typecheck.log" 2>&1 || { echo "::error::Web TypeScript check failed"; exit 1; }
+      - name: Verify production web bundle (no deploy)
+        working-directory: private-src
+        shell: bash
+        run: npm run build > "$RUNNER_TEMP/web-build.log" 2>&1 || { echo "::error::Cloudflare web build failed"; exit 1; }
+      - name: Confirm source-only validation
+        run: echo "PASS source-only web validation; no Cloudflare deployment or APK/AAB build"

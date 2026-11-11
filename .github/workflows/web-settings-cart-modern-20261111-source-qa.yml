@@ -1,0 +1,53 @@
+name: TRAYDAQ Web Settings + Cart Source QA (NO ANDROID RELEASE)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/web-settings-cart-modern-20261111-source-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-web-settings-cart-20261111-source-only
+  cancel-in-progress: true
+jobs:
+  web-source-only:
+    name: Web Settings and Cart tests, types, build (no deploy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - name: Checkout pinned TRAYDAQ V2 web source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 05ba88d701c19fd7dc505bcb78a7c66b7989906a
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install pinned web dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Focused web Settings and Cart audit
+        run: node --test tests/web-settings-cart-modern-20261111.test.mjs tests/web-android-settings-parity.test.mjs
+      - name: Full web source regression suite
+        if: always()
+        run: npm test
+      - name: Web TypeScript validation
+        if: always()
+        run: npm run typecheck
+      - name: Validate web production bundle without deploying
+        if: always()
+        run: npm run build
+      - name: Confirm source-only QA
+        if: always()
+        run: echo 'No APK, AAB, app store release, package signing, Cloudflare deployment or hosting mutation executed.'

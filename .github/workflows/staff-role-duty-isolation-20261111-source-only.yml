@@ -22,7 +22,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 42a2a153c034e0fb3d62b8b63a21e83816fa8cee
+          ref: 9a0b27872928ec6e07e26a0da829f830ab2ada98
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
@@ -33,7 +33,7 @@ jobs:
         working-directory: private-src
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "42a2a153c034e0fb3d62b8b63a21e83816fa8cee"
+          test "$(git rev-parse HEAD)" = "9a0b27872928ec6e07e26a0da829f830ab2ada98"
           test -f tests/staff-strict-role-duty-isolation.test.mjs
           test -f admin-native/src/staffRoleScreens.ts
           test -f staff-pwa/src/StaffRolePanels.tsx
@@ -44,6 +44,11 @@ jobs:
             admin-native/tests/staff-strict-role-duty-isolation.test.mjs \
             admin-native/tests/staff-role-screen-isolation.test.mjs \
             admin-native/tests/staff-mixed-role-contract.test.mjs
+      - name: Test current Staff navigation and iPhone role/voice contracts
+        working-directory: private-src
+        run: |
+          node --test tests/staff-compact-navigation.test.mjs \
+            tests/staff-iphone-role-voice.test.mjs
       - name: Install iPhone Staff source dependencies
         working-directory: private-src
         run: npm ci --no-audit --no-fund

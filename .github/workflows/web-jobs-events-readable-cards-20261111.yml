@@ -44,12 +44,11 @@ jobs:
           npm test > "$RUNNER_TEMP/web-tests.log" 2>&1 || true
           grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/web-tests.log" | tail -3 || true
           grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/web-tests.log" | sed -E 's/^not ok [0-9]+ - //' | sort > "$RUNNER_TEMP/actual-failures.txt" || true
-          cat > "$RUNNER_TEMP/baseline-failures.txt" <<'BASELINE'
-Analyst and Overall Head reporting is aggregate, scoped, and read-only
-Analyst and inherited Overall Head cannot read case worklists or source IDs
-compact Android Staff navigation derives both quick tabs and More from the same permission filter
-glass Staff menu is search-only and cannot grant new role or department permissions
-BASELINE
+          printf '%s\\n' \
+            'Analyst and Overall Head reporting is aggregate, scoped, and read-only' \
+            'Analyst and inherited Overall Head cannot read case worklists or source IDs' \
+            'compact Android Staff navigation derives both quick tabs and More from the same permission filter' \
+            'glass Staff menu is search-only and cannot grant new role or department permissions' > "$RUNNER_TEMP/baseline-failures.txt"
           if ! diff -u "$RUNNER_TEMP/baseline-failures.txt" "$RUNNER_TEMP/actual-failures.txt"; then
             echo "::error::PR introduces new or changed failing tests relative to main baseline"
             exit 1

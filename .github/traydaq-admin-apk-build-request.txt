@@ -210,3 +210,6 @@ USER-AUTHORIZED STAFF APK RELEASE — 2026-11-11
 Build the newly merged TRAYDAQ STAFF Android version 1.0.19 (versionCode 22), package com.traydaq.admin.
 Private source: gideondreams3325/traydaq-v2 commit 39336aa700f4dd42ac6404dc6095359bce5f6075 (merged release PR #366).
 Use only public V2 builder's dedicated .github/workflows/admin-native.yml (builder release PR #36), testing private staff security and department role isolation, running TypeScript, Expo checks, Gradle assembleRelease, original Admin signing and Firebase registered SHA-1 verification. Publish signed artifact TRAYDAQ-V2-Admin-Native-Android-APK. Never build customer app or publish to Play Store.
+
+STAFF BUILD CORRECTION / RETRY — 2026-11-11
+The requested 1.0.19/code22 dedicated STAFF run #48 failed only because an existing Staff test expected 1.0.18/code21 (245/246 tests passed). The assertion was corrected in private PR #367, merged source SHA 695ceb8a564a60fb0c23dcd1a6c35b2e23c7538e. Workflow now pins this corrected source. Retry the full dedicated signed com.traydaq.admin APK build with all security tests, Expo/typecheck, Gradle compilation, Firebase SHA verification, and artifact publication. No customer app build and no Play Store publication.

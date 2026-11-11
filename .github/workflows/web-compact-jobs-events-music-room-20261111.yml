@@ -1,0 +1,62 @@
+name: TRAYDAQ Web Compact Jobs Events Music Listening Room QA (No Release)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/web-compact-jobs-events-music-room-20261111.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-compact-jobs-events-web-music-room-20261111
+  cancel-in-progress: true
+env:
+  PRIVATE_SOURCE_SHA: 1e9629faba6e6b7478cbde81fd4ae64e5de0eca8
+jobs:
+  web:
+    name: Web source regressions, TypeScript, production web bundle (no release)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: "1"
+    steps:
+      - name: Checkout pinned private TRAYDAQ source (read only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install web dependencies
+        working-directory: private-src
+        shell: bash
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/web-install.log" 2>&1 || { echo "::error::Web install failed"; exit 1; }
+      - name: Run all source tests
+        working-directory: private-src
+        shell: bash
+        run: |
+          if npm test > "$RUNNER_TEMP/web-tests.log" 2>&1; then
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/web-tests.log" | tail -3 || true
+          else
+            echo "::error::Web tests failed"
+            grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/web-tests.log" | head -30 || true
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/web-tests.log" | tail -3 || true
+            exit 1
+          fi
+      - name: Check TypeScript
+        working-directory: private-src
+        shell: bash
+        run: npm run typecheck > "$RUNNER_TEMP/web-typecheck.log" 2>&1 || { echo "::error::TypeScript failed"; exit 1; }
+      - name: Bundle Cloudflare-targeted web assets (no deploy)
+        working-directory: private-src
+        shell: bash
+        run: npm run build > "$RUNNER_TEMP/web-build.log" 2>&1 || { echo "::error::Web build failed"; exit 1; }
+      - name: Confirm read only validation
+        shell: bash
+        run: echo "PASS web source only. No Cloudflare deploy, Android APK or AAB."

@@ -351,7 +351,7 @@ jobs:
           Release channel intended: Internal testing (or closed testing after internal verification)
           Changes:
           - Fixes For You post render crashes and video/image recovery during swipes.
-      - Includes the latest native TRAYDAQ user app and its signed R8-optimized code.
+          - Includes the latest native TRAYDAQ user app and its signed R8-optimized code.
           - Includes mapping.txt for manual Play Console upload if Google does not automatically ingest it.
           - Makes camera, microphone, GPS and fingerprint hardware optional in Google Play to support more phones and tablets.
           - Keeps on-demand permissions when the user chooses features that need those sensors.

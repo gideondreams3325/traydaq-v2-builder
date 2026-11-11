@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/staff-role-duty-isolation-20261111-source-only.yml'
+  pull_request:
+    paths:
+      - '.github/workflows/staff-role-duty-isolation-20261111-source-only.yml'
 permissions:
   contents: read
 concurrency:

@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: c9f1a5594edf741f18cd69eb3700758b137ce295
+          ref: d0d0dfab3afbab9735d485ca72d419e452928de2
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
@@ -30,13 +30,17 @@ jobs:
         working-directory: private-src
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "c9f1a5594edf741f18cd69eb3700758b137ce295"
+          test "$(git rev-parse HEAD)" = "d0d0dfab3afbab9735d485ca72d419e452928de2"
           test -f tests/staff-strict-role-duty-isolation.test.mjs
           test -f admin-native/src/staffRoleScreens.ts
           test -f staff-pwa/src/StaffRolePanels.tsx
-      - name: Test new cross-platform security contracts
+      - name: Test cross-platform Staff role, duty and private notification isolation
         working-directory: private-src
-        run: node --test tests/staff-strict-role-duty-isolation.test.mjs
+        run: |
+          node --test tests/staff-strict-role-duty-isolation.test.mjs \
+            admin-native/tests/staff-strict-role-duty-isolation.test.mjs \
+            admin-native/tests/staff-role-screen-isolation.test.mjs \
+            admin-native/tests/staff-mixed-role-contract.test.mjs
       - name: Install iPhone Staff source dependencies
         working-directory: private-src
         run: npm ci --no-audit --no-fund

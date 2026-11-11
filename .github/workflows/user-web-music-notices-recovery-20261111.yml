@@ -44,9 +44,10 @@ jobs:
           if npm test > "$RUNNER_TEMP/web-tests.log" 2>&1; then
             grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/web-tests.log" | tail -3 || true
           else
-            echo "::error::Web tests failed. Showing sanitized failing test identifiers only."
+            echo "::error::Web regression tests failed. Printing test names."
             grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/web-tests.log" | head -25 || true
-            grep -E '^# (tests|pass|fail) [0-9]+
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/web-tests.log" | tail -3 || true
+            exit 1
           fi
       - name: Check web TypeScript
         working-directory: private-src

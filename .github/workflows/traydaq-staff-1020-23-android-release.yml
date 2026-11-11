@@ -1,0 +1,279 @@
+name: TRAYDAQ STAFF Android 1.0.20 (23) Signed APK
+
+# Completely separate from the existing public TRAYDAQ V2 user APK builder.
+# Dedicated signed Staff APK build, triggered only by this release workflow file or manual dispatch.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/traydaq-staff-1020-23-android-release.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: traydaq-v2-staff-1020-23-android-apk
+  cancel-in-progress: false
+
+jobs:
+  admin-android:
+    name: TRAYDAQ Admin Native Android APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+      NODE_OPTIONS: "--max-old-space-size=6144"
+    defaults:
+      run:
+        working-directory: private-src/admin-native
+
+    steps:
+      - name: Validate private source token
+        working-directory: .
+        env:
+          HAS_SOURCE_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: |
+          test "$HAS_SOURCE_TOKEN" = "true" || {
+            echo "::error::Configure the builder's existing TRAYDAQ_V2_SOURCE_READ_TOKEN for private source access."
+            exit 1
+          }
+
+      - name: Checkout private TRAYDAQ Admin development source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ae8dca44cb0b7ed8e9d2edee4edb7cedb51ff28d
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Confirm separate Admin source and Android package
+        run: |
+          set -euo pipefail
+          test -f package.json
+          test -f src/App.tsx
+          test -f src/backend.ts
+          test -f app.config.js
+          node - <<'NODE'
+          const config=require('./app.config.js').expo;
+          if(config.android?.package!=='com.traydaq.admin') throw Error('Wrong Android package: must be com.traydaq.admin.');
+          if(config.version!=='1.0.20'||config.android.versionCode!==23)
+           throw Error('Production STAFF version must be 1.0.20 / code 23.');
+          if(JSON.stringify(config.platforms)!=='["android"]') throw Error('The Admin app must remain Android native-only.');
+          console.log('Verified separate Admin app package and sources.');
+          NODE
+          test "$(git rev-parse HEAD)" = "ae8dca44cb0b7ed8e9d2edee4edb7cedb51ff28d"
+          echo "TRAYDAQ_ADMIN_SOURCE_SHA=$(git rev-parse HEAD)"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # GitHub's Ubuntu runner provides Android SDK command-line tools.
+      # setup-android@v3 attempts the removed "tools" package and fails.
+      - name: Verify preinstalled Android SDK
+        run: |
+          set -euo pipefail
+          test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --version
+
+      - name: Install Android API 36
+        run: |
+          set -euo pipefail
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Restore independent Admin Firebase registration
+        env:
+          ADMIN_FIREBASE_CONFIG_B64: ${{ secrets.TRAYDAQ_ADMIN_GOOGLE_SERVICES_JSON_B64 }}
+          EXPO_PUBLIC_ADMIN_EAS_PROJECT_ID: ${{ vars.TRAYDAQ_ADMIN_EAS_PROJECT_ID || '017f3881-3581-41e3-a661-11c49614c0c9' }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$ADMIN_FIREBASE_CONFIG_B64" ]]; then
+            echo "::error::Add TRAYDAQ_ADMIN_GOOGLE_SERVICES_JSON_B64. The com.traydaq.app client file cannot be reused."
+            exit 1
+          fi
+          if [[ -z "$EXPO_PUBLIC_ADMIN_EAS_PROJECT_ID" ]]; then
+            echo "::error::Set TRAYDAQ_ADMIN_EAS_PROJECT_ID for separate Admin push notifications."
+            exit 1
+          fi
+          umask 077
+          printf '%s' "$ADMIN_FIREBASE_CONFIG_B64" | base64 --decode > google-services.json
+          node - <<'NODE'
+          const fs=require('fs');
+          const config=JSON.parse(fs.readFileSync('google-services.json','utf8'));
+          if(config.project_info?.project_id!=='traydaq' ||
+              !(config.client||[]).some(c=>c.client_info?.android_client_info?.package_name==='com.traydaq.admin'))
+            throw Error('Wrong Firebase project/Android package; register com.traydaq.admin first.');
+          if(config.private_key || config.private_key_id)throw Error('Never add Firebase service-account private keys to the Android build.');
+          console.log('Separate Firebase Admin Android client configuration validated.');
+          NODE
+
+      # Reject incorrect release-signing credentials before lengthy Gradle compilation.
+      - name: Preflight Admin keystore and Firebase signing registration
+        env:
+          ADMIN_KEYSTORE_B64: ${{ secrets.TRAYDAQ_ADMIN_UPLOAD_KEYSTORE_B64 }}
+          ADMIN_STOREPASS: ${{ secrets.TRAYDAQ_ADMIN_UPLOAD_KEYSTORE_PASSWORD }}
+          ADMIN_ALIAS: ${{ secrets.TRAYDAQ_ADMIN_UPLOAD_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          # Pasting into GitHub Actions Secrets can include accidental leading/trailing whitespace.
+          # Normalize values in memory only, without printing any signing credentials.
+          ADMIN_STOREPASS="$(node -p 'process.env.ADMIN_STOREPASS.trim()')"
+          ADMIN_ALIAS="$(node -p 'process.env.ADMIN_ALIAS.trim()')"
+          ADMIN_KEYSTORE_B64="$(node -p 'process.env.ADMIN_KEYSTORE_B64.trim()')"
+          export ADMIN_STOREPASS ADMIN_ALIAS ADMIN_KEYSTORE_B64
+          if [[ -z "$ADMIN_KEYSTORE_B64" || -z "$ADMIN_STOREPASS" || -z "$ADMIN_ALIAS" ]]; then
+            echo "::error::Admin signing secrets are incomplete. Configure the separate Admin keystore, store password and alias."
+            exit 1
+          fi
+          umask 077
+          KEYSTORE="$RUNNER_TEMP/traydaq-admin-preflight.jks"
+          trap 'rm -f "$KEYSTORE"' EXIT
+          if ! printf '%s' "$ADMIN_KEYSTORE_B64" | base64 --decode > "$KEYSTORE"; then
+            echo "::error::TRAYDAQ_ADMIN_UPLOAD_KEYSTORE_B64 must contain base64 of the original Admin keystore file."
+            exit 1
+          fi
+          if ! keytool -list -keystore "$KEYSTORE" -storepass:env ADMIN_STOREPASS >/dev/null 2>&1; then
+            echo "::error::Cannot unlock Admin keystore: verify the original keystore bytes and TRAYDAQ_ADMIN_UPLOAD_KEYSTORE_PASSWORD match. No APK was signed."
+            exit 1
+          fi
+          if ! keytool -list -keystore "$KEYSTORE" -storepass:env ADMIN_STOREPASS -alias "$ADMIN_ALIAS" >/dev/null 2>&1; then
+            echo "::error::The Admin keystore opened, but TRAYDAQ_ADMIN_UPLOAD_KEY_ALIAS does not identify an entry in it."
+            exit 1
+          fi
+          # The recovered Admin JKS uses the same password for the store and private key.
+          # Test private key recovery now to prevent a long build ending in signing failure.
+          CSR="$RUNNER_TEMP/traydaq-admin-preflight.csr"
+          if ! keytool -certreq -keystore "$KEYSTORE" -alias "$ADMIN_ALIAS" \
+            -storepass:env ADMIN_STOREPASS -keypass:env ADMIN_STOREPASS \
+            -file "$CSR" >/dev/null 2>&1; then
+            echo "::error::Admin private key cannot be unlocked using the verified original signing password."
+            exit 1
+          fi
+          rm -f "$CSR"
+          echo "Admin private key recovery verified before compiling."
+          KEY_SHA="$(keytool -list -v -keystore "$KEYSTORE" \
+            -storepass:env ADMIN_STOREPASS -alias "$ADMIN_ALIAS" \
+            | sed -n 's/^[[:space:]]*SHA1: //p' | head -1 | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          export KEY_SHA
+          node - <<'NODE'
+          const config=require('./google-services.json');
+          const registered=(config.client||[]).flatMap(c=>c.oauth_client||[])
+            .filter(c=>c.client_type===1 && c.android_info?.package_name==='com.traydaq.admin')
+            .map(c=>(c.android_info?.certificate_hash||'').replace(/:/g,'').toLowerCase());
+          if(!process.env.KEY_SHA || !registered.includes(process.env.KEY_SHA))
+            throw Error('Admin signing SHA-1 is not registered in Firebase for com.traydaq.admin. Register its SHA-1 and update TRAYDAQ_ADMIN_GOOGLE_SERVICES_JSON_B64.');
+          console.log('Admin keystore password, alias and Firebase signing SHA-1 verified before compilation.');
+          NODE
+
+      - name: Install Admin native dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Run strict Admin access and department approval tests
+        run: npm run test:security
+
+      - name: Typecheck Admin native screens
+        run: npm run typecheck
+
+      - name: Check Expo package compatibility
+        run: npx expo install --check
+
+      - name: Confirm Admin Firebase / EAS prerequisites
+        env:
+          TRAYDAQ_ADMIN_GOOGLE_SERVICES_FILE: ./google-services.json
+          EXPO_PUBLIC_ADMIN_EAS_PROJECT_ID: ${{ vars.TRAYDAQ_ADMIN_EAS_PROJECT_ID || '017f3881-3581-41e3-a661-11c49614c0c9' }}
+          REQUIRE_NATIVE_CONFIG: "1"
+        run: npm run preflight
+
+      - name: Generate separate Admin Android native project
+        env:
+          TRAYDAQ_ADMIN_GOOGLE_SERVICES_FILE: ./google-services.json
+          EXPO_PUBLIC_ADMIN_EAS_PROJECT_ID: ${{ vars.TRAYDAQ_ADMIN_EAS_PROJECT_ID || '017f3881-3581-41e3-a661-11c49614c0c9' }}
+        run: npx expo prebuild --platform android --non-interactive
+
+      - name: Build standalone Admin release APK
+        env:
+          EXPO_PUBLIC_ADMIN_EAS_PROJECT_ID: ${{ vars.TRAYDAQ_ADMIN_EAS_PROJECT_ID || '017f3881-3581-41e3-a661-11c49614c0c9' }}
+        run: |
+          cd android
+          chmod +x ./gradlew
+          ./gradlew --no-daemon :app:assembleRelease
+
+      - name: Sign Admin APK using its own keystore
+        env:
+          ADMIN_KEYSTORE_B64: ${{ secrets.TRAYDAQ_ADMIN_UPLOAD_KEYSTORE_B64 }}
+          ADMIN_STOREPASS: ${{ secrets.TRAYDAQ_ADMIN_UPLOAD_KEYSTORE_PASSWORD }}
+          ADMIN_ALIAS: ${{ secrets.TRAYDAQ_ADMIN_UPLOAD_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          ADMIN_STOREPASS="$(node -p 'process.env.ADMIN_STOREPASS.trim()')"
+          ADMIN_ALIAS="$(node -p 'process.env.ADMIN_ALIAS.trim()')"
+          ADMIN_KEYSTORE_B64="$(node -p 'process.env.ADMIN_KEYSTORE_B64.trim()')"
+          export ADMIN_STOREPASS ADMIN_ALIAS ADMIN_KEYSTORE_B64
+          if [[ -z "$ADMIN_KEYSTORE_B64" || -z "$ADMIN_STOREPASS" || -z "$ADMIN_ALIAS" ]]; then
+            echo "::error::Set separate TRAYDAQ_ADMIN signing secrets before building. The user-app signing key is not reused."
+            exit 1
+          fi
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          test -s "$APK"
+          umask 077
+          KEYSTORE="$RUNNER_TEMP/traydaq-admin-signing.jks"
+          SIGNED="$RUNNER_TEMP/traydaq-admin-signed.apk"
+          export KEYSTORE
+          trap 'rm -f "$KEYSTORE" "$SIGNED"' EXIT
+          printf '%s' "$ADMIN_KEYSTORE_B64" | base64 --decode > "$KEYSTORE"
+          export ADMIN_STOREPASS ADMIN_ALIAS
+          SIGNER="$ANDROID_HOME/build-tools/36.0.0/apksigner"
+          "$SIGNER" sign --ks "$KEYSTORE" --ks-key-alias "$ADMIN_ALIAS" \
+            --ks-pass env:ADMIN_STOREPASS --key-pass env:ADMIN_STOREPASS \
+            --out "$SIGNED" "$APK"
+          "$SIGNER" verify "$SIGNED"
+          # Sign-in must use a certificate registered for this Admin package,
+          # not only the certificate used by the public TRAYDAQ Android app.
+          KEY_SHA="$(keytool -list -v -keystore "$KEYSTORE" \
+            -storepass:env ADMIN_STOREPASS -alias "$ADMIN_ALIAS" \
+            | sed -n 's/^[[:space:]]*SHA1: //p' | head -1 | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+          export KEY_SHA
+          node - <<'NODE'
+          const config=require('./google-services.json');
+          const registered=(config.client||[]).flatMap(c=>c.oauth_client||[])
+            .filter(c=>c.client_type===1 && c.android_info?.package_name==='com.traydaq.admin')
+            .map(c=>(c.android_info?.certificate_hash||'').replace(/:/g,'').toLowerCase());
+          if(!process.env.KEY_SHA || !registered.includes(process.env.KEY_SHA))
+            throw Error('Admin signing certificate SHA-1 is not registered in Firebase for com.traydaq.admin. Download updated google-services.json.');
+          console.log('Admin package signing certificate verified against Firebase Google OAuth registration.');
+          NODE
+          mv "$SIGNED" "$APK"
+          echo "TRAYDAQ Admin APK independently signed and Firebase SHA-1 verified."
+
+      - name: Verify production APK metadata, offline bundle and signature
+        run: |
+          set -euo pipefail
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          test -s "$APK"
+          unzip -t "$APK" > /dev/null
+          unzip -Z1 "$APK" | grep -E '^assets/(index.android.bundle|.*\\.hbc)$'
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$APK"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.traydaq.admin' versionCode='23' versionName='1.0.20'"
+          sha256sum "$APK"
+
+      - name: Name the verified Staff APK for download
+        run: |
+          mkdir -p release
+          cp android/app/build/outputs/apk/release/app-release.apk release/TRAYDAQ-STAFF-1.0.20-23.apk
+
+      - name: Publish only the Admin APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TRAYDAQ-STAFF-1.0.20-23-Android-APK
+          path: private-src/admin-native/release/TRAYDAQ-STAFF-1.0.20-23.apk
+          retention-days: 14
+          if-no-files-found: error

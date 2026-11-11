@@ -13,7 +13,7 @@ concurrency:
   group: traydaq-user-music-local-search-20261111
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 27b79b6602846b04413e73a73591cc04e0a17f06
+  PRIVATE_SOURCE_SHA: 11d05e42208635a71d6368efc36295684ae7db07
 jobs:
   web:
     name: Web tests, TypeScript, Cloudflare-targeted build only

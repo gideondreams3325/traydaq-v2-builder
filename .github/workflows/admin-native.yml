@@ -45,7 +45,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 0548a77ec99fe7371b775b722fcf4b443795a726
+          ref: 39336aa700f4dd42ac6404dc6095359bce5f6075
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           fetch-depth: 1
@@ -61,12 +61,12 @@ jobs:
           node - <<'NODE'
           const config=require('./app.config.js').expo;
           if(config.android?.package!=='com.traydaq.admin') throw Error('Wrong Android package: must be com.traydaq.admin.');
-          if(config.version!=='1.0.18'||config.android.versionCode!==21)
-           throw Error('Production STAFF version must be 1.0.18 / code 21.');
+          if(config.version!=='1.0.19'||config.android.versionCode!==22)
+           throw Error('Production STAFF version must be 1.0.19 / code 21.');
           if(JSON.stringify(config.platforms)!=='["android"]') throw Error('The Admin app must remain Android native-only.');
           console.log('Verified separate Admin app package and sources.');
           NODE
-          test "$(git rev-parse HEAD)" = "0548a77ec99fe7371b775b722fcf4b443795a726"
+          test "$(git rev-parse HEAD)" = "39336aa700f4dd42ac6404dc6095359bce5f6075"
           echo "TRAYDAQ_ADMIN_SOURCE_SHA=$(git rev-parse HEAD)"
 
       - uses: actions/setup-node@v4
@@ -263,7 +263,7 @@ jobs:
           unzip -t "$APK" > /dev/null
           unzip -Z1 "$APK" | grep -E '^assets/(index.android.bundle|.*\\.hbc)$'
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$APK"
-          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.traydaq.admin' versionCode='21' versionName='1.0.18'"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.traydaq.admin' versionCode='22' versionName='1.0.19'"
           sha256sum "$APK"
 
       - name: Publish only the Admin APK

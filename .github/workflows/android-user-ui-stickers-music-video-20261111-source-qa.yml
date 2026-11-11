@@ -26,7 +26,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 56b213d4347cb086a3d183ceb7552559a50b3229
+          ref: 0cdc7af49c9b3f1844d3bca35fca5e2b1c93c602
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -40,6 +40,7 @@ jobs:
       - name: Run full Android source regression suite
         run: node --test tests/*.test.mjs
       - name: Validate native TypeScript
+        if: always()
         run: npm run typecheck
       - name: Confirm source validation only
         run: echo 'No native build, APK, AAB, signing, upload, rollout or deployment was requested.'

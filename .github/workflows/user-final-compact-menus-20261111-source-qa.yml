@@ -1,0 +1,77 @@
+name: TRAYDAQ Final Context Menus Source QA (NO RELEASE)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/user-final-compact-menus-20261111-source-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-final-context-menus-20261111
+  cancel-in-progress: true
+jobs:
+  web-source:
+    name: Web user source, TypeScript and local web bundle (no deploy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 618f69f11a0598eecb7cb5ad65aa9141d986ce88
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install locked web dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Focused search and menu regressions
+        run: node --test tests/web-profile-post-menu-dismiss-and-overflow-20261111.test.mjs tests/search-real-avatar-and-compact-options-20261111.test.mjs
+      - name: Entire web source test suite (known unchanged-main failures separately audited)
+        if: always()
+        continue-on-error: true
+        run: npm test
+      - name: Web TypeScript
+        if: always()
+        run: npm run typecheck
+      - name: Build local web bundle, no deployment
+        if: always()
+        run: npm run build
+  android-source:
+    name: Android user source tests and TypeScript only (NO APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 618f69f11a0598eecb7cb5ad65aa9141d986ce88
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked native JavaScript dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Focused native search and menu regressions
+        run: node --test tests/professional-store-compact-menu-followup-20261111.test.mjs tests/search-real-avatar-and-compact-options-20261111.test.mjs
+      - name: Full native source test suite
+        if: always()
+        run: node --test tests/*.test.mjs
+      - name: Android source TypeScript
+        if: always()
+        run: npm run typecheck

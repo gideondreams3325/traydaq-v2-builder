@@ -1,0 +1,50 @@
+name: TRAYDAQ User Android Keyboard Security Display Name QA (NO RELEASE)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/android-user-keyboard-security-displayname-20261111-source-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-user-security-keyboard-20261111-qa
+  cancel-in-progress: true
+jobs:
+  source-validation:
+    name: Android source tests and TypeScript only (no APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - name: Checkout exact candidate source, read-only
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: d3f8138dc64acde1586d84d0f0139a4f4e255349
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install pinned dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Test keyboard, identity and security behavior
+        run: node --test tests/android-keyboard-security-displayname-20261111.test.mjs tests/keyboard-safe-forms.test.mjs
+      - name: Full Android user app regression suite
+        if: always()
+        run: node --test tests/*.test.mjs
+      - name: TypeScript check
+        if: always()
+        run: npm run typecheck
+      - name: Confirm no release
+        if: always()
+        run: echo 'Read-only source tests and typecheck. No APK, AAB, signing, Play Store or Cloudflare deploy.'

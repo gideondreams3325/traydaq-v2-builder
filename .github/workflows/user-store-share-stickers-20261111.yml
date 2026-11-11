@@ -94,7 +94,14 @@ jobs:
       - name: Check Android TypeScript
         working-directory: private-src/mobile
         shell: bash
-        run: npm run typecheck > "$RUNNER_TEMP/android-typecheck.log" 2>&1 || { echo "::error::Native TypeScript failed"; exit 1; }
+        run: |
+          if npm run typecheck > "$RUNNER_TEMP/android-typecheck.log" 2>&1; then
+            echo "PASS Android TypeScript"
+          else
+            echo "::error::Native TypeScript failed; reporting only diagnostic file coordinates and TS codes."
+            grep -E 'error TS[0-9]+' "$RUNNER_TEMP/android-typecheck.log" | sed -E 's#^.*(src/[A-Za-z0-9_./-]+)\(([0-9]+),([0-9]+)\): error (TS[0-9]+):.*#\1:\2:\3 \4#' | head -25 || true
+            exit 1
+          fi
       - name: Export Android JavaScript only (no APK/AAB)
         working-directory: private-src/mobile
         shell: bash

@@ -1,0 +1,47 @@
+name: TRAYDAQ Staff compact navigation source QA (No APK)
+on:
+  push:
+    branches: [validation/staff-compact-navigation-20261111]
+    paths: [".github/workflows/staff-compact-navigation-validation.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: staff-compact-navigation-no-apk-20261111
+  cancel-in-progress: true
+jobs:
+  source-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout reviewed Staff changes, no release credentials
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 2c3b4159310f2a515c4871e7c8c4a3ea87b12405
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install web and iPhone Staff dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Verify role safety, navigation, and existing Glass UI
+        working-directory: private-src
+        run: |
+          node --test tests/staff-compact-navigation.test.mjs tests/staff-balanced-glass-theme.test.mjs tests/staff-balanced-glass-polish.test.mjs tests/staff-iphone-pwa.test.mjs
+          node --test admin-native/tests/staff-role-screen-isolation.test.mjs admin-native/tests/staff-mixed-role-contract.test.mjs admin-native/tests/native-only-security-hub.test.mjs
+      - name: iPhone Staff TypeScript and web bundle only
+        working-directory: private-src
+        run: |
+          npm run typecheck:staff
+          npm run build:staff
+      - name: Native Staff TypeScript only, no Expo/Gradle release
+        working-directory: private-src/admin-native
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run typecheck
+      - name: Confirm no mobile app release
+        run: echo "Source tests and web compilation only. No APK, AAB, EAS build, Play release, App Store release, or deployment."

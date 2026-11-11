@@ -1,0 +1,44 @@
+name: TRAYDAQ Main Baseline Test Audit for Web Jobs Events (No Release)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/web-jobs-events-main-baseline-20261111.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PRIVATE_SOURCE_SHA: 3ed8b5f40863ee9a937ab6d88da3b83c8f30b8f8
+jobs:
+  baseline:
+    name: Read-only baseline npm test on main (no deployment)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { echo "::error::npm ci failed"; exit 1; }
+      - name: Record unmodified main test baseline
+        working-directory: private-src
+        shell: bash
+        run: |
+          if npm test > "$RUNNER_TEMP/test.log" 2>&1; then
+            echo "PASS baseline"
+          else
+            echo "::warning::Baseline main also has failing tests"
+            grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/test.log" | head -20 || true
+          fi
+          grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/test.log" | tail -3 || true
+          echo "Read-only baseline recorded; no app write or deploy"

@@ -12,7 +12,7 @@ concurrency:
   group: traydaq-web-user-remove-bottom-bar-20261111
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 9521c93367ed66f2bcbfd713321c99f6dd77af33
+  PRIVATE_SOURCE_SHA: 727cabab1978368dbe8068f659b40a660c02c646
 jobs:
   web:
     name: Web tests, types, Cloudflare-targeted build (no deploy)

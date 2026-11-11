@@ -1,0 +1,51 @@
+name: TRAYDAQ Staff balanced glass source QA (NO APK)
+on:
+  push:
+    branches: [validation/staff-balanced-glass-20261111]
+    paths:
+      - ".github/workflows/staff-balanced-glass-validation.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: staff-balanced-glass-no-apk-20261111
+  cancel-in-progress: true
+jobs:
+  source-only-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout reviewed private Staff design branch (read only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 584f70bd0b813714788afcbee2695acf58c83922
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install web/iPhone dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Check glass palette and role-safety source tests
+        working-directory: private-src
+        run: |
+          node --test tests/staff-balanced-glass-theme.test.mjs
+          node --test admin-native/tests/staff-role-screen-isolation.test.mjs admin-native/tests/native-only-security-hub.test.mjs
+      - name: iPhone Staff TypeScript and browser bundle (not deployment)
+        working-directory: private-src
+        run: |
+          npm run typecheck:staff
+          npm run build:staff
+      - name: Verify native Staff TypeScript (source only, no Android toolchain)
+        working-directory: private-src/admin-native
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm run typecheck
+      - name: Confirm source-only verification
+        run: |
+          echo "PASS: existing Staff green/gold colors, role isolation, source TypeScript and iPhone browser bundle."
+          echo "No APK, AAB, Gradle, EAS build, App Store release, or Cloudflare deployment."

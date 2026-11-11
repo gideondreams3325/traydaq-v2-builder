@@ -1,0 +1,50 @@
+name: TRAYDAQ Legacy Feed Context Menu Source QA (NO RELEASE)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/legacy-feed-context-menu-20261111-source-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-legacy-feed-menu-no-release
+  cancel-in-progress: true
+jobs:
+  native-source-qa:
+    name: Native source regressions and TypeScript ONLY
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    defaults:
+      run:
+        working-directory: candidate/mobile
+    steps:
+      - name: Read-only checkout of exact PR candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fd0dfa34c4cf5ccfe46bca1d6f65ad78635c490b
+          path: candidate
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: candidate/mobile/package-lock.json
+      - name: Install locked JavaScript dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Focused legacy feed and all compact action menu tests
+        run: node --test tests/legacy-feed-compact-options-audit-20261111.test.mjs tests/search-real-avatar-and-compact-options-20261111.test.mjs
+      - name: Full Android JavaScript source regression suite
+        if: always()
+        run: node --test tests/*.test.mjs
+      - name: Native TypeScript check
+        if: always()
+        run: npm run typecheck
+      - name: Confirm no Android build or release
+        if: always()
+        run: echo 'Source tests and TypeScript only. No APK, AAB, signing or release.'

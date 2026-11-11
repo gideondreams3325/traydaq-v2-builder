@@ -204,3 +204,9 @@ Do not build users APK/AAB, change credentials, or release to any store.
 
 OWNER-AUTHORIZED NEW TRAYDAQ STAFF ANDROID RELEASE — 2026-11-09 18:36 UTC
 Run dedicated admin-native.yml only; signed Android 1.0.18, versionCode 21, com.traydaq.admin, from private main commit 0548a77ec99fe7371b775b722fcf4b443795a726. Latest builder source preflight https://github.com/gideondreams3325/traydaq-v2-builder/actions/runs/42675219529 completed successfully (both staff jobs). Preserve original Admin signing certificate, Firebase SHA-1 validation, voice notes, department roles, Legal Aid; build/verify/upload only the Staff APK, no user APK/AAB or Play Store release.
+
+
+USER-AUTHORIZED STAFF APK RELEASE — 2026-11-11
+Build the newly merged TRAYDAQ STAFF Android version 1.0.19 (versionCode 22), package com.traydaq.admin.
+Private source: gideondreams3325/traydaq-v2 commit 39336aa700f4dd42ac6404dc6095359bce5f6075 (merged release PR #366).
+Use only public V2 builder's dedicated .github/workflows/admin-native.yml (builder release PR #36), testing private staff security and department role isolation, running TypeScript, Expo checks, Gradle assembleRelease, original Admin signing and Firebase registered SHA-1 verification. Publish signed artifact TRAYDAQ-V2-Admin-Native-Android-APK. Never build customer app or publish to Play Store.

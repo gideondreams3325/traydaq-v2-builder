@@ -1,0 +1,63 @@
+name: TRAYDAQ Web Viewport Gap After Bottom Navigation Removal QA (No Release)
+# Read-only web validation for a pinned private source revision.
+# No source leakage, Android build, signing, Cloudflare deployment or AAB/APK.
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/user-web-viewport-gap-no-bottom-nav-20261111.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-web-viewport-gap-20261111
+  cancel-in-progress: true
+env:
+  PRIVATE_SOURCE_SHA: fc5cc95590e3891bf5ae5bb74e1036934c67e943
+jobs:
+  web:
+    name: Web tests + typecheck + Cloudflare-ready build (no deploy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install web dependencies
+        working-directory: private-src
+        shell: bash
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/web-install.log" 2>&1 || { echo "::error::Install failed"; exit 1; }
+      - name: Run all web regressions
+        working-directory: private-src
+        shell: bash
+        run: |
+          if npm test > "$RUNNER_TEMP/web-tests.log" 2>&1; then
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/web-tests.log" | tail -3 || true
+          else
+            echo "::error::Web tests failed"
+            grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/web-tests.log" | head -20 || true
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/web-tests.log" | tail -3 || true
+            exit 1
+          fi
+      - name: Check web TypeScript
+        working-directory: private-src
+        shell: bash
+        run: npm run typecheck > "$RUNNER_TEMP/web-types.log" 2>&1 || { echo "::error::Web TypeScript failed"; exit 1; }
+      - name: Build Cloudflare-targeted assets (no deployment)
+        working-directory: private-src
+        shell: bash
+        run: npm run build > "$RUNNER_TEMP/web-build.log" 2>&1 || { echo "::error::Web build failed"; exit 1; }
+      - name: Confirm no release actions
+        shell: bash
+        run: echo "PASS source-only web validation; no APK/AAB or Cloudflare deployment"

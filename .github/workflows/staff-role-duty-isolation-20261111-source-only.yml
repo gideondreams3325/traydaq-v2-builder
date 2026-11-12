@@ -22,7 +22,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 5a296b2013c6b79f97eaea998a6268512db029c4
+          ref: 1e1e03517dc7177bc9d5a031196cd3aa07cdaba4
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
@@ -33,9 +33,10 @@ jobs:
         working-directory: private-src
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "5a296b2013c6b79f97eaea998a6268512db029c4"
+          test "$(git rev-parse HEAD)" = "1e1e03517dc7177bc9d5a031196cd3aa07cdaba4"
           test -f tests/staff-strict-role-duty-isolation.test.mjs
           test -f admin-native/src/staffRoleScreens.ts
+          node -e "const a=require('./admin-native/app.config.js').expo; if(a.version!=='1.0.21'||a.android.versionCode!==24||a.android.package!=='com.traydaq.admin') throw Error('Incorrect TRAYDAQ STAFF release metadata')"
           test -f staff-pwa/src/StaffRolePanels.tsx
       - name: Test cross-platform Staff role, duty and private notification isolation
         working-directory: private-src

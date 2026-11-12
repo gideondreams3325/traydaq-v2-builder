@@ -22,7 +22,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 57ffce8e1db44f8e22906dc05825791b94255224
+          ref: 4cf44895670fb4acd054bfa57367b2c546bbe0b1
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
@@ -33,7 +33,7 @@ jobs:
         working-directory: private-src
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "57ffce8e1db44f8e22906dc05825791b94255224"
+          test "$(git rev-parse HEAD)" = "4cf44895670fb4acd054bfa57367b2c546bbe0b1"
           test -f tests/staff-strict-role-duty-isolation.test.mjs
           test -f admin-native/src/staffRoleScreens.ts
           test -f staff-pwa/src/StaffRolePanels.tsx

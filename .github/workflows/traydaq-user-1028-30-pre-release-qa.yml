@@ -1,0 +1,115 @@
+name: TRAYDAQ User 1.0.28 (30) Pre-Release QA (NO AAB)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/traydaq-user-1028-30-pre-release-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: traydaq-user-1028-30-pre-release-qa
+  cancel-in-progress: false
+
+jobs:
+  android-source:
+    name: Native tests, TypeScript and Android JS export (no APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - name: Verify private V2 source read access
+        env:
+          SOURCE_READ_TOKEN_PRESENT: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$SOURCE_READ_TOKEN_PRESENT" = true
+      - name: Checkout exact candidate SHA (read only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 369b3fa2c4e7849436376c6b0893d1fb6cc3627f
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Confirm candidate SHA
+        run: test "$(git -C private-src rev-parse HEAD)" = '369b3fa2c4e7849436376c6b0893d1fb6cc3627f'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Confirm User AAB version, package and prior For You fix
+        working-directory: private-src/mobile
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const a=JSON.parse(fs.readFileSync('app.json','utf8')).expo;
+          if(a.name!=='TRAYDAQ'||a.android?.package!=='com.traydaq.app'||a.version!=='1.0.28'||a.android.versionCode!==30)
+            throw Error('Incorrect Android user package or new release version');
+          const feed=fs.readFileSync('src/new-design/HomeFeedScreen.tsx','utf8');
+          if(!feed.includes('reportForYouRenderError')||!feed.includes('ForYouPostBoundary')||
+             !feed.includes('SafePicturePager')||!feed.includes('for-you-immersive-photo-swipe')||
+             !feed.includes('for-you-fallback-photo-swipe')||!feed.includes('Math.min(3,count)')||
+             feed.includes('for-you-gallery-navigation')||feed.includes('for-you-fallback-next'))
+            throw Error('For You three-dot swipe gallery/fallback repair missing');
+          console.log('PASS: User release identity, version 1.0.28 code 30 and For You fix');
+          NODE
+      - name: Install pinned native dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Run complete native regression suite
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Validate Android TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Validate Android runtime fixture TypeScript
+        working-directory: private-src/mobile
+        run: npx tsc --project tsconfig.runtime-fixture.json --noEmit
+      - name: Export Android JS/Hermes bundle without native packaging
+        working-directory: private-src/mobile
+        run: npx expo export --platform android
+      - name: Confirm no APK, AAB or release
+        run: echo 'Only source tests, TypeScript and JavaScript export were executed.'
+
+  web-source:
+    name: Web tests, TypeScript and Cloudflare-targeted build (no deploy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: '1'
+    steps:
+      - name: Verify private V2 source read access
+        env:
+          SOURCE_READ_TOKEN_PRESENT: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$SOURCE_READ_TOKEN_PRESENT" = true
+      - name: Checkout exact candidate SHA (read only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 369b3fa2c4e7849436376c6b0893d1fb6cc3627f
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Confirm candidate SHA
+        run: test "$(git -C private-src rev-parse HEAD)" = '369b3fa2c4e7849436376c6b0893d1fb6cc3627f'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install web dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Run web regressions
+        working-directory: private-src
+        run: npm test
+      - name: Validate web TypeScript
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Build Cloudflare-targeted web assets without deployment
+        working-directory: private-src
+        run: npm run build

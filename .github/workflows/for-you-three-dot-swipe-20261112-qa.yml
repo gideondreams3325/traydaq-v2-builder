@@ -47,11 +47,11 @@ jobs:
           node - <<'NODE'
           const fs=require('node:fs');
           const a=JSON.parse(fs.readFileSync('app.json','utf8')).expo;
-          if(a.name!=='TRAYDAQ'||a.android?.package!=='com.traydaq.app'||a.version!=='1.0.26'||a.android.versionCode!==28)
+          if(a.name!=='TRAYDAQ'||a.android?.package!=='com.traydaq.app'||a.version!=='1.0.27'||a.android.versionCode!==29)
             throw Error('Incorrect Android user package or new release version');
           const feed=fs.readFileSync('src/new-design/HomeFeedScreen.tsx','utf8');
           if(!feed.includes('reportForYouRenderError')||!feed.includes('ForYouPostBoundary'))throw Error('For You repair missing');
-          console.log('PASS: User release identity, version 1.0.26 code 28 and For You fix');
+          console.log('PASS: User release identity, version 1.0.27 code 29 and For You fix');
           NODE
       - name: Install pinned native dependencies
         working-directory: private-src/mobile

@@ -1,0 +1,82 @@
+name: TRAYDAQ Web For You Comments Parity QA (NO APP BUILD)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/traydaq-web-comment-parity-20261112.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: traydaq-web-comment-parity-source-qa
+  cancel-in-progress: false
+
+jobs:
+  web-source:
+    name: Full web tests, TypeScript and Cloudflare build (NO DEPLOY)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CI: '1'
+    steps:
+      - name: Checkout exact TRAYDAQ V2 candidate (read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 4591eb1050028586a4199c45f1e240d84df5e299
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Confirm private candidate SHA
+        run: test "$(git -C private-src rev-parse HEAD)" = "4591eb1050028586a4199c45f1e240d84df5e299"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install pinned web dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Run every web regression test (including new web comment parity)
+        working-directory: private-src
+        run: npm test
+      - name: Validate web TypeScript
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Build Cloudflare Pages assets locally (NO DEPLOY)
+        working-directory: private-src
+        run: npm run build
+  android-compatibility:
+    name: Android regression and TypeScript (NO APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - name: Checkout exact TRAYDAQ V2 candidate (read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 4591eb1050028586a4199c45f1e240d84df5e299
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install pinned Android dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Run native regression tests
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Validate Android TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Verify no Android packaging performed
+        run: echo "No APK, AAB, Google Play upload or Cloudflare deployment was performed."

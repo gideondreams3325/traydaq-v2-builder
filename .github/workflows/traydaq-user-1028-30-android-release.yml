@@ -139,8 +139,8 @@ jobs:
           # which cannot modify this project's dynamic app.config.js automatically.
           # Pin just the Expo Doctor-listed versions in the isolated runner checkout.
           npm install --no-audit --no-fund --save-exact \
-            expo@57.0.32 expo-image-picker@57.0.21 expo-asset@57.0.21 \
-            expo-sharing@57.0.25 expo-notifications@57.0.25 \
+            expo@57.0.33 expo-image-picker@57.0.21 expo-asset@57.0.21 \
+            expo-sharing@57.0.26 expo-notifications@57.0.25 \
             expo-location@57.0.23 expo-splash-screen@57.0.11 \
             expo-image-manipulator@57.0.22
           npx expo-doctor

@@ -1,4 +1,4 @@
-name: TRAYDAQ STAFF Android 1.0.21 (23) Signed APK
+name: TRAYDAQ STAFF Android 1.0.21 (24) Signed APK
 
 # Completely separate from the existing public TRAYDAQ V2 user APK builder.
 # Dedicated signed Staff APK build, triggered only by this release workflow file or manual dispatch.

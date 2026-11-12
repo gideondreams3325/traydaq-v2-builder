@@ -214,8 +214,9 @@ jobs:
               exit 0
             fi
             if ! grep -Eqi 'Read timed out|Connection reset|Connect timed out|Connection timed out|Could not download|Could not GET|Network is unreachable' "$LOG"; then
-              echo "::error::Gradle failed for a non-network reason. Inspect the private runner log."
-              grep -E '(^FAILURE:|^Execution failed for task |^> Task :[^ ]+ FAILED)' "$LOG" | tail -8 || true
+              echo "::error::Gradle failed for a non-network reason; printing only structured error summaries."
+              # Never publish the full private native build log or environment.
+              grep -E '(^FAILURE:|^\* What went wrong:|^\* Try:|^Execution failed for task |^> Task :[^ ]+ FAILED|^> A problem occurred|^> Could not|^> Plugin |^> Failed |^> Cannot |^Caused by:)' "$LOG" | tail -40 || true
               exit 1
             fi
             echo "::warning::Official dependency download failed on attempt $attempt."

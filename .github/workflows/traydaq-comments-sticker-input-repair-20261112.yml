@@ -1,0 +1,79 @@
+name: TRAYDAQ Web and Android Comments Sticker Input QA (NO RELEASE)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/traydaq-comments-sticker-input-repair-20261112.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-sticker-input-source-validation
+  cancel-in-progress: false
+jobs:
+  web:
+    name: Web keyboard/sticker comment tests and Cloudflare build
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CI: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: b550c4647d58ba2521a43f5b4a1bbac921e9ed79
+          path: private-src
+          persist-credentials: false
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+      - name: Verify exact source candidate
+        run: test "$(git -C private-src rev-parse HEAD)" = "b550c4647d58ba2521a43f5b4a1bbac921e9ed79"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install web dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Web regression tests
+        working-directory: private-src
+        run: npm test
+      - name: Web TypeScript
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Cloudflare-targeted web build, without deployment
+        working-directory: private-src
+        run: npm run build
+  native:
+    name: Android comments tests, TypeScript and JS export (NO APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: b550c4647d58ba2521a43f5b4a1bbac921e9ed79
+          path: private-src
+          persist-credentials: false
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+      - name: Verify exact source candidate
+        run: test "$(git -C private-src rev-parse HEAD)" = "b550c4647d58ba2521a43f5b4a1bbac921e9ed79"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install Android dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Android regression suite
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Android TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android JavaScript export, without packaging
+        working-directory: private-src/mobile
+        run: npx expo export --platform android

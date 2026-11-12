@@ -22,7 +22,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 9043a6590a929d95754399eb94aaa1620f9b3590
+          ref: f18145a7dc21f4bf5980098258e4f3538374da4b
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
@@ -33,7 +33,7 @@ jobs:
         working-directory: private-src
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "9043a6590a929d95754399eb94aaa1620f9b3590"
+          test "$(git rev-parse HEAD)" = "f18145a7dc21f4bf5980098258e4f3538374da4b"
           test -f tests/staff-strict-role-duty-isolation.test.mjs
           test -f admin-native/src/staffRoleScreens.ts
           node -e "const a=require('./admin-native/app.config.js').expo; if(a.version!=='1.0.21'||a.android.versionCode!==24||a.android.package!=='com.traydaq.admin') throw Error('Incorrect TRAYDAQ STAFF release metadata')"

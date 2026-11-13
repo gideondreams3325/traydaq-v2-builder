@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PRIVATE_SOURCE_SHA: bb022d9209d2403f6c8644479e08f4a64c8ee1bb
+  PRIVATE_SOURCE_SHA: 991fc95a2a81de55691e20ea8a39ae65503770d5
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 
@@ -44,6 +44,26 @@ jobs:
       - name: Cloudflare-targeted static compile (no deployment)
         working-directory: private-src
         run: npm run build
+      - name: Confirm production NativeParity editor is bundled
+        working-directory: private-src
+        run: |
+          node --input-type=module <<'NODE'
+          import {readdirSync,readFileSync} from 'node:fs';
+          import {join} from 'node:path';
+          const visit=['dist'];
+          let hasEditor=false;
+          while(visit.length){
+            const dir=visit.pop();
+            for(const entry of readdirSync(dir,{withFileTypes:true})){
+              const path=join(dir,entry.name);
+              if(entry.isDirectory())visit.push(path);
+              else if(entry.name.endsWith('.js')&&readFileSync(path,'utf8').includes('firebase-content-edits'))
+                hasEditor=true;
+            }
+          }
+          if(!hasEditor)throw Error('Missing live Firebase content editing UI in Cloudflare web assets');
+          console.log('PASS: Production web bundle includes authenticated owner editor');
+          NODE
 
   android:
     runs-on: ubuntu-latest

@@ -42,6 +42,7 @@ jobs:
         working-directory: private-src
         run: npm test
       - name: Web TypeScript
+        if: always()
         working-directory: private-src
         run: npm run typecheck
       - name: Cloudflare web production build only (no deployment)
@@ -75,6 +76,7 @@ jobs:
         working-directory: private-src/mobile
         run: node --test tests/*.test.mjs
       - name: Android TypeScript
+        if: always()
         working-directory: private-src/mobile
         run: npm run typecheck
       - name: Expo JS export only; no APK, AAB or Gradle build
@@ -104,3 +106,4 @@ jobs:
 
 # SOURCE VALIDATION ONLY. Never deploy, create Android APK/AAB, or sign packages.
 # Rerun after matching legacy For You assertions to Following-tab semantics.
+# Rechecked legacy For You loading, brightness, and video readiness assertions.

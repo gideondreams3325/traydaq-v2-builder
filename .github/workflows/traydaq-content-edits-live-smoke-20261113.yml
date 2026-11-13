@@ -20,7 +20,10 @@ jobs:
         run: |
           node --input-type=module <<'NODE'
           const site='https://traydaq.com/';
-          const res=await fetch(site,{redirect:'follow',signal:AbortSignal.timeout(20000)});
+          const manifest=await fetch(new URL('/app-version.json',site),{signal:AbortSignal.timeout(15000),headers:{'cache-control':'no-cache'}});
+          const manifestText=await manifest.text();
+          console.log('Live version manifest:',manifest.status,manifestText.slice(0,160));
+          const res=await fetch(site,{redirect:'follow',signal:AbortSignal.timeout(20000),headers:{'cache-control':'no-cache'}});
           if(!res.ok)throw Error('Homepage returned HTTP '+res.status);
           const html=await res.text();
           if(!html.toLowerCase().includes('<html'))throw Error('Homepage is not HTML');
@@ -39,9 +42,9 @@ jobs:
           }
           for(const match of html.matchAll(/(?:src|href)=["']([^"']+\.js(?:\?[^"']*)?)["']/g))
             enqueue(match[1],res.url);
-          console.log('Homepage JS references:',queue.length);
+          console.log('Homepage JS references:',queue.length,queue.slice(0,12).map(s=>new URL(s).pathname));
           let fetched=0,marker=false;
-          while(queue.length&&seen.size<110){
+          while(queue.length&&seen.size<900){
             const next=queue.shift();
             if(seen.has(next))continue;
             seen.add(next);
@@ -57,7 +60,8 @@ jobs:
                 enqueue(match[1],next);
             }catch{}
           }
-          console.log('Crawled JS resources:',fetched);
+          console.log('Crawled JS resources:',fetched,'remaining:',queue.length);
+          console.log('Found marker in fetched JavaScript:',marker);
           if(!marker)throw Error('Web editing marker not present in reachable live JS assets');
           NODE
 # Public read-only site check. No private source, credentials, app build or deployment.

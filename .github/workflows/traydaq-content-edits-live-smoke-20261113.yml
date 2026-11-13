@@ -20,6 +20,7 @@ jobs:
         run: |
           node --input-type=module <<'NODE'
           const site='https://traydaq.com/';
+          async function liveCheck(){
           const manifest=await fetch(new URL('/app-version.json',site),{signal:AbortSignal.timeout(15000),headers:{'cache-control':'no-cache'}});
           const manifestText=await manifest.text();
           console.log('Live version manifest:',manifest.status,manifestText.slice(0,160));
@@ -52,7 +53,7 @@ jobs:
               const part=await fetch(next,{signal:AbortSignal.timeout(12000)});
               if(!part.ok)continue;
               const text=await part.text();fetched++;
-              if(text.includes('web-content-edits')){
+              if(text.includes('firebase-content-edits')){
                 console.log('PASS: Moderated web post editing is in deployed JavaScript');
                 marker=true;break;
               }
@@ -62,6 +63,14 @@ jobs:
           }
           console.log('Crawled JS resources:',fetched,'remaining:',queue.length);
           console.log('Found marker in fetched JavaScript:',marker);
-          if(!marker)throw Error('Web editing marker not present in reachable live JS assets');
+          return marker;
+          }
+          for(let attempt=1;attempt<=14;attempt++){
+            console.log('Checking deployed NativeParity editor, attempt',attempt);
+            const ok=await liveCheck().catch(e=>{console.log('Transient deploy check:',e.message);return false;});
+            if(ok){console.log('PASS: Production Firebase content editing is deployed on traydaq.com');process.exit(0);}
+            if(attempt<14)await new Promise(done=>setTimeout(done,15000));
+          }
+          throw Error('Production Firebase content editing is not visible in live JavaScript');
           NODE
 # Public read-only site check. No private source, credentials, app build or deployment.

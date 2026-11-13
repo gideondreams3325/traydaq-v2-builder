@@ -1,0 +1,75 @@
+name: TRAYDAQ Following Notifications Live Web Smoke (Read Only)
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/traydaq-following-notifications-live-smoke-20261113.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-web-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Confirm Cloudflare publishes new followed creator notification controls
+        run: |
+          node --input-type=module <<'NODE'
+          const site='https://traydaq.com/';
+          async function liveCheck(){
+          const manifest=await fetch(new URL('/app-version.json',site),{signal:AbortSignal.timeout(15000),headers:{'cache-control':'no-cache'}});
+          const manifestText=await manifest.text();
+          console.log('Live version manifest:',manifest.status,manifestText.slice(0,160));
+          const res=await fetch(site,{redirect:'follow',signal:AbortSignal.timeout(20000),headers:{'cache-control':'no-cache'}});
+          if(!res.ok)throw Error('Homepage returned HTTP '+res.status);
+          const html=await res.text();
+          if(!html.toLowerCase().includes('<html'))throw Error('Homepage is not HTML');
+          console.log('Homepage available; final origin:',new URL(res.url).origin);
+          const acceptedOrigin=new URL(res.url).origin;
+          const queue=[],seen=new Set();
+          function enqueue(value,context){
+            try{
+              const raw=value.trim();
+              if(!/\.js(?:\?.*)?$/.test(raw)||raw.length>220||raw.includes('..'))return;
+              for(const candidate of [new URL(raw,context),new URL(raw,res.url)]){
+                if(candidate.origin===acceptedOrigin&&!seen.has(candidate.href))
+                  queue.push(candidate.href);
+              }
+            }catch{}
+          }
+          for(const match of html.matchAll(/(?:src|href)=["']([^"']+\.js(?:\?[^"']*)?)["']/g))
+            enqueue(match[1],res.url);
+          console.log('Homepage JS references:',queue.length,queue.slice(0,12).map(s=>new URL(s).pathname));
+          let fetched=0,settings=false,service=false;
+          while(queue.length&&seen.size<900){
+            const next=queue.shift();
+            if(seen.has(next))continue;
+            seen.add(next);
+            try{
+              const part=await fetch(next,{signal:AbortSignal.timeout(12000)});
+              if(!part.ok)continue;
+              const text=await part.text();fetched++;
+              if(text.includes('following-post-notification-preferences'))settings=true;
+              if(text.includes('firebase-following-notifications'))service=true;
+              if(settings&&service){console.log('PASS: Following alert settings and service API are both in live JS');break;}
+              for(const match of text.matchAll(/["']((?:\.\/|\/assets\/|assets\/)[^"' ]+\.js(?:\?[^"' ]*)?)["']/g))
+                enqueue(match[1],next);
+            }catch{}
+          }
+          console.log('Crawled JS resources:',fetched,'remaining:',queue.length);
+          console.log('Following settings marker:',settings,'Service API marker:',service);
+          return settings&&service;
+          }
+          for(let attempt=1;attempt<=14;attempt++){
+            console.log('Checking deployed followed-creator notifications, attempt',attempt);
+            const ok=await liveCheck().catch(e=>{console.log('Transient deploy check:',e.message);return false;});
+            if(ok){console.log('PASS: Following notification UI is deployed on traydaq.com');process.exit(0);}
+            if(attempt<14)await new Promise(done=>setTimeout(done,15000));
+          }
+          throw Error('Following notification UI is not yet visible in live JavaScript');
+          NODE
+# Public read-only site check. No private source, credentials, app build or deployment.

@@ -1,0 +1,51 @@
+name: TRAYDAQ Content Edit Live Web Smoke (Read Only)
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/traydaq-content-edits-live-smoke-20261113.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-web-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Confirm Git-connected Cloudflare publication of reviewed edit UI
+        run: |
+          node --input-type=module <<'NODE'
+          const base='https://traydaq.com/';
+          async function check(){
+            const page=await fetch(base,{signal:AbortSignal.timeout(15000),redirect:'follow'});
+            if(!page.ok)return {ok:false,why:'Homepage HTTP '+page.status};
+            const html=await page.text();
+            if(!html.toLowerCase().includes('<html'))return {ok:false,why:'Homepage did not return HTML'};
+            const links=[...html.matchAll(/(?:src|href)=["']([^"']+\.js(?:\?[^"']*)?)["']/g)]
+              .map(m=>new URL(m[1],base)).filter(u=>u.origin===new URL(base).origin).slice(0,30);
+            if(!links.length)return {ok:false,why:'No same-origin web JS entry found'};
+            let found=false;
+            for(const link of links){
+              const result=await fetch(link,{signal:AbortSignal.timeout(15000)});
+              if(!result.ok)continue;
+              const source=await result.text();
+              if(source.includes('web-content-edits')){found=true;break;}
+            }
+            return {ok:found,why:found?'Live web bundle contains moderated content-editor API':'New editor marker not yet present in the live bundle'};
+          }
+          for(let n=1;n<=9;n++){
+            try{
+              const result=await check();
+              console.log('Public deployment check '+n+': '+result.why);
+              if(result.ok){console.log('PASS: New reviewed content-edit bundle available at traydaq.com');process.exit(0);}
+            }catch(e){console.log('Public deployment check '+n+': transient network error');}
+            if(n<9)await new Promise(resolve=>setTimeout(resolve,15000));
+          }
+          process.exit(1);
+          NODE
+# Does not access private repositories, credentials or app installs.
+# Read-only validation of the already-connected Cloudflare site. No build, APK/AAB or deployment.

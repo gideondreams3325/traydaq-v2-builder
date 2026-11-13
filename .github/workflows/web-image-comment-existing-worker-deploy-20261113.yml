@@ -1,0 +1,75 @@
+name: TRAYDAQ Existing Customer Worker Image Comments Deploy (NO AAB)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/web-image-comment-existing-worker-deploy-20261113.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-existing-customer-worker-web-publish
+  cancel-in-progress: false
+env:
+  PRIVATE_SOURCE_SHA: 2cce0f578fab4a490893b283a679cccf8b10d5b3
+jobs:
+  existing-customer-worker:
+    name: Verify, test, build, and update existing customer Worker only
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: '1'
+    steps:
+      - name: Check private source access
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - name: Checkout exact, already merged private production source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Verify exact main source, existing Worker target, and web-only changes
+        working-directory: private-src
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+          grep -q 'onImage={file=>void stageImage(file)}' src/native-parity/Discussions.tsx
+          grep -q '"name": "traydaq-v2"' wrangler.jsonc
+          test -f scripts/verify-existing-customer-worker.mjs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install locked web dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Run full web regression suite
+        working-directory: private-src
+        run: npm test
+      - name: Validate TypeScript
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Build Cloudflare customer web
+        working-directory: private-src
+        run: npm run build
+      - name: Verify EXISTING traydaq-v2 Worker with read-only Cloudflare preflight
+        working-directory: private-src
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/verify-existing-customer-worker.mjs
+      - name: Update existing customer Worker (no Pages, legal/staff, APK or AAB)
+        uses: cloudflare/wrangler-action@v3
+        with:
+          workingDirectory: private-src
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: '4.156.2'
+          command: deploy --config wrangler.jsonc
+      - name: Confirm existing customer Worker deployment
+        run: echo "Customer traydaq-v2 Worker updated from merged source. No mobile build, APK/AAB or staff/legal Worker deployment."

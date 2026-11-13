@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PRIVATE_SOURCE_SHA: 991fc95a2a81de55691e20ea8a39ae65503770d5
+  PRIVATE_SOURCE_SHA: f2116c3199440a74120ee5c365365a92e283727d
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 

@@ -1,0 +1,63 @@
+name: TRAYDAQ Android For You Comments Gesture Lock QA (NO AAB)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/android-for-you-comments-gesture-lock-20261113.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-comments-gesture-lock-20261113-source
+  cancel-in-progress: true
+env:
+  PRIVATE_SOURCE_SHA: 4f8c374d93df23652554412101f0f1963c933566
+jobs:
+  android-source:
+    name: Native regression suite, typecheck and Android JS export (no APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - name: Check private source access
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - name: Checkout exact private candidate commit
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Verify exact source and comments lock
+        working-directory: private-src/mobile
+        run: |
+          set -euo pipefail
+          test "$(git -C .. rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+          grep -q 'for-you-comments-gesture-shield' src/new-design/HomeFeedScreen.tsx
+          grep -q 'commentsOpenRef.current' src/new-design/HomeFeedScreen.tsx
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked Android dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Run entire Android native test suite
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Typecheck Android app and runtime fixtures
+        working-directory: private-src/mobile
+        run: |
+          npm run typecheck
+          npx tsc --project tsconfig.runtime-fixture.json --noEmit
+      - name: Validate Android JavaScript bundle
+        working-directory: private-src/mobile
+        run: npx expo export --platform android
+      - name: Confirm validation-only
+        run: echo 'PASS - No native build, APK, AAB, signing, Google Play upload or deployment.'

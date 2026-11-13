@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PRIVATE_SOURCE_SHA: 860b4c941e06412063dee49faa915bc8b7e3ed79
+  PRIVATE_SOURCE_SHA: dcb63a4d86b8be520b467a93ca9d4350969999ee
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 
@@ -30,6 +30,7 @@ jobs:
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
+          fetch-depth: 40
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -38,8 +39,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git fetch --no-tags --depth=1 origin main
-          changed="$(git diff --name-only FETCH_HEAD HEAD)"
+          BASE_SHA=5618a0cd88dbb8b248778e490b58f051fffa54ff
+          git cat-file -e "$BASE_SHA^{commit}"
+          changed="$(git diff --name-only "$BASE_SHA" HEAD)"
           printf '%s\n' "$changed"
           if [ -z "$changed" ]; then echo "::error::Expected Android source changes"; exit 1; fi
           if printf '%s\n' "$changed" | grep -Ev '^mobile/' ; then

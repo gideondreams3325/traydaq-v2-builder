@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-web-comment-photos-no-stickers
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 95394c94964f9fefcb9118138748254bb298ef60
+  PRIVATE_SOURCE_SHA: 44a88bab5f1682fa4dd940aba5699fde2445a79f
 jobs:
   web:
     name: Web tests, typecheck and Cloudflare-targeted build (no deploy or AAB)

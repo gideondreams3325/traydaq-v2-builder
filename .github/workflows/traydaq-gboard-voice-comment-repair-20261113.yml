@@ -1,0 +1,69 @@
+name: TRAYDAQ Gboard Stickers and Voice Comments QA (NO RELEASE)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/traydaq-gboard-voice-comment-repair-20261113.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-gboard-voice-source-qa
+  cancel-in-progress: false
+jobs:
+  web:
+    name: Web Gboard rich clipboard and voice errors, TypeScript and Cloudflare build
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CI: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: e50cd4f169e1be1665a5d1fb50e6e1f6e4bd9450
+          path: private-src
+          persist-credentials: false
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+      - run: test "$(git -C private-src rev-parse HEAD)" = "e50cd4f169e1be1665a5d1fb50e6e1f6e4bd9450"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - working-directory: private-src
+        run: npm test
+      - working-directory: private-src
+        run: npm run typecheck
+      - working-directory: private-src
+        run: npm run build
+  android:
+    name: Android Gboard regression, TypeScript and JS export (no APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: e50cd4f169e1be1665a5d1fb50e6e1f6e4bd9450
+          path: private-src
+          persist-credentials: false
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+      - run: test "$(git -C private-src rev-parse HEAD)" = "e50cd4f169e1be1665a5d1fb50e6e1f6e4bd9450"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - working-directory: private-src/mobile
+        run: npm run typecheck
+      - working-directory: private-src/mobile
+        run: npx expo export --platform android

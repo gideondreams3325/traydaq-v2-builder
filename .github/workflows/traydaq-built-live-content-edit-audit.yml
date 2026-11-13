@@ -1,0 +1,64 @@
+name: TRAYDAQ Compare Built Web Edit With Live Cloudflare
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/traydaq-built-live-content-edit-audit.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compare-web-assets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: dc23283626ac2f455bc367b9c60ce9a437524a27
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build only web assets (no deploy or APK/AAB)
+        working-directory: private-src
+        run: |
+          npm ci --no-audit --no-fund >/dev/null
+          npm run build >/dev/null
+      - name: Compare generated JavaScript to public site by asset filename
+        working-directory: private-src
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFileSync,readdirSync} from 'node:fs';
+          import {join,relative} from 'node:path';
+          const base='dist';
+          const found=[];
+          function walk(p){
+            for(const item of readdirSync(p,{withFileTypes:true})){
+              const path=join(p,item.name);
+              if(item.isDirectory())walk(path);
+              else if(item.name.endsWith('.js')){
+                const body=readFileSync(path,'utf8');
+                if(body.includes('web-content-edits'))found.push({path:relative(base,path),bytes:Buffer.byteLength(body)});
+              }
+            }
+          }
+          walk(base);
+          const html=readFileSync(join(base,'index.html'),'utf8');
+          const localEntry=[...html.matchAll(/src=["']([^"']+\.js)["']/g)].map(x=>x[1]);
+          console.log('LOCAL expected index scripts:',localEntry);
+          console.log('LOCAL exact web-content-edits markers:',found);
+          const origin='https://traydaq.com/';
+          const liveIndex=await fetch(origin,{signal:AbortSignal.timeout(15000)});
+          const liveHtml=await liveIndex.text();
+          const liveEntry=[...liveHtml.matchAll(/src=["']([^"']+\.js)["']/g)].map(x=>x[1]);
+          console.log('LIVE index scripts:',liveEntry);
+          for(const item of found){
+            const res=await fetch(new URL('/'+item.path,origin),{signal:AbortSignal.timeout(15000)});
+            const body=await res.text();
+            console.log('Expected marker asset live request:',item.path,'HTTP',res.status,'bytes',body.length,'marker',body.includes('web-content-edits'),'type',res.headers.get('content-type'));
+          }
+          if(!found.length)throw Error('Generated web build lacks the editor code despite direct React imports');
+          NODE
+# Read-only inspection; no private source is output, no release or credentials.

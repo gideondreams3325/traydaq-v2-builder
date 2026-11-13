@@ -1,0 +1,105 @@
+name: TRAYDAQ Following Feed Android Web Validation (No APK/AAB)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/following-feed-android-web-20261113-qa.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: following-feed-android-web-qa-20261113
+  cancel-in-progress: true
+env:
+  PRIVATE_SOURCE_REF: feat/following-feed-android-web-20261113
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+
+jobs:
+  web:
+    name: Web Following + full regression suite + Cloudflare-targeted build
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_REF }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install pinned web dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Following feed targeted web tests
+        working-directory: private-src
+        run: node --test tests/following-feed-android-web-20261113.test.mjs
+      - name: All web regressions
+        working-directory: private-src
+        run: npm test
+      - name: Web TypeScript
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Cloudflare web production build only (no deployment)
+        working-directory: private-src
+        run: npm run build
+
+  android:
+    name: Android Following + full native tests + TypeScript + JS-only export
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_REF }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install pinned Android dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Following feed targeted Android tests
+        working-directory: private-src/mobile
+        run: node --test tests/following-feed-android-web-20261113.test.mjs
+      - name: All native regressions
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Android TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Expo JS export only; no APK, AAB or Gradle build
+        working-directory: private-src/mobile
+        run: npx expo export --platform android
+
+  edge:
+    name: Supabase Following catalogue Deno typecheck (no deploy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_REF }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Deno typecheck native catalog with local shared imports
+        working-directory: private-src
+        run: |
+          echo '{"nodeModulesDir":"auto"}' > deno.json
+          deno check --config deno.json supabase/functions/firebase-native-content/index.ts
+
+# SOURCE VALIDATION ONLY. Never deploy, create Android APK/AAB, or sign packages.

@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-web-comment-photos-no-stickers
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 97763f2db87796217d7f6b97d8786d0fed8df0cb
+  PRIVATE_SOURCE_SHA: 9c4186e5a18bfc0cbb5d91373ebe1190c8c19fe3
 jobs:
   web:
     name: Web tests, typecheck and Cloudflare-targeted build (no deploy or AAB)
@@ -37,6 +37,8 @@ jobs:
         run: |
           test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
           grep -q 'onImage={file=>void stageImage(file)}' src/native-parity/Discussions.tsx
+          grep -q 'payload.append("image",attachment,attachment.name)' src/native-parity/Discussions.tsx
+          grep -q 'const incomingImage=form.get("image")' supabase/functions/firebase-discussions/index.ts
           grep -q 'aria-label="Attach image to comment"' src/native-parity/Discussions.tsx
           if grep -q 'setStickerTrayOpen' src/native-parity/Discussions.tsx; then exit 1; fi
       - uses: actions/setup-node@v4

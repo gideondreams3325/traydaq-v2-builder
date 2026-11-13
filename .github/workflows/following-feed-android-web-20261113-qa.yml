@@ -103,3 +103,4 @@ jobs:
           deno check --config deno.json supabase/functions/firebase-native-content/index.ts
 
 # SOURCE VALIDATION ONLY. Never deploy, create Android APK/AAB, or sign packages.
+# Rerun after matching legacy For You assertions to Following-tab semantics.

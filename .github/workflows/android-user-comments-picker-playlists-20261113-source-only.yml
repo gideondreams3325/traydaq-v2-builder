@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-android-comments-picker-playlists-20261113-source
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 1a41e93c79c39aaaf723840f79854015d3a3a407
+  PRIVATE_SOURCE_SHA: 492652cb6daa4760d0b77694bc016837d80ad90d
 jobs:
   android-source:
     name: Full native regression, TypeScript and JS export (no APK or AAB)

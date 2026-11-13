@@ -19,33 +19,45 @@ jobs:
       - name: Confirm Git-connected Cloudflare publication of reviewed edit UI
         run: |
           node --input-type=module <<'NODE'
-          const base='https://traydaq.com/';
-          async function check(){
-            const page=await fetch(base,{signal:AbortSignal.timeout(15000),redirect:'follow'});
-            if(!page.ok)return {ok:false,why:'Homepage HTTP '+page.status};
-            const html=await page.text();
-            if(!html.toLowerCase().includes('<html'))return {ok:false,why:'Homepage did not return HTML'};
-            const links=[...html.matchAll(/(?:src|href)=["']([^"']+\.js(?:\?[^"']*)?)["']/g)]
-              .map(m=>new URL(m[1],base)).filter(u=>u.origin===new URL(base).origin).slice(0,30);
-            if(!links.length)return {ok:false,why:'No same-origin web JS entry found'};
-            let found=false;
-            for(const link of links){
-              const result=await fetch(link,{signal:AbortSignal.timeout(15000)});
-              if(!result.ok)continue;
-              const source=await result.text();
-              if(source.includes('web-content-edits')){found=true;break;}
-            }
-            return {ok:found,why:found?'Live web bundle contains moderated content-editor API':'New editor marker not yet present in the live bundle'};
-          }
-          for(let n=1;n<=9;n++){
+          const site='https://traydaq.com/';
+          const res=await fetch(site,{redirect:'follow',signal:AbortSignal.timeout(20000)});
+          if(!res.ok)throw Error('Homepage returned HTTP '+res.status);
+          const html=await res.text();
+          if(!html.toLowerCase().includes('<html'))throw Error('Homepage is not HTML');
+          console.log('Homepage available; final origin:',new URL(res.url).origin);
+          const acceptedOrigin=new URL(res.url).origin;
+          const queue=[],seen=new Set();
+          function enqueue(value,context){
             try{
-              const result=await check();
-              console.log('Public deployment check '+n+': '+result.why);
-              if(result.ok){console.log('PASS: New reviewed content-edit bundle available at traydaq.com');process.exit(0);}
-            }catch(e){console.log('Public deployment check '+n+': transient network error');}
-            if(n<9)await new Promise(resolve=>setTimeout(resolve,15000));
+              const raw=value.trim();
+              if(!/\.js(?:\?.*)?$/.test(raw)||raw.length>220||raw.includes('..'))return;
+              for(const candidate of [new URL(raw,context),new URL(raw,res.url)]){
+                if(candidate.origin===acceptedOrigin&&!seen.has(candidate.href))
+                  queue.push(candidate.href);
+              }
+            }catch{}
           }
-          process.exit(1);
+          for(const match of html.matchAll(/(?:src|href)=["']([^"']+\.js(?:\?[^"']*)?)["']/g))
+            enqueue(match[1],res.url);
+          console.log('Homepage JS references:',queue.length);
+          let fetched=0,marker=false;
+          while(queue.length&&seen.size<110){
+            const next=queue.shift();
+            if(seen.has(next))continue;
+            seen.add(next);
+            try{
+              const part=await fetch(next,{signal:AbortSignal.timeout(12000)});
+              if(!part.ok)continue;
+              const text=await part.text();fetched++;
+              if(text.includes('web-content-edits')){
+                console.log('PASS: Moderated web post editing is in deployed JavaScript');
+                marker=true;break;
+              }
+              for(const match of text.matchAll(/["']((?:\.\/|\/assets\/|assets\/)[^"' ]+\.js(?:\?[^"' ]*)?)["']/g))
+                enqueue(match[1],next);
+            }catch{}
+          }
+          console.log('Crawled JS resources:',fetched);
+          if(!marker)throw Error('Web editing marker not present in reachable live JS assets');
           NODE
-# Does not access private repositories, credentials or app installs.
-# Read-only validation of the already-connected Cloudflare site. No build, APK/AAB or deployment.
+# Public read-only site check. No private source, credentials, app build or deployment.

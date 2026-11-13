@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-android-comments-gesture-lock-20261113-source
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 0913bd32e4c3f6de47882015d363885bef7a2fd0
+  PRIVATE_SOURCE_SHA: 8dbf380a7393a1b199974883a4fd5d4111a5b596
 jobs:
   android-source:
     name: Native regression suite, typecheck and Android JS export (no APK/AAB)

@@ -30,12 +30,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 4821694a97f49c4c0deca7e458975b291dba93c6
+          ref: 50200ece3a3a73a926f076eee00d801c05c16216
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
       - name: Confirm candidate SHA
-        run: test "$(git -C private-src rev-parse HEAD)" = '4821694a97f49c4c0deca7e458975b291dba93c6'
+        run: test "$(git -C private-src rev-parse HEAD)" = '50200ece3a3a73a926f076eee00d801c05c16216'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -55,7 +55,7 @@ jobs:
              !feed.includes('for-you-fallback-photo-swipe')||!feed.includes('Math.min(3,count)')||
              feed.includes('for-you-gallery-navigation')||feed.includes('for-you-fallback-next'))
             throw Error('For You three-dot swipe gallery/fallback repair missing');
-          console.log('PASS: User release identity, version 1.0.29 code 30 and For You fix');
+          console.log('PASS: User release identity, version 1.0.29 code 31 and For You fix');
           NODE
       - name: Install pinned native dependencies
         working-directory: private-src/mobile
@@ -90,12 +90,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 4821694a97f49c4c0deca7e458975b291dba93c6
+          ref: 50200ece3a3a73a926f076eee00d801c05c16216
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
       - name: Confirm candidate SHA
-        run: test "$(git -C private-src rev-parse HEAD)" = '4821694a97f49c4c0deca7e458975b291dba93c6'
+        run: test "$(git -C private-src rev-parse HEAD)" = '50200ece3a3a73a926f076eee00d801c05c16216'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

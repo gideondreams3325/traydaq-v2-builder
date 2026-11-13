@@ -20,11 +20,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: e50cd4f169e1be1665a5d1fb50e6e1f6e4bd9450
+          ref: e6885490d60114c4cc3938bece77fa47c7434c0d
           path: private-src
           persist-credentials: false
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
-      - run: test "$(git -C private-src rev-parse HEAD)" = "e50cd4f169e1be1665a5d1fb50e6e1f6e4bd9450"
+      - run: test "$(git -C private-src rev-parse HEAD)" = "e6885490d60114c4cc3938bece77fa47c7434c0d"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -49,11 +49,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: e50cd4f169e1be1665a5d1fb50e6e1f6e4bd9450
+          ref: e6885490d60114c4cc3938bece77fa47c7434c0d
           path: private-src
           persist-credentials: false
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
-      - run: test "$(git -C private-src rev-parse HEAD)" = "e50cd4f169e1be1665a5d1fb50e6e1f6e4bd9450"
+      - run: test "$(git -C private-src rev-parse HEAD)" = "e6885490d60114c4cc3938bece77fa47c7434c0d"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

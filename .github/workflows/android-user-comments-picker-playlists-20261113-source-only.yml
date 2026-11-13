@@ -1,0 +1,65 @@
+name: TRAYDAQ Android Comments Picker and Playlists QA (NO AAB)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/android-user-comments-picker-playlists-20261113-source-only.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-comments-picker-playlists-20261113-source
+  cancel-in-progress: true
+env:
+  PRIVATE_SOURCE_SHA: b716117c0e0a353607ad886736e05fa6f9396eae
+jobs:
+  android-source:
+    name: Full native regression, TypeScript and JS export (no APK or AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - name: Check private source read access
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - name: Checkout exact private change candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Confirm source pinned and no release
+        working-directory: private-src/mobile
+        run: |
+          set -euo pipefail
+          test "$(git -C .. rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+          grep -q 'recoverCommentImageIntent' src/new-design/HomeFeedScreen.tsx
+          grep -q 'comments-down-swipe-region' src/new-design/DiscussionPanel.tsx
+          grep -q 'music-playlist-empty-create' src/new-design/MusicV2Screen.tsx
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked native JS dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Run complete Android native regression suite
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Native TS typecheck
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android runtime fixture TS typecheck
+        working-directory: private-src/mobile
+        run: npx tsc --project tsconfig.runtime-fixture.json --noEmit
+      - name: Source-only Android JS export
+        working-directory: private-src/mobile
+        run: npx expo export --platform android
+      - name: Confirm no native package or release
+        run: echo 'Validation only. No Gradle, APK, AAB, signing, Google Play upload or release.'

@@ -1,0 +1,75 @@
+name: TRAYDAQ Web Android Post Comments Control Source QA (No APK)
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/post-comments-control-web-android-20261113-source-qa.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: post-comments-control-web-android-20261113
+  cancel-in-progress: true
+
+env:
+  PRIVATE_SOURCE_SHA: 6ca7bf86e4aadd21e7a46d7be7fcafdacf75b803
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout private TRAYDAQ V2 source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install web packages
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Run web regression suite
+        working-directory: private-src
+        run: npm test
+      - name: Web TypeScript
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Cloudflare-targeted static web bundle, no deployment
+        working-directory: private-src
+        run: npm run build
+
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout private TRAYDAQ V2 native user source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install native packages
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Run native regression suite
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Native TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Export Android JavaScript only (no APK or AAB)
+        working-directory: private-src/mobile
+        run: npx expo export --platform android

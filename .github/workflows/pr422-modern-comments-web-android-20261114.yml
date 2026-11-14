@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-pr422-modern-comments
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 95175d46ae791153afebb5b2ddbd36edcb80b94d
+  PRIVATE_SOURCE_SHA: 65c48e9f2946f5e2aa3aefd421b4eace1be2549e
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

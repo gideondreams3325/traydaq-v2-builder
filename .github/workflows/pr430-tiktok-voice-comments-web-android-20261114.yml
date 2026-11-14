@@ -58,7 +58,73 @@ jobs:
             echo 'PASS: web regression tests'
             grep -E '^# (tests|pass|fail) [0-9]+$' /tmp/pr430-web-tests.log || true
           else
-            echo 'FAIL: web regression tests'; grep -E '^# (tests|pass|fail) [0-9]+$' /tmp/pr430-web-tests.log || true; exit 1
+            echo 'FAIL: web regression tests'; grep -E '^# (tests|pass|fail) [0-9]+
+          fi
+      - name: Web TypeScript validation
+        if: always()
+        working-directory: private-src
+        run: |
+          npm run typecheck > /tmp/pr430-web-types.log 2>&1 && echo 'PASS: web typecheck' || (echo 'FAIL: web typecheck'; exit 1)
+      - name: Cloudflare-targeted web production build (no deploy)
+        if: always()
+        working-directory: private-src
+        run: |
+          npm run build > /tmp/pr430-web-build.log 2>&1 && echo 'PASS: web build' || (echo 'FAIL: web build'; exit 1)
+  android:
+    name: Android voice tests, full suite, typecheck and JS-only export
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Require private source read-only token
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Verify exact private commit
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install pinned native packages
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund > /dev/null
+      - name: Focused Android voice UI and media focus tests
+        working-directory: private-src/mobile
+        run: |
+          if node --test tests/comment-voice-waveform-ui-20261114.test.mjs tests/for-you-tiktok-comments-20261114.test.mjs tests/for-you-comment-audio-focus-20261114.test.mjs > /tmp/pr430-android-focused.log 2>&1; then
+            echo 'PASS: Android focused voice tests'
+            grep -E '^# (tests|pass|fail) [0-9]+$' /tmp/pr430-android-focused.log || true
+          else
+            echo 'FAIL: Android focused voice tests'; grep -E '^# (tests|pass|fail) [0-9]+$' /tmp/pr430-android-focused.log || true; exit 1
+          fi
+      - name: Full Android regression suite
+        working-directory: private-src/mobile
+        run: |
+          if node --test tests/*.test.mjs > /tmp/pr430-android-tests.log 2>&1; then
+            echo 'PASS: Android regression tests'
+            grep -E '^# (tests|pass|fail) [0-9]+$' /tmp/pr430-android-tests.log || true
+          else
+            echo 'FAIL: Android regression tests'; grep -E '^# (tests|pass|fail) [0-9]+$' /tmp/pr430-android-tests.log || true; exit 1
+          fi
+      - name: Android TypeScript validation
+        working-directory: private-src/mobile
+        run: |
+          npm run typecheck > /tmp/pr430-android-types.log 2>&1 && echo 'PASS: Android typecheck' || (echo 'FAIL: Android typecheck'; exit 1)
+      - name: Android JavaScript-only bundle (no APK or AAB)
+        working-directory: private-src/mobile
+        run: |
+          npx expo export --platform android > /tmp/pr430-android-bundle.log 2>&1 && echo 'PASS: Android JS bundle' || (echo 'FAIL: Android JS bundle'; exit 1)
+# Read-only source tests; no app release, keys, artifacts, deployment, or database changes.
+ /tmp/pr430-web-tests.log || true; grep -E '^not ok [0-9]+' /tmp/pr430-web-tests.log | cut -c 1-180 || true; exit 1
           fi
       - name: Web TypeScript validation
         working-directory: private-src

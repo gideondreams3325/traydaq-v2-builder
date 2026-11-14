@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-pr426-voice-safety-recovery
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 6d4a9e52cd39c7497cb0d54073b9a23fd51bf171
+  PRIVATE_SOURCE_SHA: 7d6b0eb7eaa8e697a4579c398813320da765c4f9
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

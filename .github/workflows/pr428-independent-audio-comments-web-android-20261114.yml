@@ -1,0 +1,96 @@
+name: TRAYDAQ PR428 Independent Audio Comments Web Android (No APK/AAB)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/pr428-independent-audio-comments-web-android-20261114.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-pr428-independent-audio-comments
+  cancel-in-progress: true
+env:
+  PRIVATE_SOURCE_SHA: 8f4688c3277afcea81e045e61ed4d39e8aba5739
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  web:
+    name: Web full tests, typecheck and Cloudflare-targeted build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Require private source read-only connection
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Verify exact PR commit
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - name: Pinned dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: PR428 independent audio upload and local duration tests
+        working-directory: private-src
+        run: node --test tests/audio-comments-no-openai-20261114.test.mjs tests/voice-comment-safety-provider-recovery-20261114.test.mjs tests/for-you-comment-audio-focus-20261114.test.mjs tests/for-you-comment-final-layout-20261114.test.mjs tests/for-you-tiktok-comments-20261114.test.mjs
+      - name: Web full regression suite
+        working-directory: private-src
+        run: npm test
+      - name: Web TypeScript validation
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Cloudflare-targeted production web build (no deployment)
+        working-directory: private-src
+        run: npm run build
+  android:
+    name: Android full tests, typecheck and JS-only bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Require private source read-only connection
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Verify exact PR commit
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - name: Pinned native dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: PR428 Android independent voice comment regression tests
+        working-directory: private-src/mobile
+        run: node --test tests/for-you-comment-audio-focus-20261114.test.mjs tests/for-you-comment-final-layout-20261114.test.mjs tests/for-you-tiktok-comments-20261114.test.mjs tests/comment-keyboard-layout-parity.test.mjs tests/comment-picker-swipe-playlists-20261113.test.mjs
+      - name: Native full regression suite
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Native TypeScript validation
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android JS export only (no APK AAB Gradle)
+        working-directory: private-src/mobile
+        run: npx expo export --platform android
+# Read-only verification of exact private source. No deployment, APK/AAB, signing or uploaded app artifacts.

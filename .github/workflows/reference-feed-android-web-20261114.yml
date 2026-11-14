@@ -10,7 +10,7 @@ concurrency:
   group: traydaq-reference-feed-android-web-20261114
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: dc10497c5189cc3c82f92825f0a167ed59fb46e3
+  PRIVATE_SOURCE_SHA: 40c1522610497c9d02bf2cae61ee0de8e38ec860
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

@@ -1,0 +1,92 @@
+name: TRAYDAQ Reference Feed Android Web QA (No APK/AAB)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/reference-feed-android-web-20261114.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-reference-feed-android-web-20261114
+  cancel-in-progress: true
+env:
+  PRIVATE_SOURCE_SHA: dc10497c5189cc3c82f92825f0a167ed59fb46e3
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  web:
+    name: Web reference feed, regression, typecheck and Cloudflare build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Require read-only source token
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Pin source SHA
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - name: Install exact web dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Reference feed and existing immersive regressions
+        working-directory: private-src
+        run: node --test tests/reference-feed-android-web-20261114.test.mjs tests/immersive-feed-pro-20261114.test.mjs tests/following-stable-session-20261114.test.mjs tests/for-you-responsive-overlays-20261114.test.mjs
+      - name: Full web test suite
+        working-directory: private-src
+        run: npm test
+      - name: Web TypeScript
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Cloudflare-targeted web build only
+        working-directory: private-src
+        run: npm run build
+  android:
+    name: Android JS tests and TypeScript; no app binary
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Require read-only source token
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Pin source SHA
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - name: Install exact native dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Reference feed and existing native regressions
+        working-directory: private-src/mobile
+        run: node --test tests/reference-feed-android-web-20261114.test.mjs tests/immersive-feed-pro-20261114.test.mjs tests/following-feed-android-web-20261113.test.mjs tests/for-you-bottom-discovery-dock-20261114.test.mjs
+      - name: Full Android source tests
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Android TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+# Read-only source QA. No APK/AAB creation, signing, Play upload or rollout.

@@ -10,7 +10,7 @@ concurrency:
   group: traydaq-android-vertical-engagement-rail
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: d2d3c3f78ece21a6cff7e63af5e0edc2292f5132
+  PRIVATE_SOURCE_SHA: cf03928a3b88f81563c9b7812819d58e4b14e49b
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

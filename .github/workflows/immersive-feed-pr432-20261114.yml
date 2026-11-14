@@ -10,7 +10,7 @@ concurrency:
   group: traydaq-immersive-feed-pr432
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 0ba845fef73402725a4dfa0ca9ca5d1a8dde9548
+  PRIVATE_SOURCE_SHA: 4cb41347b036a403ac80ddcfa23d9dc34169a024
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

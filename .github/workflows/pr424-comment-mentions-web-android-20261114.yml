@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-pr424-comment-mentions
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: c0b02ff7ac37c2ac797b7d307f620eee052e7331
+  PRIVATE_SOURCE_SHA: bc0ff3e1a1fe2e69248e39657cf694efbddd3d96
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -44,7 +44,7 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: PR424 web mention search and notification tests
         working-directory: private-src
-        run: node --test tests/comment-mentions-20261114.test.mjs tests/for-you-comment-final-layout-20261114.test.mjs tests/for-you-tiktok-comments-20261114.test.mjs
+        run: node --test tests/comment-mentions-20261114.test.mjs tests/comment-mention-delivery-20261114.test.mjs tests/for-you-comment-final-layout-20261114.test.mjs tests/for-you-tiktok-comments-20261114.test.mjs
       - name: Web full regression suite
         working-directory: private-src
         run: npm test

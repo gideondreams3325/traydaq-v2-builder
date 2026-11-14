@@ -10,7 +10,7 @@ concurrency:
   group: following-feed-android-web-qa-20261113
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_REF: feat/following-feed-android-web-20261113
+  PRIVATE_SOURCE_REF: fix/following-empty-scope-20261114
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 

@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-for-you-pr419-full-validation
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 15e6c3be181d110403201e37349db36ffb9d395c
+  PRIVATE_SOURCE_SHA: c63cdf6a07b6778c8e0210a7b4019d6d688f1e77
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

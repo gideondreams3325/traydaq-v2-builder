@@ -1,0 +1,53 @@
+name: Android Right-Side Engagement Rail QA (No APK/AAB)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/android-vertical-engagement-rail-20261114.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-vertical-engagement-rail
+  cancel-in-progress: true
+env:
+  PRIVATE_SOURCE_SHA: d2d3c3f78ece21a6cff7e63af5e0edc2292f5132
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android:
+    name: Full Android source validation and TypeScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Require existing read-only source access
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Verify exact proposed source commit
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - name: Install pinned Android dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Vertical action rail and existing feed regressions
+        working-directory: private-src/mobile
+        run: node --test tests/android-vertical-engagement-rail-20261114.test.mjs tests/for-you-bottom-discovery-dock-20261114.test.mjs tests/for-you-responsive-media-reference.test.mjs tests/following-feed-android-web-20261113.test.mjs
+      - name: Full native source test suite
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Android TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+# Read-only validation. No APK or AAB generation, signing, publishing or deployment.

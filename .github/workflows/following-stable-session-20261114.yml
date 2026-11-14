@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-following-pr421-stable-session
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 85030129432a101598a16f14583ae297ee1383c5
+  PRIVATE_SOURCE_SHA: a920f1ebb331f86c9d0aef297c22d8bbec28f0b6
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-pr428-independent-audio-comments
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 8f4688c3277afcea81e045e61ed4d39e8aba5739
+  PRIVATE_SOURCE_SHA: 9c4a03d1757709d3edfc6e476e9e15937b906ee4
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

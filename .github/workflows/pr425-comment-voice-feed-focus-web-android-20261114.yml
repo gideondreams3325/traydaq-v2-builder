@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-pr425-comment-voice-focus
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 061543c684200d119e073dcc4238ee8a6c951c7a
+  PRIVATE_SOURCE_SHA: 2b2783787e18180884babeecc75fbe16a579413d
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-pr430-voice-waveform-validation
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 15dba2302f7da70ddda7fd04eedfed8809e4c96d
+  PRIVATE_SOURCE_SHA: 71ff5e293704c960391efc2efa347dfbbf12a314
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

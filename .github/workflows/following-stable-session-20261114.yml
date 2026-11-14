@@ -1,0 +1,96 @@
+name: TRAYDAQ PR421 Following Stable Session Web Android Validation (No APK/AAB)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/following-stable-session-20261114.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-following-pr421-stable-session
+  cancel-in-progress: true
+env:
+  PRIVATE_SOURCE_SHA: 85030129432a101598a16f14583ae297ee1383c5
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  web:
+    name: Web full tests, typecheck and Cloudflare-targeted build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Require private source read-only connection
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Verify exact PR commit
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - name: Pinned dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: PR421 Following tab persistence and discovery tests
+        working-directory: private-src
+        run: node --test tests/following-stable-session-20261114.test.mjs
+      - name: Web full regression suite
+        working-directory: private-src
+        run: npm test
+      - name: Web TypeScript validation
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Cloudflare-targeted production web build (no deployment)
+        working-directory: private-src
+        run: npm run build
+  android:
+    name: Android full tests, typecheck and JS-only bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Require private source read-only connection
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Verify exact PR commit
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - name: Pinned native dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: PR421 Following Android regression checks
+        working-directory: private-src/mobile
+        run: node --test tests/for-you-gallery-layout-safety.test.mjs tests/for-you-all-formats-legibility.test.mjs tests/following-feed-android-web-20261113.test.mjs
+      - name: Native full regression suite
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Native TypeScript validation
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android JS export only (no APK AAB Gradle)
+        working-directory: private-src/mobile
+        run: npx expo export --platform android
+# Read-only verification of exact private source. No deployment, APK/AAB, signing or uploaded app artifacts.

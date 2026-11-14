@@ -1,0 +1,138 @@
+name: TRAYDAQ PR431 Combined Profile Web Android Validation (No APK/AAB)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/pr431-combined-profile-web-android-20261114.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-pr431-combined-profile-validation
+  cancel-in-progress: true
+env:
+  PRIVATE_SOURCE_SHA: 536aaed674c1f21b8ac1da6db14a588a374f4f55
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  web:
+    name: Web profile regression, full suite, TypeScript, Cloudflare build
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Require read-only private source connection
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - name: Checkout exact private PR431 commit without saving credentials
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Verify source revision
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - name: Install pinned web dependencies (sanitized output)
+        working-directory: private-src
+        run: |
+          npm ci --no-audit --no-fund > /tmp/pr431-web-install.log 2>&1 && echo 'PASS: web dependencies' || (echo 'FAIL: web dependencies'; exit 1)
+      - name: Focused combined-profile and existing profile regression tests
+        working-directory: private-src
+        run: |
+          if node --test tests/combined-profile-android-web-20261114.test.mjs tests/profile-original-content-links.test.mjs tests/profile-products-services-parity.test.mjs tests/profile-social-connections.test.mjs tests/web-profile-store-popup.test.mjs tests/web-profile-post-menu-dismiss-and-overflow-20261111.test.mjs > /tmp/pr431-web-focused.log 2>&1; then
+            echo 'PASS: combined profile and existing profile web tests'
+            grep -E '^# (tests|pass|fail) [0-9]+$' /tmp/pr431-web-focused.log || true
+          else
+            echo 'FAIL: combined profile and existing profile web tests'
+            grep -E '^# (tests|pass|fail) [0-9]+$|^not ok [0-9]+' /tmp/pr431-web-focused.log | cut -c 1-180 || true
+            exit 1
+          fi
+      - name: Full web test suite
+        working-directory: private-src
+        run: |
+          if npm test > /tmp/pr431-web-tests.log 2>&1; then
+            echo 'PASS: full web suite'
+            grep -E '^# (tests|pass|fail) [0-9]+$' /tmp/pr431-web-tests.log || true
+          else
+            echo 'FAIL: full web suite'
+            grep -E '^# (tests|pass|fail) [0-9]+$|^not ok [0-9]+' /tmp/pr431-web-tests.log | cut -c 1-180 || true
+            exit 1
+          fi
+      - name: Web TypeScript check
+        working-directory: private-src
+        run: |
+          npm run typecheck > /tmp/pr431-web-tsc.log 2>&1 && echo 'PASS: web TypeScript' || (echo 'FAIL: web TypeScript'; exit 1)
+      - name: Cloudflare-targeted production web build (no deploy)
+        working-directory: private-src
+        run: |
+          npm run build > /tmp/pr431-web-build.log 2>&1 && test -f dist/index.html && echo 'PASS: Cloudflare-targeted build' || (echo 'FAIL: Cloudflare-targeted build'; exit 1)
+  android:
+    name: Android profile regression, full suite, TypeScript, JS export only
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Require read-only private source connection
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - name: Checkout exact private PR431 commit without saving credentials
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Verify source revision
+        working-directory: private-src/mobile
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - name: Install pinned Android source dependencies (sanitized output)
+        working-directory: private-src/mobile
+        run: |
+          npm ci --no-audit --no-fund > /tmp/pr431-native-install.log 2>&1 && echo 'PASS: native dependencies' || (echo 'FAIL: native dependencies'; exit 1)
+      - name: Targeted native profile tests
+        working-directory: private-src/mobile
+        run: |
+          if node --test tests/profile-v2.test.mjs tests/android-profile-scroll-video-stills.test.mjs tests/profile-avatar-navigation.test.mjs tests/profile-social-connections.test.mjs tests/profile-persistent-cache.test.mjs tests/profile-editor-keyboard.test.mjs > /tmp/pr431-native-focused.log 2>&1; then
+            echo 'PASS: targeted Android profile tests'
+            grep -E '^# (tests|pass|fail) [0-9]+$' /tmp/pr431-native-focused.log || true
+          else
+            echo 'FAIL: targeted Android profile tests'
+            grep -E '^# (tests|pass|fail) [0-9]+$|^not ok [0-9]+' /tmp/pr431-native-focused.log | cut -c 1-180 || true
+            exit 1
+          fi
+      - name: Full Android source test suite
+        working-directory: private-src/mobile
+        run: |
+          if node --test tests/*.test.mjs > /tmp/pr431-native-tests.log 2>&1; then
+            echo 'PASS: full Android source suite'
+            grep -E '^# (tests|pass|fail) [0-9]+$' /tmp/pr431-native-tests.log || true
+          else
+            echo 'FAIL: full Android source suite'
+            grep -E '^# (tests|pass|fail) [0-9]+$|^not ok [0-9]+' /tmp/pr431-native-tests.log | cut -c 1-180 || true
+            exit 1
+          fi
+      - name: Native TypeScript check
+        working-directory: private-src/mobile
+        run: |
+          npm run typecheck > /tmp/pr431-native-tsc.log 2>&1 && echo 'PASS: native TypeScript' || (echo 'FAIL: native TypeScript'; exit 1)
+      - name: Android JavaScript bundle export only (no Gradle, APK or AAB)
+        working-directory: private-src/mobile
+        run: |
+          npx expo export --platform android > /tmp/pr431-native-bundle.log 2>&1 && echo 'PASS: Android JavaScript bundle' || (echo 'FAIL: Android JavaScript bundle'; exit 1)
+# No production deployment, signing, APK/AAB packaging, artifact upload or private source exposure.

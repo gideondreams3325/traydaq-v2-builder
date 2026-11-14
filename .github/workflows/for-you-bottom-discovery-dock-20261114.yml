@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-for-you-pr420-discovery-dock
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 1648778b667188dd1a07d4b8384d9d9ac129e35a
+  PRIVATE_SOURCE_SHA: 571d34fcc70d46a30a8bbfbb03bf7ceb3d0ad9bf
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

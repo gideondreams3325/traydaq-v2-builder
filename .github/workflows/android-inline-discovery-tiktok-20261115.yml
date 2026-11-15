@@ -1,0 +1,93 @@
+name: TRAYDAQ Android Inline Discovery TikTok Style QA (No AAB)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/android-inline-discovery-tiktok-20261115.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-inline-discovery-tiktok-20261115
+  cancel-in-progress: true
+env:
+  PRIVATE_SOURCE_SHA: 592330af4bf21565376a531d61f7ebdd63129a20
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android:
+    name: Android discovery regressions, all tests, TypeScript and JS export
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Confirm read-only source token
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Verify source SHA
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - name: Install native dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Inline discovery and existing feed regressions
+        working-directory: private-src/mobile
+        run: |
+          node --test tests/android-tiktok-inline-discovery-20261115.test.mjs tests/android-feed-layout-repair-20261115.test.mjs tests/android-compact-persistent-story-tray-20261115.test.mjs tests/reference-feed-android-web-20261114.test.mjs tests/for-you-bottom-discovery-dock-20261114.test.mjs
+      - name: All Android native source tests
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Android TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android JS export, not binary build
+        working-directory: private-src/mobile
+        run: npx expo export --platform android
+  web:
+    name: Unchanged web feed regression and Cloudflare-ready build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Confirm read-only source token
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Verify source SHA
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - name: Install web dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: All web tests
+        working-directory: private-src
+        run: npm test
+      - name: Web TypeScript
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Cloudflare-targeted web build, no deployment
+        working-directory: private-src
+        run: npm run build
+# Read-only QA; do not build APK/AAB, sign, deploy, publish or release.

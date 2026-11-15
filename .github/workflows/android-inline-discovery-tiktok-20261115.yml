@@ -10,7 +10,7 @@ concurrency:
   group: traydaq-android-inline-discovery-tiktok-20261115
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 592330af4bf21565376a531d61f7ebdd63129a20
+  PRIVATE_SOURCE_SHA: 926a80e127dc4d1f3f4a1191460b58a773d0a1d3
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

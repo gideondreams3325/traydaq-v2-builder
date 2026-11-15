@@ -1,4 +1,4 @@
-name: TRAYDAQ Android Feed Resume QA (No APK/AAB)
+name: TRAYDAQ Android Feed and Comment QA (No APK/AAB)
 on:
   push:
     branches: [main]
@@ -10,7 +10,7 @@ concurrency:
   group: traydaq-android-feed-resume-36a3617
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: fae1c3f059dfb535612366776c08f68a92977eae
+  PRIVATE_SOURCE_SHA: 7c3f220cf39a3078f1e4240b2eabd32b5facba85
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

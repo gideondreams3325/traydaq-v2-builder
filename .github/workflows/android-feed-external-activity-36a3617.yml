@@ -69,3 +69,57 @@ jobs:
             exit 1
           fi
 # Source validation only. No APK, AAB, signing, upload, deployment or release.
+  web:
+    name: Shared-project regression, TypeScript and Cloudflare build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Require private source access
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Verify exact source
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - name: Install dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Run shared-project tests
+        working-directory: private-src
+        shell: bash
+        run: |
+          if node --test --test-reporter=tap tests/*.test.mjs > "$RUNNER_TEMP/web-tests.log" 2>&1; then result=0; else result=$?; fi
+          grep -E '^(not ok [0-9]+ -|# (tests|pass|fail|cancelled|skipped|todo|duration_ms))' "$RUNNER_TEMP/web-tests.log" || true
+          exit "$result"
+      - name: Check web TypeScript
+        working-directory: private-src
+        shell: bash
+        run: |
+          if npm run typecheck > "$RUNNER_TEMP/web-typecheck.log" 2>&1; then
+            echo "Web TypeScript passed."
+          else
+            echo "Web TypeScript failed."
+            exit 1
+          fi
+      - name: Check Cloudflare-targeted build without deploying
+        working-directory: private-src
+        shell: bash
+        run: |
+          if npm run build > "$RUNNER_TEMP/web-build.log" 2>&1; then
+            echo "Cloudflare-targeted build passed."
+          else
+            echo "Cloudflare-targeted build failed."
+            exit 1
+          fi

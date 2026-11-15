@@ -1,0 +1,86 @@
+name: TRAYDAQ User 1.0.36 (38) Pre-Release QA (Android + Web)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/traydaq-user-1036-38-pre-release-qa-20261115.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PRIVATE_SOURCE_SHA: f521f1aa55a9eb5a033d862c485131d89077d530
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Verify source SHA
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - name: Confirm release identity and version
+        working-directory: private-src/mobile
+        run: |
+          node - <<'NODE'
+          const a=require('./app.json').expo;
+          if(a.android?.package!=='com.traydaq.app'||a.version!=='1.0.36'||a.android.versionCode!==38)throw Error('Wrong release version or package');
+          console.log('Validated user release: '+a.android.package+' '+a.version+' ('+a.android.versionCode+')');
+          NODE
+      - name: Install Android dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Android source regression tests
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Android TypeScript
+        if: always()
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android JS export, no APK/AAB
+        working-directory: private-src/mobile
+        run: npx expo export --platform android
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Verify source SHA
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - name: Install web dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: All web regression tests
+        working-directory: private-src
+        run: npm test
+      - name: Web TypeScript
+        if: always()
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Cloudflare-targeted web build (no deployment)
+        working-directory: private-src
+        run: npm run build
+# Pre-release Android/web gate including For You/Following loading, no deployment or APK/AAB signing.

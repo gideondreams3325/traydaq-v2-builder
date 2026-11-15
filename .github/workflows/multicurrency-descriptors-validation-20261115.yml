@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 env:
-  PRIVATE_SOURCE_SHA: 6c01f465bb6f90adf781870e4e235ca925af9b1c
+  PRIVATE_SOURCE_SHA: 66ffcc9e16b0337fab941b45975e7ec8d2a0af30
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

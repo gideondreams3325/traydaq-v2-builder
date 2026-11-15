@@ -1,0 +1,47 @@
+name: Android Feed Return Without Reload (Source QA)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/android-feed-return-without-reload-20261115.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PRIVATE_SOURCE_SHA: c3d56093e616656f777b0b189dfe20db05331a1a
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Verify exact Android source commit
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - name: Install Android dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Full Android source regression suite
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Android TypeScript
+        if: always()
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android JS export - no package
+        if: always()
+        working-directory: private-src/mobile
+        run: npx expo export --platform android
+# No APK/AAB; no release; no Web or Staff deployment.

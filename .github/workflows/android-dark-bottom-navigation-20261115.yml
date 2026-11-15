@@ -10,7 +10,7 @@ concurrency:
   group: traydaq-android-dark-bottom-navigation-20261115
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 2eabf775b7de045ed0d24be4a3996e702d4bf354
+  PRIVATE_SOURCE_SHA: 427cf29b235445d6d17caac8934879050095568b
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

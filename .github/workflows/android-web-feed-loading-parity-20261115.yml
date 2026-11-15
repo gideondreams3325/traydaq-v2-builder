@@ -1,0 +1,49 @@
+name: Android Web Feed Loading Parity QA (Source Only)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/android-web-feed-loading-parity-20261115.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PRIVATE_SOURCE_SHA: e402dac407f1229d842ba7ff84dbe29bbf44a440
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Verify selected Android-only source
+        working-directory: private-src
+        run: |
+          test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+          git diff --name-only "$PRIVATE_SOURCE_SHA^" "$PRIVATE_SOURCE_SHA" | cat
+      - name: Install Android dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Full Android source regression suite
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Android TypeScript
+        if: always()
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android JS export (no APK / AAB)
+        if: always()
+        working-directory: private-src/mobile
+        run: npx expo export --platform android
+# Web and Staff sources are deliberately untouched; no deployment or Android package.

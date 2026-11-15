@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 env:
-  PRIVATE_SOURCE_SHA: 10c3d9998da45c48e6971f7c3871f581d1aea1b1
+  PRIVATE_SOURCE_SHA: 13266c69f175f8ddfd4bdcb4d45221745c46ea58
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -37,6 +37,7 @@ jobs:
         working-directory: private-src/mobile
         run: node --test tests/*.test.mjs
       - name: Android TypeScript
+        if: always()
         working-directory: private-src/mobile
         run: npm run typecheck
       - name: Android JS export, no APK/AAB
@@ -68,6 +69,7 @@ jobs:
         working-directory: private-src
         run: npm test
       - name: Web TypeScript
+        if: always()
         working-directory: private-src
         run: npm run typecheck
       - name: Cloudflare-targeted web build (no deployment)

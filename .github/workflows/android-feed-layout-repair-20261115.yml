@@ -10,7 +10,7 @@ concurrency:
   group: traydaq-android-feed-layout-repair-20261115
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 3ce7117c071ccf2f6b0af05374366e3fedda1838
+  PRIVATE_SOURCE_SHA: 88958db15311c0c5a8677d2b9917c2e1595bfa58
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

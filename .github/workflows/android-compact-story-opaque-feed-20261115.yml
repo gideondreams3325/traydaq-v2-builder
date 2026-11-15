@@ -1,0 +1,57 @@
+name: TRAYDAQ Android Compact Story and Opaque Feed QA (Source Only)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/android-compact-story-opaque-feed-20261115.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-compact-story-opaque-20261115
+  cancel-in-progress: true
+env:
+  PRIVATE_SOURCE_SHA: e371e8b19a82eecab10426cf6a14c5391ee1822c
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android:
+    name: Android feed regression, full tests, TypeScript and JS export (no AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Verify source token exists
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Confirm pinned private source
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - name: Install reproducible native dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: New story tray and previous feed regressions
+        working-directory: private-src/mobile
+        run: |
+          node --test tests/android-compact-persistent-story-tray-20261115.test.mjs tests/android-feed-layout-repair-20261115.test.mjs tests/immersive-feed-pro-20261114.test.mjs tests/following-feed-android-web-20261113.test.mjs tests/reference-feed-android-web-20261114.test.mjs tests/for-you-bottom-discovery-dock-20261114.test.mjs
+      - name: Full Android source tests
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Android TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android JS export only (no APK/AAB)
+        working-directory: private-src/mobile
+        run: npx expo export --platform android
+# Read-only source QA, no APK/AAB creation, signing, upload, release or deployment.

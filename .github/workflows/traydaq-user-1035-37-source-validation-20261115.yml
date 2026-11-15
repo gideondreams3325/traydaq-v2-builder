@@ -1,0 +1,78 @@
+name: TRAYDAQ User 1.0.35 (37) Pre-Release QA (Android + Web)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/traydaq-user-1035-37-source-validation-20261115.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PRIVATE_SOURCE_SHA: f391ea90433f192696422b0e70ad63b1ae11af73
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Verify source SHA
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - name: Install Android dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Android source regression tests
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Android TypeScript
+        if: always()
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android JS export, no APK/AAB
+        working-directory: private-src/mobile
+        run: npx expo export --platform android
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Verify source SHA
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - name: Install web dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: All web regression tests
+        working-directory: private-src
+        run: npm test
+      - name: Web TypeScript
+        if: always()
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Cloudflare-targeted web build (no deployment)
+        working-directory: private-src
+        run: npm run build
+# Pre-release Android/web gate including For You/Following loading, no deployment or APK/AAB signing.

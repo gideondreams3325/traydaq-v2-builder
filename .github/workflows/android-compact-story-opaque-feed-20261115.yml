@@ -10,7 +10,7 @@ concurrency:
   group: traydaq-android-compact-story-opaque-20261115
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: e371e8b19a82eecab10426cf6a14c5391ee1822c
+  PRIVATE_SOURCE_SHA: 70ac108c897a4ca30c4a8a18bae74af0f8fade66
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

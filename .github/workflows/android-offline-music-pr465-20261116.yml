@@ -1,0 +1,89 @@
+name: TRAYDAQ Android Offline Music PR465 QA (No Release)
+# Exact immutable private source validation; never create APK/AAB or publish.
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/android-offline-music-pr465-20261116.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-offline-music-pr465
+  cancel-in-progress: false
+env:
+  PRIVATE_SOURCE_SHA: 28045888a3573f3542fab80bbc59e9145a9b6542
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android:
+    name: Full Android regressions, TypeScript, JS export only
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Verify read-only private source connection
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: |
+          test "$HAS_TOKEN" = true || { echo '::error::Private source read token missing'; exit 1; }
+      - name: Checkout exact private Android source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify immutable source commit
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install pinned Android dependencies
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          if npm ci --no-audit --no-fund > "$RUNNER_TEMP/offline-music-install.log" 2>&1; then
+            echo 'PASS: Android pinned dependencies installed'
+          else
+            echo '::error::Android dependency installation failed'
+            exit 1
+          fi
+      - name: Complete Android regression tests
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          if node --test tests/*.test.mjs > "$RUNNER_TEMP/offline-music-tests.log" 2>&1; then
+            echo 'PASS: Android complete regression suite'
+            awk '/^# (tests|pass|fail|cancelled|skipped) [0-9]+$/ {print}' "$RUNNER_TEMP/offline-music-tests.log"
+          else
+            echo '::error::Android regression suite failed. Test names only follow.'
+            awk '/^not ok [0-9]+ - / {print}' "$RUNNER_TEMP/offline-music-tests.log"
+            awk '/^# (tests|pass|fail|cancelled|skipped) [0-9]+$/ {print}' "$RUNNER_TEMP/offline-music-tests.log"
+            exit 1
+          fi
+      - name: Android TypeScript
+        if: always()
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          if npm run typecheck > "$RUNNER_TEMP/offline-music-typecheck.log" 2>&1; then
+            echo 'PASS: Android TypeScript'
+          else
+            echo '::error::Android TypeScript failed. Private diagnostics not published.'
+            exit 1
+          fi
+      - name: Android JavaScript export (NO APK or AAB)
+        if: always()
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          if npm run export:android > "$RUNNER_TEMP/offline-music-export.log" 2>&1; then
+            echo 'PASS: Android JavaScript export, no APK or AAB'
+          else
+            echo '::error::Android JS export failed. Private diagnostics not published.'
+            exit 1
+          fi
+# No Expo prebuild, Gradle, APK, AAB, signing, Google Play, Cloudflare or staff release.

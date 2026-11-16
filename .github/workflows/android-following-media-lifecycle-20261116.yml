@@ -11,7 +11,7 @@ concurrency:
   group: android-following-media-lifecycle
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: c6bc8e5f1664f36b244ef04fe7eff7ece9ccef81
+  PRIVATE_SOURCE_SHA: b35046f922b328ef2110af699fd9ffb966cfca9f
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

@@ -11,7 +11,7 @@ concurrency:
   group: android-stable-media-pr464
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: 58cbde80e7a2aa8a9e7771a5790108e19111c8be
+  PRIVATE_SOURCE_SHA: 1ea50482080d47302e6c53d7b1a3e96e4dbc91b9
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

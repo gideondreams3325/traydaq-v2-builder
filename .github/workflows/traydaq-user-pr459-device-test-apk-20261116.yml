@@ -1,0 +1,268 @@
+name: TRAYDAQ V2 User PR459 Device Test APK (No Play Upload)
+
+# Android installable test APK only. No Play upload, rollout, AAB, source deployment or staff build.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/traydaq-user-pr459-device-test-apk-20261116.yml"]
+
+concurrency:
+  group: traydaq-v2-user-pr459-device-apk
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  device-test-apk:
+    name: Existing-key signed APK for on-device testing
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+      NODE_OPTIONS: "--max-old-space-size=6144"
+      TRAYDAQ_RELEASE_VERSION: "1.0.37"
+      TRAYDAQ_RELEASE_CODE: "39"
+      TRAYDAQ_SOURCE_SHA: "0aaa1cb9cf4af9c9855af4856ed46a93744b7eb9"
+      # Public certificate from signed User APK run 40043905049 (v1.0.1/code 3).
+      TRAYDAQ_EXPECTED_SIGNING_SHA256: "716a68f5734545bc9d9700f045d2bfb1b1087ffe732021f216b32a575f03f83d"
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - name: Checkout latest private TRAYDAQ V2 user code
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: "0aaa1cb9cf4af9c9855af4856ed46a93744b7eb9"
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Confirm user package and release version
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const a=require('./app.json').expo;
+          if(a.android?.package!=='com.traydaq.app')throw Error('Wrong TRAYDAQ user app package.');
+          if(!Number.isInteger(a.android.versionCode)||a.android.versionCode!==38||
+             a.version!=='1.0.36')
+            throw Error('Expected merged 1.0.36 (38) source before generating test-only 1.0.37 (39) APK.');
+          console.log('Package:',a.android.package,'version:',a.version,'code:',a.android.versionCode);
+          NODE
+          test "$(git -C .. rev-parse HEAD)" = "$TRAYDAQ_SOURCE_SHA"
+          echo "Source commit: $TRAYDAQ_SOURCE_SHA"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android 16 build SDK
+        run: |
+          set -euo pipefail
+          test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Validate existing TRAYDAQ V2 release signing key
+        env:
+          KEY_B64: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEYSTORE_B64 }}
+          STORE_PASS: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEYSTORE_PASSWORD }}
+          KEY_PASS: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          for field in KEY_B64 STORE_PASS KEY_PASS; do
+            if [[ -z "${!field:-}" ]]; then echo "::error::Existing signing secret $field is missing"; exit 1; fi
+          done
+          if [[ -n "$KEY_ALIAS" && "$KEY_ALIAS" != "traydaq-v2-upload" ]]; then
+            echo "::warning::Alias secret differs from the verified JKS alias; using the original alias."
+          fi
+          KEY_ALIAS=traydaq-v2-upload
+          umask 077
+          export TRAYDAQ_UPLOAD_KEYSTORE="$RUNNER_TEMP/traydaq-existing-upload.jks"
+          printf '%s' "$KEY_B64" | base64 --decode > "$TRAYDAQ_UPLOAD_KEYSTORE"
+          keytool -list -keystore "$TRAYDAQ_UPLOAD_KEYSTORE" -storepass:env STORE_PASS -alias "$KEY_ALIAS" >/dev/null
+          keytool -list -v -keystore "$TRAYDAQ_UPLOAD_KEYSTORE" -storepass:env STORE_PASS -alias "$KEY_ALIAS" > "$RUNNER_TEMP/original-cert.txt"
+          ACTUAL_SHA256=$(sed -n 's/^[[:space:]]*SHA256: //p' "$RUNNER_TEMP/original-cert.txt" | head -1 | tr -d ':' | tr '[:upper:]' '[:lower:]')
+          [[ "$ACTUAL_SHA256" == "$TRAYDAQ_EXPECTED_SIGNING_SHA256" ]] || {
+            echo "::error::Keystore differs from installed User APK certificate; refusing incompatible release."
+            exit 1
+          }
+          keytool -certreq -keystore "$TRAYDAQ_UPLOAD_KEYSTORE" -storepass:env STORE_PASS \
+            -keypass:env KEY_PASS -alias "$KEY_ALIAS" -file "$RUNNER_TEMP/key-check.csr" >/dev/null 2>&1
+          rm -f "$RUNNER_TEMP/key-check.csr"
+          echo "TRAYDAQ_UPLOAD_KEYSTORE=$TRAYDAQ_UPLOAD_KEYSTORE" >> "$GITHUB_ENV"
+          echo "TRAYDAQ_UPLOAD_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "Permanent release key verified; no replacement key generated."
+
+      - name: Verify Google OAuth client recognizes the existing certificate
+        env:
+          STORE_PASS: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -f google-services.json || { echo "::error::Missing existing mobile/google-services.json"; exit 1; }
+          node - <<'NODE'
+          const c=require('node:child_process');
+          const j=require('./google-services.json');
+          const pkg='com.traydaq.app';
+          if(j.project_info?.project_id!=='traydaq')throw Error('Wrong Firebase project');
+          const app=(j.client||[]).find(x=>x.client_info?.android_client_info?.package_name===pkg);
+          if(!app)throw Error('Android Firebase registration missing');
+          const output=c.execFileSync('keytool',['-list','-v','-keystore',process.env.TRAYDAQ_UPLOAD_KEYSTORE,
+            '-storepass:env','STORE_PASS','-alias',process.env.TRAYDAQ_UPLOAD_ALIAS],{encoding:'utf8'});
+          const cert=output.match(/^\s*SHA1:\s*([0-9A-F:]+)/im)?.[1]?.replace(/:/g,'').toLowerCase();
+          const registered=(app.oauth_client||[]).filter(x=>x.client_type===1&&x.android_info?.package_name===pkg)
+            .some(x=>String(x.android_info.certificate_hash||'').replace(/:/g,'').toLowerCase()===cert);
+          if(!cert||!registered)throw Error('Signing certificate does not match registered Google sign-in client');
+          console.log('Verified existing upload certificate against Firebase Android OAuth client.');
+          NODE
+
+      - name: Install and validate TRAYDAQ V2 user app
+        run: |
+          set -euo pipefail
+          npm install --no-audit --no-fund
+          # Run all native security/regression tests against committed source first.
+          # Later Expo patch alignment changes the temporary package.json only.
+          node --test tests/*.test.mjs
+          # Align these Expo SDK 57 patch dependencies without expo install --fix,
+          # which cannot modify this project's dynamic app.config.js automatically.
+          # Pin just the Expo Doctor-listed versions in the isolated runner checkout.
+          npm install --no-audit --no-fund --save-exact \
+            expo@57.0.33 expo-image-picker@57.0.21 expo-asset@57.0.21 \
+            expo-sharing@57.0.26 expo-notifications@57.0.25 \
+            expo-location@57.0.23 expo-splash-screen@57.0.11 \
+            expo-image-manipulator@57.0.22
+          npx expo-doctor
+          npm run typecheck
+
+      - name: Set test-only version 1.0.37 (39) and remove development overlay permission
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const p='app.json';const c=JSON.parse(fs.readFileSync(p,'utf8'));
+          c.expo.version=process.env.TRAYDAQ_RELEASE_VERSION;
+          c.expo.android.versionCode=Number(process.env.TRAYDAQ_RELEASE_CODE);
+          c.expo.android.blockedPermissions=[...new Set([...(c.expo.android.blockedPermissions||[]),'android.permission.SYSTEM_ALERT_WINDOW'])];
+          if(c.expo.android.package!=='com.traydaq.app'||c.expo.android.versionCode<=4)throw Error('Invalid user release identity');
+          fs.writeFileSync(p,JSON.stringify(c,null,2)+'\n');
+          console.log('Installable device-test version set to',c.expo.version,'code',c.expo.android.versionCode);
+          NODE
+
+      - name: Generate native Android release project
+        run: |
+          set -euo pipefail
+          npx expo export --platform android
+          npx expo prebuild --platform android --non-interactive
+
+      - name: Sign the device-test APK using the existing TRAYDAQ certificate
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const p='android/app/build.gradle';
+          let s=fs.readFileSync(p,'utf8');
+          if(!/signingConfigs\s*\{/.test(s))throw Error('Missing Gradle signingConfigs');
+          const signing=[
+            '    traydaqExistingUpload {',
+            '        storeFile file(System.getenv("TRAYDAQ_UPLOAD_KEYSTORE"))',
+            '        storePassword System.getenv("TRAYDAQ_UPLOAD_STOREPASS")',
+            '        keyAlias System.getenv("TRAYDAQ_UPLOAD_ALIAS")',
+            '        keyPassword System.getenv("TRAYDAQ_UPLOAD_KEYPASS")',
+            '    }'
+          ].join('\n');
+          s=s.replace(/signingConfigs\s*\{/,match=>match+'\n'+signing+'\n');
+          const match='signingConfig signingConfigs.debug';
+          const idx=s.lastIndexOf(match);
+          if(idx<0||idx<s.indexOf('buildTypes {')||idx<s.lastIndexOf('release {'))
+            throw Error('Could not locate safe release signingConfig substitution.');
+          s=s.slice(0,idx)+s.slice(idx).replace(match,'signingConfig signingConfigs.traydaqExistingUpload');
+          fs.writeFileSync(p,s);
+          console.log('Device-test APK configured with existing TRAYDAQ signing key.');
+          NODE
+
+      - name: Build signed installable Android APK (resilient Maven Central downloads)
+        env:
+          TRAYDAQ_UPLOAD_STOREPASS: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEYSTORE_PASSWORD }}
+          TRAYDAQ_UPLOAD_KEYPASS: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          cd android
+          chmod +x gradlew
+          # React Native 0.86.3 AAR downloads timed out on the first run.
+          # Allow longer official Maven Central HTTP reads and reduce concurrent requests.
+          # The same generated Android project and permanent signing key are reused.
+          for attempt in 1 2; do
+            LOG="$RUNNER_TEMP/traydaq-test-apk-gradle-attempt-${attempt}.log"
+            echo "Building signed device-test APK (attempt ${attempt}/2, Maven timeouts increased)."
+            if ./gradlew --no-daemon --max-workers=2 \
+              -Dorg.gradle.internal.http.connectionTimeout=120000 \
+              -Dorg.gradle.internal.http.socketTimeout=300000 \
+              -Dorg.gradle.internal.repository.max.tentatives=5 \
+              -Dorg.gradle.internal.repository.initial.backoff=1000 \
+              :app:assembleRelease > "$LOG" 2>&1; then
+              echo "PASS: signed device-test APK compilation completed on attempt $attempt."
+              exit 0
+            fi
+            if ! grep -Eqi 'Read timed out|Connection reset|Connect timed out|Connection timed out|Could not download|Could not GET|Network is unreachable' "$LOG"; then
+              echo "::error::Gradle failed for a non-network reason; printing only structured error summaries."
+              # Never publish the full private native build log or environment.
+              grep -E '(^FAILURE:|^\* What went wrong:|^\* Try:|^Execution failed for task |^> Task :[^ ]+ FAILED|^> A problem occurred|^> Could not|^> Plugin |^> Failed |^> Cannot |^Caused by:)' "$LOG" | tail -40 || true
+              exit 1
+            fi
+            echo "::warning::Official dependency download failed on attempt $attempt."
+            if [ "$attempt" -eq 2 ]; then
+              echo "::error::Maven download failed again; release was not produced."
+              exit 1
+            fi
+            echo "Retrying the same release build with retained Gradle cache."
+            sleep 20
+          done
+
+
+      - name: Verify APK package, test version, source and signing certificate
+        run: |
+          set -euo pipefail
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          test -s "$APK"
+          unzip -t "$APK" >/dev/null
+          SIGNER="$ANDROID_HOME/build-tools/36.0.0/apksigner"
+          "$SIGNER" verify "$APK"
+          CERT_SHA=$("$SIGNER" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -1 | tr -d '\r')
+          [[ "${CERT_SHA,,}" == "$TRAYDAQ_EXPECTED_SIGNING_SHA256" ]] || {
+            echo "::error::APK signing key does not match the existing TRAYDAQ app."
+            exit 1
+          }
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.traydaq.app' versionCode='39' versionName='1.0.37'"
+          test "$TRAYDAQ_SOURCE_SHA" = "0aaa1cb9cf4af9c9855af4856ed46a93744b7eb9"
+          mkdir -p device-test
+          cp "$APK" device-test/TRAYDAQ-1.0.37-39-PR459-TEST.apk
+          printf '%s\n' 'TRAYDAQ PR459 Android on-device test APK' \
+            'Source commit: 0aaa1cb9cf4af9c9855af4856ed46a93744b7eb9' \
+            'Version: 1.0.37 (39); app ID com.traydaq.app' \
+            'Existing signing certificate verified. No Google Play upload.' \
+            'Test first-frame video, For You/Following swipes, image cache, Data Saver, network recovery and background resume.' \
+            > device-test/TESTING-NOTES.txt
+          sha256sum device-test/TRAYDAQ-1.0.37-39-PR459-TEST.apk | tee device-test/SHA256SUMS.txt
+
+      - name: Upload test APK only (not a release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: TRAYDAQ-V2-PR459-Android-Device-Test-APK
+          path: private-src/mobile/device-test/
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Remove temporary signing files
+        if: always()
+        working-directory: .
+        run: rm -f "$RUNNER_TEMP/traydaq-existing-upload.jks" "$RUNNER_TEMP/original-cert.txt" "$RUNNER_TEMP/key-check.csr"

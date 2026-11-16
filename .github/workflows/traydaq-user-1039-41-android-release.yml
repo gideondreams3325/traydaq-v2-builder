@@ -287,7 +287,7 @@ jobs:
           import zipfile,struct,hashlib,json,os,xml.etree.ElementTree as ET
           root=ET.parse('play-release/AndroidManifest.xml').getroot();ns='{http://schemas.android.com/apk/res/android}'
           assert root.attrib.get('package')=='com.traydaq.app'
-          assert root.attrib.get(ns+'versionCode')=='38'
+          assert root.attrib.get(ns+'versionCode')==os.environ['TRAYDAQ_RELEASE_CODE'], 'AAB manifest version must match this release'
           assert root.find('uses-sdk').attrib.get(ns+'targetSdkVersion')=='36'
           permissions=[x.attrib.get(ns+'name') for x in root.findall('uses-permission')]
           assert 'android.permission.SYSTEM_ALERT_WINDOW' not in permissions

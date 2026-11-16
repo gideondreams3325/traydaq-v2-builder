@@ -11,7 +11,7 @@ concurrency:
   group: android-following-media-lifecycle
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: b35046f922b328ef2110af699fd9ffb966cfca9f
+  PRIVATE_SOURCE_SHA: 435de5c09eec196301fceb3dde8c83cf12f7b73c
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -50,6 +50,16 @@ jobs:
           else
             echo '::error::Android dependency install failed'
             exit 1
+          fi
+      - name: Focused Following-photo regression diagnostics (test metadata only)
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          if node --test tests/android-following-picture-persists-20261116.test.mjs > "$RUNNER_TEMP/following-test.log" 2>&1; then
+            echo 'PASS: focused Android Following photo regression'
+          else
+            echo '::warning::Focused Following photo regression failed. Safe metadata follows.'
+            grep -E '^not ok|^  error:|^  code:|^  failureType:|^# (tests|pass|fail) ' "$RUNNER_TEMP/following-test.log" | head -25 || true
           fi
       - name: Complete Android regression and feed crash-safety tests
         working-directory: private-src/mobile

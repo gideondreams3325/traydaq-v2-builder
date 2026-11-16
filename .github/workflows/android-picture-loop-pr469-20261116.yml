@@ -11,7 +11,7 @@ concurrency:
   group: android-picture-loop-pr469
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: 52397c58e5f539a3602389b66eb39bcc22f4c004
+  PRIVATE_SOURCE_SHA: 83872a4b7da9718d7bd299187ed961e994f2ca69
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

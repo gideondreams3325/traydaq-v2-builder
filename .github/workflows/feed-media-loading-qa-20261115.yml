@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 env:
-  PRIVATE_SOURCE_SHA: 1821bd40b2907db5764c5a609ccf177bb90ffbf6
+  PRIVATE_SOURCE_SHA: 567fc44edd8bf9089a9a6adc689e4e01e912a1c3
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -75,4 +75,4 @@ jobs:
       - name: Cloudflare-targeted web build (no deployment)
         working-directory: private-src
         run: npm run build
-# For You/Following image and video loading validation only; no deployments, signing, APK or AAB builds.
+# Validate immersive Android + web reference redesign against private PR exact commit; no APK, AAB or deployment.

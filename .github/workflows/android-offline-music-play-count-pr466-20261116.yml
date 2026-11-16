@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-android-offline-counts-counts-pr466
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: 8f8e550d91bbb7675652e65832dbd870f039760b
+  PRIVATE_SOURCE_SHA: e0d39bef72744630487816f4efd82426975eac1a
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

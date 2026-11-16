@@ -11,7 +11,7 @@ concurrency:
   group: android-offline-downloads-history
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: cccf9837724fb333dc6227c0fdb917a75fa26778
+  PRIVATE_SOURCE_SHA: f0499967997f079f5c03189a628c9209118bc6f4
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -62,6 +62,7 @@ jobs:
             echo '::error::Android regression failure. Test names only follow.'
             awk '/^not ok [0-9]+ - / {print; failing=1; next} failing && /^  location: / {sub(/^.*\/tests\//,"tests/"); print "  " $0; failing=0}' "$RUNNER_TEMP/android-tests.log"
             awk '/^# (tests|pass|fail|cancelled|skipped) [0-9]+$/ {print}' "$RUNNER_TEMP/android-tests.log"
+            grep 'OFFLINE_DEBUG:' "$RUNNER_TEMP/android-tests.log" | head -8 || true
             # Only the two fabricated public-data test cases may emit a short,
             # sanitized assertion reason. No private app source or credentials.
             awk '/^not ok [0-9]+ - (offline history stores|recovered public browsing previews)/ {show=1; next} show && /^  error:/ {getline; print "OFFLINE TEST REASON: " substr($0,1,160); show=0} show && /^  code:/ {print;show=0} /^not ok [0-9]+ - / && !/offline history stores|recovered public browsing previews/ {show=0}' "$RUNNER_TEMP/android-tests.log"

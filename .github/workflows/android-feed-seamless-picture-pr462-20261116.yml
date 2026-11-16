@@ -1,0 +1,92 @@
+name: TRAYDAQ Android Feed Seamless Picture PR462 QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/android-feed-seamless-picture-pr462-20261116.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-seamless-picture-pr462
+  cancel-in-progress: false
+
+env:
+  PRIVATE_SOURCE_SHA: 09e8f499c459abcce1e52196d42509544384a1e3
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+
+jobs:
+  android:
+    name: Private Android tests, TypeScript and Expo export (no AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Verify private source access is configured
+        shell: bash
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: |
+          if [ "$HAS_TOKEN" != true ]; then
+            echo '::error::Private read-only source connection missing'
+            exit 1
+          fi
+      - name: Checkout exact private PR source without saving credentials
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify immutable source checkout
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install pinned Android dependencies
+        working-directory: private-src/mobile
+        run: |
+          if npm ci --no-audit --no-fund > "$RUNNER_TEMP/android-install.log" 2>&1; then
+            echo 'PASS: pinned Android dependencies'
+          else
+            echo '::error::Android install failed; private diagnostics retained only on runner'
+            exit 1
+          fi
+      - name: Run complete Android regression test suite
+        working-directory: private-src/mobile
+        run: |
+          if node --test tests/*.test.mjs > "$RUNNER_TEMP/android-tests.log" 2>&1; then
+            echo 'PASS: Android regression tests'
+            awk '/^# (tests|pass|fail|cancelled|skipped) [0-9]+$/ {print}' "$RUNNER_TEMP/android-tests.log"
+          else
+            echo '::error::Android tests failed; no private test logs published'
+            awk '/^# (tests|pass|fail|cancelled|skipped) [0-9]+$/ {print}' "$RUNNER_TEMP/android-tests.log"
+            exit 1
+          fi
+      - name: Android TypeScript validation
+        working-directory: private-src/mobile
+        run: |
+          if npm run typecheck > "$RUNNER_TEMP/android-typecheck.log" 2>&1; then
+            echo 'PASS: Android TypeScript'
+          else
+            echo '::error::Android TypeScript failed; no private code published'
+            exit 1
+          fi
+      - name: Export Android JavaScript and assets only
+        working-directory: private-src/mobile
+        run: |
+          if npm run export:android > "$RUNNER_TEMP/android-export.log" 2>&1; then
+            echo 'PASS: Android JS and assets export (no APK or AAB)'
+          else
+            echo '::error::Android export failed; no source bundle published'
+            exit 1
+          fi
+
+# This workflow neither publishes private source nor creates APK/AAB/Play releases.
+# The web app, Cloudflare deployment, staff app and backend are untouched.

@@ -1,0 +1,1 @@
+Validation request 2026-11-16: private traydaq-v2 branch feat/web-icloud-email-guidance-20261116, web-only iCloud email sign-in guidance. No Android, release or Cloudflare deployment.

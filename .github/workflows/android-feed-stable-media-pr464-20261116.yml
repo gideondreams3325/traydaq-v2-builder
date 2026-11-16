@@ -62,6 +62,8 @@ jobs:
             awk '/^# (tests|pass|fail|cancelled|skipped) [0-9]+$/ {print}' "$RUNNER_TEMP/android-tests.log"
           else
             echo '::error::Android regression suite failed; no private source exposed'
+            # Only test *names* escape the private runner. Never print source or stack traces.
+            awk '/^not ok [0-9]+ - / {print}' "$RUNNER_TEMP/android-tests.log"
             awk '/^# (tests|pass|fail|cancelled|skipped) [0-9]+$/ {print}' "$RUNNER_TEMP/android-tests.log"
             exit 1
           fi

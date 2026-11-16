@@ -1,0 +1,91 @@
+name: TRAYDAQ Android Transparent Status Tray PR463 QA
+# Read-only source validation. NEVER builds APK/AAB or deploys anything.
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/android-transparent-status-tray-pr463-20261116.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-transparent-status-tray-pr463
+  cancel-in-progress: false
+
+env:
+  PRIVATE_SOURCE_SHA: c4fda97af6ed9f9863902888a682e3151c76cb13
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+
+jobs:
+  android:
+    name: Private Android regression suite, TypeScript and JS export (no APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Check private read-only source connection
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: |
+          if [ "$HAS_TOKEN" != true ]; then
+            echo '::error::Read-only private source access is missing'
+            exit 1
+          fi
+      - name: Checkout exact private PR commit without persisting credentials
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify exact private source commit
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install pinned Android dependencies
+        working-directory: private-src/mobile
+        run: |
+          if npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1; then
+            echo 'PASS: pinned Android dependencies'
+          else
+            echo '::error::Android install failed; private diagnostics remain on runner'
+            exit 1
+          fi
+      - name: Full Android tests including transparent status tray regression
+        working-directory: private-src/mobile
+        run: |
+          if node --test tests/*.test.mjs > "$RUNNER_TEMP/tests.log" 2>&1; then
+            echo 'PASS: full Android regression suite'
+            awk '/^# (tests|pass|fail|cancelled|skipped) [0-9]+$/ {print}' "$RUNNER_TEMP/tests.log"
+          else
+            echo '::error::Android test failures; private diagnostics remain on runner'
+            awk '/^# (tests|pass|fail|cancelled|skipped) [0-9]+$/ {print}' "$RUNNER_TEMP/tests.log"
+            exit 1
+          fi
+      - name: Android TypeScript validation
+        working-directory: private-src/mobile
+        run: |
+          if npm run typecheck > "$RUNNER_TEMP/typecheck.log" 2>&1; then
+            echo 'PASS: Android TypeScript'
+          else
+            echo '::error::Android TypeScript failed; private diagnostics remain on runner'
+            exit 1
+          fi
+      - name: Export Android JavaScript and assets only
+        working-directory: private-src/mobile
+        run: |
+          if npm run export:android > "$RUNNER_TEMP/export.log" 2>&1; then
+            echo 'PASS: Android JS and assets export only (no APK/AAB)'
+          else
+            echo '::error::Android JS export failed; private diagnostics remain on runner'
+            exit 1
+          fi
+
+# No native binaries, signing, Play upload, Cloudflare deployment or staff changes.

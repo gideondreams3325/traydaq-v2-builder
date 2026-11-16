@@ -11,7 +11,7 @@ concurrency:
   group: android-feed-crash-memory-pr467
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: 9b6cd5bf6015f5fe73db51c91bdede320d129861
+  PRIVATE_SOURCE_SHA: 0da4c9a257753c3eb3dd516a8c70421331a194fd
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

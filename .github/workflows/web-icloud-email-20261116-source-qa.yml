@@ -1,0 +1,88 @@
+name: TRAYDAQ V2 iCloud Email Web Authentication QA (Source Only)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/traydaq-web-icloud-20261116-validation-request.txt"
+
+permissions:
+  contents: read
+
+jobs:
+  web-icloud-email:
+    name: Private customer web tests, TypeScript and Cloudflare build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "1"
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - name: Check out feature branch of private TRAYDAQ source (read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/web-icloud-email-guidance-20261116
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Confirm expected private web source (no native build)
+        run: |
+          test -f src/native-parity/AccountAccess.tsx
+          test -f tests/web-icloud-email-guidance-20261116.test.mjs
+          echo "Checking web-only iCloud email guidance feature branch"
+          git rev-parse HEAD
+      - name: Install dependencies without printing private source logs
+        run: |
+          if npm ci --no-audit --no-fund > "$RUNNER_TEMP/traydaq-web-install.log" 2>&1; then
+            echo "PASS: dependency installation"
+          else
+            echo "::error::FAIL: dependency installation"
+            exit 1
+          fi
+      - name: Focused iCloud email web contract test
+        run: |
+          if node --test tests/web-icloud-email-guidance-20261116.test.mjs > "$RUNNER_TEMP/traydaq-web-icloud-focused.log" 2>&1; then
+            echo "PASS: focused web iCloud authentication contracts"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-web-icloud-focused.log" | tail -3 || true
+          else
+            echo "::error::FAIL: focused web iCloud authentication contracts"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-web-icloud-focused.log" | tail -3 || true
+            exit 1
+          fi
+      - name: Full web regression suite
+        run: |
+          if npm test > "$RUNNER_TEMP/traydaq-web-all-tests.log" 2>&1; then
+            echo "PASS: full web regression suite"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-web-all-tests.log" | tail -3 || true
+          else
+            echo "::error::FAIL: full web regression suite"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-web-all-tests.log" | tail -3 || true
+            exit 1
+          fi
+      - name: Typecheck user web source
+        run: |
+          if npm run typecheck > "$RUNNER_TEMP/traydaq-web-tsc.log" 2>&1; then
+            echo "PASS: web TypeScript"
+          else
+            echo "::error::FAIL: web TypeScript"
+            exit 1
+          fi
+      - name: Compile Cloudflare-targeted web assets (do not deploy)
+        run: |
+          if npm run build > "$RUNNER_TEMP/traydaq-web-build.log" 2>&1 && test -f dist/index.html; then
+            echo "PASS: Cloudflare web build"
+          else
+            echo "::error::FAIL: Cloudflare web build"
+            exit 1
+          fi
+# Private source is read-only. No Android/Staff changes, APK/AAB, deployment, or production release.

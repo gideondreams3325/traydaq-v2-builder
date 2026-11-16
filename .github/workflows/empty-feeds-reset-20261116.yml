@@ -1,0 +1,90 @@
+name: TRAYDAQ Empty For You Following Source QA (No Release)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/empty-feeds-reset-20261116.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: traydaq-empty-feeds-reset-source-qa
+  cancel-in-progress: true
+
+env:
+  PRIVATE_SOURCE_SHA: b31515aa782651a9e713478967575c8343115f54
+  CI: "1"
+  EXPO_NO_TELEMETRY: "1"
+
+jobs:
+  web:
+    name: Web reset contract, TypeScript and Cloudflare build (no deploy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout the proposed private reset commit (read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Confirm the private source commit
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - name: Install web packages
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Validate the deliberately blank web and Android routes
+        working-directory: private-src
+        run: node --test tests/empty-feeds-reset-20261116.test.mjs
+      - name: Typecheck web
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Build Cloudflare-targeted web assets (do not deploy)
+        working-directory: private-src
+        run: npm run build
+
+  android:
+    name: Android reset contract, TypeScript and JS export (no APK or AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout the proposed private reset commit (read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Confirm the private source commit
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - name: Install Android packages
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Validate the deliberately blank web and Android routes
+        working-directory: private-src
+        run: node --test tests/empty-feeds-reset-20261116.test.mjs
+      - name: Typecheck Android
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android JavaScript bundle only (no Gradle/native build)
+        working-directory: private-src/mobile
+        run: npm run export:android
+
+# Intentional source-only prep: no merger, deployment, credentials write, APK or AAB.

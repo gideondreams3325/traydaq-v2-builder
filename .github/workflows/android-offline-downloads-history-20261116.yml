@@ -11,7 +11,7 @@ concurrency:
   group: android-offline-downloads-history
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: 218a4ce6284d5752c6937992c007722d855f704e
+  PRIVATE_SOURCE_SHA: 472b6342a52b690a153d22b3615c05dda03d87cd
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

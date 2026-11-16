@@ -11,7 +11,7 @@ concurrency:
   group: android-following-media-lifecycle
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: ecf6a26119cd57d47f19721eb8bdbd9c222fa868
+  PRIVATE_SOURCE_SHA: 65c85961fe6661d858f774bdde5c3bc50a1f8ad0
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -70,6 +70,12 @@ jobs:
             awk '/^# (tests|pass|fail|cancelled|skipped) [0-9]+$/ {print}' "$RUNNER_TEMP/android-tests.log"
           else
             echo '::error::Android regression failure. Test names only follow.'
+            echo 'Focused Following photo regression diagnostic:'
+            if node --test tests/android-following-picture-persists-20261116.test.mjs > "$RUNNER_TEMP/focused-following.log" 2>&1; then
+              echo 'PASS: focused Following picture regression tests'
+            else
+              grep -E '^(not ok [0-9]+ - |  failureType:|  error:|  code:|# (tests|pass|fail) [0-9]+$)' "$RUNNER_TEMP/focused-following.log" | head -25 || true
+            fi
             awk '/^not ok [0-9]+ - / {print; failing=1; next} failing && /^  location: / {sub(/^.*\/tests\//,"tests/"); print "  " $0; failing=0}' "$RUNNER_TEMP/android-tests.log"
             awk '/^# (tests|pass|fail|cancelled|skipped) [0-9]+$/ {print}' "$RUNNER_TEMP/android-tests.log"
             exit 1

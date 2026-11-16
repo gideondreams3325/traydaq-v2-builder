@@ -1,0 +1,90 @@
+name: TRAYDAQ Android Stable Feed Media PR464 QA
+# Source-only validation: NO APK, NO AAB, NO publication or Cloudflare deploy.
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/android-feed-stable-media-pr464-20261116.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: android-stable-media-pr464
+  cancel-in-progress: false
+env:
+  PRIVATE_SOURCE_SHA: 58cbde80e7a2aa8a9e7771a5790108e19111c8be
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android:
+    name: Android full tests, TypeScript and JS export (NO APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Verify private source read connection
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: |
+          test "$HAS_TOKEN" = true || { echo '::error::Private source read connection missing'; exit 1; }
+      - name: Checkout exact Android PR source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Validate immutable source SHA
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install pinned Android dependencies
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          if npm ci --no-audit --no-fund > "$RUNNER_TEMP/android-install.log" 2>&1; then
+            echo 'PASS: Android pinned dependency install'
+          else
+            echo '::error::Android dependencies failed; private diagnostics kept on runner'
+            exit 1
+          fi
+      - name: Complete Android source and runtime tests
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          if node --test tests/*.test.mjs > "$RUNNER_TEMP/android-tests.log" 2>&1; then
+            echo 'PASS: Android complete regression suite'
+            awk '/^# (tests|pass|fail|cancelled|skipped) [0-9]+$/ {print}' "$RUNNER_TEMP/android-tests.log"
+          else
+            echo '::error::Android regression suite failed; no private source exposed'
+            awk '/^# (tests|pass|fail|cancelled|skipped) [0-9]+$/ {print}' "$RUNNER_TEMP/android-tests.log"
+            exit 1
+          fi
+      - name: Android TypeScript check
+        if: always()
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          if npm run typecheck > "$RUNNER_TEMP/android-tsc.log" 2>&1; then
+            echo 'PASS: Android TypeScript'
+          else
+            echo '::error::Android TypeScript failed; private diagnostics kept on runner'
+            exit 1
+          fi
+      - name: Android JS export ONLY (no binary)
+        if: always()
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          if npm run export:android > "$RUNNER_TEMP/android-export.log" 2>&1; then
+            echo 'PASS: Android JS export (no APK/AAB)'
+          else
+            echo '::error::Android JS export failed; private diagnostics kept on runner'
+            exit 1
+          fi
+# Never run Gradle, Expo prebuild, Play upload, signing or deployments.

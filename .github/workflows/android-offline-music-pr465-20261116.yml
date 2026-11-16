@@ -60,7 +60,7 @@ jobs:
             awk '/^# (tests|pass|fail|cancelled|skipped) [0-9]+$/ {print}' "$RUNNER_TEMP/offline-music-tests.log"
           else
             echo '::error::Android regression suite failed. Test names only follow.'
-            awk '/^not ok [0-9]+ - / {print}' "$RUNNER_TEMP/offline-music-tests.log"
+            awk '/^not ok [0-9]+ - / {print; failing=1; next} failing && /^  location: / {sub(/^.*\/tests\//,"tests/"); print "  " $0; failing=0}' "$RUNNER_TEMP/offline-music-tests.log"
             awk '/^# (tests|pass|fail|cancelled|skipped) [0-9]+$/ {print}' "$RUNNER_TEMP/offline-music-tests.log"
             exit 1
           fi
@@ -72,7 +72,8 @@ jobs:
           if npm run typecheck > "$RUNNER_TEMP/offline-music-typecheck.log" 2>&1; then
             echo 'PASS: Android TypeScript'
           else
-            echo '::error::Android TypeScript failed. Private diagnostics not published.'
+            echo '::error::Android TypeScript failed. Reporting only compiler error codes and file basename/line.'
+            grep -E 'error TS[0-9]+:' "$RUNNER_TEMP/offline-music-typecheck.log" | sed -E 's|^(.*/)?([^/]+\.tsx?)(\([0-9]+,[0-9]+\))?: error (TS[0-9]+):.*$|\2\3 \4|' | head -15 || true
             exit 1
           fi
       - name: Android JavaScript export (NO APK or AAB)

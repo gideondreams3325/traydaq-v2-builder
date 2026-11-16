@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-android-offline-music-pr465
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: 66c175db9369d620951585f73b4a4a3e0f7bf21a
+  PRIVATE_SOURCE_SHA: f6506bd6647da9f8e3bc7c2bef68ef971d3c8272
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

@@ -3,7 +3,7 @@ name: TRAYDAQ Android Offline Music Play Counts PR466 QA (No Release)
 on:
   push:
     branches: [main]
-    paths: ['.github/workflows/android-offline-counts-play-count-pr466-20261116.yml']
+    paths: ['.github/workflows/android-offline-music-play-count-pr466-20261116.yml']
   workflow_dispatch:
 permissions:
   contents: read

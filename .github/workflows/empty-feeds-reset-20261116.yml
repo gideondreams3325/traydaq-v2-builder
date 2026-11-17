@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PRIVATE_SOURCE_SHA: 76c4b51c21eea4e012012654f63f0b85a3ebecc3
+  PRIVATE_SOURCE_SHA: ed7a2d196133850a873dde064ba7fe56175901a0
   CI: "1"
   EXPO_NO_TELEMETRY: "1"
 
@@ -47,7 +47,7 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Validate the new Android and web feed routes
         working-directory: private-src
-        run: node --test tests/empty-feeds-reset-20261116.test.mjs tests/nextgen-feed-scroll-brand-20261117.test.mjs tests/nextgen-feed-compact-auth-overlay-20261117.test.mjs
+        run: node --test tests/empty-feeds-reset-20261116.test.mjs tests/nextgen-feed-scroll-brand-20261117.test.mjs tests/nextgen-feed-compact-following-media-20261117.test.mjs tests/nextgen-feed-compact-auth-overlay-20261117.test.mjs
       - name: Typecheck web
         working-directory: private-src
         run: npm run typecheck
@@ -89,7 +89,7 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Validate the deliberately blank web and Android routes
         working-directory: private-src
-        run: node --test tests/empty-feeds-reset-20261116.test.mjs tests/nextgen-feed-scroll-brand-20261117.test.mjs tests/nextgen-feed-compact-auth-overlay-20261117.test.mjs
+        run: node --test tests/empty-feeds-reset-20261116.test.mjs tests/nextgen-feed-scroll-brand-20261117.test.mjs tests/nextgen-feed-compact-following-media-20261117.test.mjs tests/nextgen-feed-compact-auth-overlay-20261117.test.mjs
       - name: Typecheck Android
         working-directory: private-src/mobile
         run: npm run typecheck

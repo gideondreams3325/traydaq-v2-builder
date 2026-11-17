@@ -60,7 +60,7 @@ jobs:
         run: |
           npm install --no-save --no-audit --no-fund playwright@1.57.0
           npx playwright install --with-deps chromium
-      - name: Test real Chromium feed scrolling on phones, tablets and desktop
+      - name: Chromium responsive scroll, compact header and unobstructed media
         run: node scripts/nextgen-feed-browser-smoke.mjs
 
   android:

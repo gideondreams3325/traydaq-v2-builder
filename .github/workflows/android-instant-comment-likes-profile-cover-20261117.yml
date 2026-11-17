@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-android-instant-likes-cover-20261117
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: b40437c94c1890121acaffa14f725a26f94be884
+  PRIVATE_SOURCE_SHA: 7f07302fdef5baaa1fcaa4000cdb7c9464b3a1f0
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-android-unified-share-sheet-20261117
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: ac3a5da1d22db388175236640d55a870dffcd9ff
+  PRIVATE_SOURCE_SHA: 80fbb5dc506235b67960f831547bd32596c41cf2
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

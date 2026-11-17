@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-web-feed-sound-startup-20261117
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: ef17107258a05cd31848acfb3ae9b718bceb36a3
+  PRIVATE_SOURCE_SHA: 2a7f0d47865632a2cc05d691bbe81cb448b75d9f
   CI: "1"
 jobs:
   web:

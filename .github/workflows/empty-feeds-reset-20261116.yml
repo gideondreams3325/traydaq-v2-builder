@@ -1,4 +1,4 @@
-name: TRAYDAQ NextGen Brand & Scroll QA (No Release)
+name: TRAYDAQ NextGen Feed Header + Session + Scroll QA (No Release)
 on:
   workflow_dispatch:
   push:
@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PRIVATE_SOURCE_SHA: caa96e85fc04c5ae7b0da2e3e0a49456132ca1db
+  PRIVATE_SOURCE_SHA: 4d2254beb6480d651fdba4896a0ae2ec84c65c83
   CI: "1"
   EXPO_NO_TELEMETRY: "1"
 
@@ -47,7 +47,7 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Validate the new Android and web feed routes
         working-directory: private-src
-        run: node --test tests/empty-feeds-reset-20261116.test.mjs tests/nextgen-feed-scroll-brand-20261117.test.mjs
+        run: node --test tests/empty-feeds-reset-20261116.test.mjs tests/nextgen-feed-scroll-brand-20261117.test.mjs tests/nextgen-feed-compact-auth-overlay-20261117.test.mjs
       - name: Typecheck web
         working-directory: private-src
         run: npm run typecheck
@@ -89,7 +89,7 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Validate the deliberately blank web and Android routes
         working-directory: private-src
-        run: node --test tests/empty-feeds-reset-20261116.test.mjs tests/nextgen-feed-scroll-brand-20261117.test.mjs
+        run: node --test tests/empty-feeds-reset-20261116.test.mjs tests/nextgen-feed-scroll-brand-20261117.test.mjs tests/nextgen-feed-compact-auth-overlay-20261117.test.mjs
       - name: Typecheck Android
         working-directory: private-src/mobile
         run: npm run typecheck

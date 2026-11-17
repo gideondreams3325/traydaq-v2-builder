@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-android-pre-immersive-feed-20261117
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: dc8882c3aa6b47bc865aea4316efdcbdc91b3bae
+  PRIVATE_SOURCE_SHA: 57683f695d7297dee47af0bd3e22f6b52c59aa9a
   CI: "1"
   EXPO_NO_TELEMETRY: "1"
 jobs:

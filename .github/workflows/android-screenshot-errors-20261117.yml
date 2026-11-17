@@ -1,0 +1,53 @@
+name: TRAYDAQ Android Screenshot Error Recovery QA (NO RELEASE)
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/android-screenshot-errors-20261117.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-screenshot-errors-20261117
+  cancel-in-progress: false
+env:
+  PRIVATE_SOURCE_SHA: a789d964a202c1e62d3f53ae9baa734e98db1dc9
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android:
+    name: Android publishing, professional directory, chats and repost checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - name: Check out exact private candidate (read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify pinned private source commit
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Screenshot issue regressions
+        working-directory: private-src/mobile
+        run: node --test tests/android-screenshot-error-recovery-20261117.test.mjs tests/chat-voice-layout-android-regression.test.mjs tests/android-share-report-repost-following-20261117.test.mjs
+      - name: All native regression tests
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Native TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android JavaScript-only export (NO APK OR AAB)
+        working-directory: private-src/mobile
+        run: npm run export:android
+# Never build/sign APK/AAB, release to Play, or deploy backend from QA.

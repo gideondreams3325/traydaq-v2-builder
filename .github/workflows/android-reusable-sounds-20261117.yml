@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-android-reusable-sounds-20261117
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: 95e22d45531983dce6315ad650e829ecd0534864
+  PRIVATE_SOURCE_SHA: 9c99cbc9d337cd49e3431101640846785c59706d
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

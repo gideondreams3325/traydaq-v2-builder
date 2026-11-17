@@ -24,6 +24,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
+      - name: Checkout public builder browser test script
+        uses: actions/checkout@v4
       - name: Checkout the proposed private reset commit (read-only)
         uses: actions/checkout@v4
         with:

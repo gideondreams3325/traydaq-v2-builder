@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-android-picture-cache-repair-20261117
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: b50695a192d3e70fe49920a7b640b5e785802875
+  PRIVATE_SOURCE_SHA: 38c440f7120bee496feb000eae0455df510e6171
   CI: "1"
   EXPO_NO_TELEMETRY: "1"
 jobs:

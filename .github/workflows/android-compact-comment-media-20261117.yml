@@ -1,0 +1,53 @@
+name: TRAYDAQ Android Compact In-Feed Comments QA (No Release)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/android-compact-comment-media-20261117.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-compact-comment-media-20261117
+  cancel-in-progress: false
+env:
+  PRIVATE_SOURCE_SHA: 5ece4768b53689c898f25064b968f064a3d29b60
+  CI: "1"
+  EXPO_NO_TELEMETRY: "1"
+jobs:
+  android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout pinned Android user-app candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify immutable source SHA
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install native dependencies without modifying lock
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Validate compact media and comment close/restore behavior
+        working-directory: private-src/mobile
+        run: node --test tests/android-compact-comment-media-20261117.test.mjs tests/for-you-inline-comments-and-copy.test.mjs tests/for-you-comment-final-layout-20261114.test.mjs tests/for-you-comment-audio-focus-20261114.test.mjs tests/for-you-responsive-media-reference.test.mjs
+      - name: All Android user-app regressions
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Android TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android JS-only export (not APK or AAB)
+        working-directory: private-src/mobile
+        run: npm run export:android
+# Strict read-only V2 Builder validation: no signed bundles, APKs, AABs, Play upload, rollout or Cloudflare deployment.

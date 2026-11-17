@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-android-chat-gossips-settings-20261117
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: 88d939d05ced5203e53a9b5b56c2ebb531637c4e
+  PRIVATE_SOURCE_SHA: 38d059ea0b2ddcfd1e24bbbbbc8db5aa385958c0
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

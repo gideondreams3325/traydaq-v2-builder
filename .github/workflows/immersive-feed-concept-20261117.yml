@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-immersive-feed-concept-20261117
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: 4d07b9928e51f014c67c17b84eba45e5fdd5b50f
+  PRIVATE_SOURCE_SHA: 5b6b6ec4d7fcd60be71fdd6bd6006cea1aac26b4
   CI: "1"
   EXPO_NO_TELEMETRY: "1"
 jobs:

@@ -16,7 +16,7 @@ env:
   EXPO_NO_TELEMETRY: '1'
 jobs:
   android:
-    name: Native DM eligibility, installed app icons, exact links: full tests, TS and JS export
+    name: 'Native DM eligibility, installed app icons, exact links - full tests, TS and JS export'
     runs-on: ubuntu-24.04
     timeout-minutes: 50
     steps:

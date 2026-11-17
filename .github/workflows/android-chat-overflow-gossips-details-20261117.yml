@@ -1,0 +1,54 @@
+name: TRAYDAQ Android Direct Chat Menu + Gossips Tools QA (NO RELEASE)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/android-chat-overflow-gossips-details-20261117.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-chat-gossips-settings-20261117
+  cancel-in-progress: false
+env:
+  PRIVATE_SOURCE_SHA: 937486b2075e1c6b971781c158f7634821f28fa0
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android:
+    name: Native chat privacy, Gossips permissions, TypeScript and JS-only export
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - name: Check out exact private candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify pinned source
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked Android dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Focused direct chat menu and Gossips workflow regressions
+        working-directory: private-src/mobile
+        run: node --test tests/android-chat-overflow-gossips-settings-20261117.test.mjs tests/messaging-inbox-responsive.test.mjs tests/chat-privacy-gossips.test.mjs tests/chat-voice-layout-android-regression.test.mjs tests/chat-keyboard-live-parity.test.mjs
+      - name: Entire Android regression suite
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Android TypeScript validation
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android JavaScript export only (NO APK/AAB)
+        working-directory: private-src/mobile
+        run: npm run export:android
+# Read-only source QA. Never sign or create APK/AAB or upload/release to Google Play.

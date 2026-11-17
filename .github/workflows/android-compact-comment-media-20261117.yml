@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-android-compact-comment-media-20261117
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: 5ece4768b53689c898f25064b968f064a3d29b60
+  PRIVATE_SOURCE_SHA: 1cbb7fe9000f5af77b64864468b614bfa7e5f297
   CI: "1"
   EXPO_NO_TELEMETRY: "1"
 jobs:

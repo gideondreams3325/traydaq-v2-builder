@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-web-android-session-sharing-20261117
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: a606581a7a30910762fb4dc78e6834b975132672
+  PRIVATE_SOURCE_SHA: 714f21798a0c5b956a7764346dec0cb460d80537
   CI: "1"
   EXPO_NO_TELEMETRY: "1"
 jobs:

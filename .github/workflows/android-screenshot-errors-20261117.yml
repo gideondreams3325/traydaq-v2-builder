@@ -10,7 +10,7 @@ concurrency:
   group: traydaq-android-screenshot-errors-20261117
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: a789d964a202c1e62d3f53ae9baa734e98db1dc9
+  PRIVATE_SOURCE_SHA: 4564188a6e8e03bd52d33ac3141c4dee09c08272
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

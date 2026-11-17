@@ -53,6 +53,14 @@ jobs:
         working-directory: private-src
         run: npm run build
 
+
+      - name: Install headless browser smoke dependencies
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.57.0
+          npx playwright install --with-deps chromium
+      - name: Test real Chromium feed scrolling on phones, tablets and desktop
+        run: node scripts/nextgen-feed-browser-smoke.mjs
+
   android:
     name: Android reset contract, TypeScript and JS export (no APK or AAB)
     runs-on: ubuntu-latest

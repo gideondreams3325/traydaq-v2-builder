@@ -1,4 +1,4 @@
-name: TRAYDAQ Empty For You Following Source QA (No Release)
+name: TRAYDAQ NextGen For You Following Source QA (No Release)
 on:
   workflow_dispatch:
   push:
@@ -10,11 +10,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: traydaq-empty-feeds-reset-source-qa
+  group: traydaq-nextgen-feeds-source-qa
   cancel-in-progress: true
 
 env:
-  PRIVATE_SOURCE_SHA: ab844b2673c8eecbb071db4ae3f46f9c4d466d41
+  PRIVATE_SOURCE_SHA: 24c32d26a47691667d926109a109c757b5b895ad
   CI: "1"
   EXPO_NO_TELEMETRY: "1"
 
@@ -43,7 +43,7 @@ jobs:
       - name: Install web packages
         working-directory: private-src
         run: npm ci --no-audit --no-fund
-      - name: Validate the deliberately blank web and Android routes
+      - name: Validate the new Android and web feed routes
         working-directory: private-src
         run: node --test tests/empty-feeds-reset-20261116.test.mjs
       - name: Typecheck web

@@ -1,0 +1,53 @@
+name: TRAYDAQ Android Share Report and Repost Following QA (NO RELEASE)
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/android-repost-following-20261117.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-repost-following-20261117
+  cancel-in-progress: false
+env:
+  PRIVATE_SOURCE_SHA: 62ae417e61f7562890c3269d1989dc3d34fe2c73
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android:
+    name: Repost and Report share actions, private repost ledger and Following
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - name: Check out exact private source (read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify exact source commit
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Focused share, report and repost tests
+        working-directory: private-src/mobile
+        run: node --test tests/android-share-report-repost-following-20261117.test.mjs
+      - name: Complete Android regression suite
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Native TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android JavaScript export (NO APK AAB)
+        working-directory: private-src/mobile
+        run: npm run export:android
+# Never sign, generate APK/AAB, publish Google Play, or deploy any backend in QA.

@@ -12,7 +12,7 @@ concurrency:
   group: traydaq-restore-original-fullscreen-feeds-qa
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 13a122641f009bc299edccefb15631cb6ffe1bc0
+  PRIVATE_SOURCE_SHA: cd5b3cb1a59fce351652f8cba86c9c4729be4928
   CI: "1"
   EXPO_NO_TELEMETRY: "1"
 

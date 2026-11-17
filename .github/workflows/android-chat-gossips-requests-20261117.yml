@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-native-chats-gossips-requests-20261117
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: ae5a621f812e26caa4804d8c73dc34ecb33a8127
+  PRIVATE_SOURCE_SHA: 4e0c4c56c8697934bcad4212a4cc918aaa08e005
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

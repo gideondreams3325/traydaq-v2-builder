@@ -1,0 +1,53 @@
+name: TRAYDAQ Android Music Owner Self-use Exception QA (NO RELEASE)
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/android-music-owner-self-use-20261117.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-music-owner-self-use-20261117
+  cancel-in-progress: false
+env:
+  PRIVATE_SOURCE_SHA: aa846cab00389f670f19dbf6fe9a5acd098cb217
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android:
+    name: Owner self-use even with public reuse disabled; full Android QA
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - name: Check out exact private V2 feature commit (read only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Verify exact candidate commit
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked Android dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Focused music owner and reusable sound regression tests
+        working-directory: private-src/mobile
+        run: node --test tests/android-music-owner-self-use-20261117.test.mjs tests/android-reusable-sounds-20261117.test.mjs tests/android-saved-sound-pagination-20261117.test.mjs
+      - name: Full Android regression tests
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: TypeScript validation
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android JavaScript export (no APK or AAB)
+        working-directory: private-src/mobile
+        run: npm run export:android
+# No Gradle, APK, AAB, signing, Play publishing or release.

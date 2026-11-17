@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-android-share-eligible-peers-20261117
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: b8010fcc781bc2061a219ff4dc47647e958920da
+  PRIVATE_SOURCE_SHA: 8d6fda58c49951dbe060af4eb1cee3e436a4d8b0
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -75,9 +75,9 @@ jobs:
       - name: Install locked shared test dependencies
         working-directory: private-src
         run: npm ci --no-audit --no-fund
-      - name: Verify server privacy and customer regression suite
+      - name: Validate new server-side share privacy and authorization contract
         working-directory: private-src
-        run: npm test
+        run: node --test tests/android-share-chat-privacy-server-20261117.test.mjs
       - name: Shared TypeScript validation
         working-directory: private-src
         run: npm run typecheck

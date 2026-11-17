@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-android-in-app-browser-bio-links-20261117
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: de9a85a59e0b8798f72863fe608636801220a740
+  PRIVATE_SOURCE_SHA: 77cbb0792a65749e4c67d920025976e9b81fc29b
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

@@ -1,0 +1,65 @@
+name: TRAYDAQ Android Receive Photos Videos For You QA (NO RELEASE)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/android-receive-share-to-for-you-20261117.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-receive-share-to-for-you-20261117
+  cancel-in-progress: false
+env:
+  PRIVATE_SOURCE_SHA: bb112dd8d57dd3111b0d0ca245fcc8048a0d888a
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android:
+    name: Android incoming sharing and For You post composer - validation only
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - name: Check out exact private candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify pinned private source
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked Android dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Run focused inbound Android share and auth composer tests
+        working-directory: private-src/mobile
+        run: node --test tests/android-receive-media-share-20261117.test.mjs tests/android-unified-share-sheet-20261117.test.mjs tests/android-share-eligible-peers-deep-links-20261117.test.mjs tests/studios-v2.test.mjs
+      - name: Run complete Android regression suite
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Validate native TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Confirm Android share-intent filter in native Expo introspection
+        working-directory: private-src/mobile
+        run: |
+          npx expo config --type introspect --json > /tmp/traydaq-share-introspect.json
+          node -e '
+          const fs=require("node:fs");
+          const value=fs.readFileSync("/tmp/traydaq-share-introspect.json","utf8");
+          for(const required of ["android.intent.action.SEND","android.intent.action.SEND_MULTIPLE","image/*","video/*"]){
+            if(!value.includes(required))throw Error("Android native share manifest missing "+required);
+          }
+          '
+      - name: Android JS export only (no APK or AAB)
+        working-directory: private-src/mobile
+        run: npm run export:android
+# Never sign or create APK/AAB; never publish to Google Play.

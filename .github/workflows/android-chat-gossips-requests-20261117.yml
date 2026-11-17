@@ -1,0 +1,54 @@
+name: TRAYDAQ User Android Chats Gossips Requests UI QA (NO RELEASE)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/android-chat-gossips-requests-20261117.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-native-chats-gossips-requests-20261117
+  cancel-in-progress: false
+env:
+  PRIVATE_SOURCE_SHA: ae5a621f812e26caa4804d8c73dc34ecb33a8127
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android:
+    name: User Android Chat Gossips Requests regressions, TS and JS export only
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - name: Checkout exact private candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Assert identical pinned source SHA
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Locked Android dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Focused Chats Gossips Requests and chat privacy tests
+        working-directory: private-src/mobile
+        run: node --test tests/android-traydaq-chat-gossips-requests-20261117.test.mjs tests/messaging-inbox-responsive.test.mjs tests/chat-privacy-gossips.test.mjs tests/chat-keyboard-live-parity.test.mjs tests/chat-voice-layout-android-regression.test.mjs tests/gossips-input-reactions-create-speed.test.mjs
+      - name: All Android regression tests
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Android TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android JS export only (no APK, AAB or Play)
+        working-directory: private-src/mobile
+        run: npm run export:android
+# Validation only; no signing, APK, AAB, Google Play upload, rollout or release.

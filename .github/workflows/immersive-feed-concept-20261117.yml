@@ -1,0 +1,84 @@
+name: TRAYDAQ Immersive Feed Concept Android Web QA (No Release)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/immersive-feed-concept-20261117.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-immersive-feed-concept-20261117
+  cancel-in-progress: false
+env:
+  PRIVATE_SOURCE_SHA: 4d07b9928e51f014c67c17b84eba45e5fdd5b50f
+  CI: "1"
+  EXPO_NO_TELEMETRY: "1"
+jobs:
+  android:
+    name: Android feed regressions, TypeScript, JS export only
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout pinned private Android candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Require exact candidate SHA
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked Android dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: All Android source and runtime regressions
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Android TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android JavaScript export (no APK/AAB)
+        working-directory: private-src/mobile
+        run: npm run export:android
+  web:
+    name: Web feed regressions, TypeScript, Cloudflare web asset build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout same pinned private candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Require exact candidate SHA
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install locked web dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Full web regression suite including immersive feed
+        working-directory: private-src
+        run: npm test
+      - name: Web TypeScript
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Cloudflare-targeted build (no deployment)
+        working-directory: private-src
+        run: npm run build
+# Read-only Builder validation. Never create APK/AAB, sign apps, deploy web, or publish to Google Play.

@@ -1,0 +1,82 @@
+name: TRAYDAQ Android Feed Picture Rendering Cache QA (No Release)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/android-picture-cache-repair-20261117.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-picture-cache-repair-20261117
+  cancel-in-progress: false
+env:
+  PRIVATE_SOURCE_SHA: b50695a192d3e70fe49920a7b640b5e785802875
+  CI: "1"
+  EXPO_NO_TELEMETRY: "1"
+jobs:
+  android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout pinned private Android candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify immutable source SHA
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install Android dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Validate all Android regressions including picture render and cache repair
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Validate Android TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Export Android JavaScript only, no APK or AAB
+        working-directory: private-src/mobile
+        run: npm run export:android
+  web:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout same pinned private candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify immutable source SHA
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install web dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Verify web regressions remain intact
+        working-directory: private-src
+        run: npm test
+      - name: Validate web TypeScript
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Cloudflare-targeted web asset build, no deployment
+        working-directory: private-src
+        run: npm run build
+# Read-only V2 Builder validation of exact Android picture repair branch. No deployment, APK, AAB, signing or Play upload.

@@ -1,0 +1,57 @@
+name: TRAYDAQ Android In-App Browser and Bio Links QA (NO RELEASE)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/android-in-app-browser-bio-links-20261117.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-in-app-browser-bio-links-20261117
+  cancel-in-progress: false
+env:
+  PRIVATE_SOURCE_SHA: 608d91c7f0b06f9e8f0561cdc6ecdd03fae7c799
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android:
+    name: Android in-app browser and profile bio links - validation only
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - name: Check out exact private candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify pinned private source
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked Android dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Run focused inbound Android share and auth composer tests
+        working-directory: private-src/mobile
+        run: node --test tests/android-in-app-browser-profile-bio-20261117.test.mjs tests/android-share-eligible-peers-deep-links-20261117.test.mjs tests/android-unified-share-sheet-20261117.test.mjs
+      - name: Run complete Android regression suite
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Validate native TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Confirm native Expo app config
+        working-directory: private-src/mobile
+        run: npx expo config --type introspect --json > /tmp/traydaq-browser-native-config.json
+      - name: Android JS export only (no APK or AAB)
+        working-directory: private-src/mobile
+        run: npm run export:android
+# Never sign or create APK/AAB; never publish to Google Play.

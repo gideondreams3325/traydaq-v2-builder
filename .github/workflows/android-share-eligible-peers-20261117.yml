@@ -1,0 +1,83 @@
+name: TRAYDAQ Android Eligible Share Targets and Exact Content Links QA (NO RELEASE)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/android-share-eligible-peers-20261117.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-share-eligible-peers-20261117
+  cancel-in-progress: false
+env:
+  PRIVATE_SOURCE_SHA: b8010fcc781bc2061a219ff4dc47647e958920da
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android:
+    name: Native DM eligibility, installed app icons, exact links: full tests, TS and JS export
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - name: Check out exact private candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify pinned source
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked Android dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Focused universal share and messaging regressions
+        working-directory: private-src/mobile
+        run: node --test tests/android-share-eligible-peers-deep-links-20261117.test.mjs tests/android-unified-share-sheet-20261117.test.mjs tests/user-ui-store-share-comments-regression.test.mjs tests/guest-browsing-interactions.test.mjs
+      - name: Entire Android regression suite
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Android TypeScript validation
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android JavaScript export only (NO APK/AAB)
+        working-directory: private-src/mobile
+        run: npm run export:android
+# Read-only source QA. Never sign or create APK/AAB or upload/release to Google Play.
+  backend:
+    name: Verify unchanged Web contracts and additive share privacy endpoint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify pinned source
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install locked shared test dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Verify server privacy and customer regression suite
+        working-directory: private-src
+        run: npm test
+      - name: Shared TypeScript validation
+        working-directory: private-src
+        run: npm run typecheck

@@ -13,7 +13,7 @@ const sizes=[
 ];
 const cards=Array.from({length:14},(_,i)=>
   '<article class="nd-post"><div class="nd-post-top"><strong>Creator '+(i+1)+'</strong></div>'+
-  '<div class="nd-post-media"><div class="nd-photo-wrap"><button type="button"><img alt="Post photo"></button></div></div>'+
+  '<div class="nd-post-media"><div class="nd-photo-wrap"><button type="button"><img alt="Post photo"></button></div><div class="nd-media-watermark">TRAYDAQ ✦</div></div>'+
   '<div class="nd-post-bottom"><p class="nd-caption">Post '+(i+1)+'</p>'+
   '<div class="nd-actions"><button>Like</button><button>Comments</button><button>Share</button></div></div></article>'
 ).join('');
@@ -29,8 +29,8 @@ const html='<!doctype html><html><head><meta name="viewport" content="width=devi
   '<div class="nd-main-tabs"><button class="active">For You</button><button>Following</button></div>'+
   '<button class="nd-search-cta">Search</button></header><div class="nd-layout">'+
   '<aside class="nd-sidebar"><section class="nd-orbit"><h2>Discovery</h2><div class="nd-orbit-aura"><span class="nd-orbit-core"></span></div></section></aside>'+
-  '<section class="nd-feed-main"><div class="nd-mobile-orbit"><section class="nd-orbit"><h2>Discover creators</h2>'+
-  '<div class="nd-orbit-aura"><span class="nd-orbit-core"></span></div></section></div>'+
+  '<section class="nd-feed-main"><div class="nd-mobile-orbit"><section class="nd-orbit"><div class="nd-orbit-heading"><h2>Discover creators</h2><p>Discover your world</p></div>'+
+  '<div class="nd-orbit-aura"><span class="nd-orbit-core"></span></div><div class="nd-orbit-actions"><button>Pick for You</button><button>Trending</button><button>Nearby</button></div></section></div>'+
   '<nav class="nd-mobile-tray"><button>Music</button><button>Products</button><button>Events</button><button>Jobs</button></nav>'+
   '<div class="nd-updates"><header><h2>Fresh updates</h2></header><div class="nd-updates-row">'+
   '<button>Creator one</button><button>Creator two</button><button>Creator three</button><button>Creator four</button></div></div>'+
@@ -52,6 +52,18 @@ try {
       assert(dims.scroll>dims.client+500,name+' content cannot scroll: '+JSON.stringify(dims));
       assert(['auto','scroll'].includes(dims.overflow),name+' overflow style: '+JSON.stringify(dims));
       assert(dims.screen<=dims.width+2,name+' horizontal overflow: '+JSON.stringify(dims));
+      const layout=await page.evaluate(()=>{
+        const post=document.querySelector('.nd-post-media').getBoundingClientRect();
+        const mark=document.querySelector('.nd-media-watermark').getBoundingClientRect();
+        const orbit=document.querySelector('.nd-mobile-orbit .nd-orbit').getBoundingClientRect();
+        return {postHeight:post.height,postWidth:post.width,markHeight:mark.height,markWidth:mark.width,orbitHeight:orbit.height};
+      });
+      assert(layout.markHeight>0&&layout.markHeight<layout.postHeight*.35,
+        name+' watermark covers the photo vertically: '+JSON.stringify(layout));
+      assert(layout.markWidth>0&&layout.markWidth<layout.postWidth*.75,
+        name+' watermark covers the photo horizontally: '+JSON.stringify(layout));
+      if(width<=900)assert(layout.orbitHeight>0&&layout.orbitHeight<150,
+        name+' discovery header too tall: '+JSON.stringify(layout));
 
       const media=page.locator('.nd-post-media').first();
       await media.scrollIntoViewIfNeeded();

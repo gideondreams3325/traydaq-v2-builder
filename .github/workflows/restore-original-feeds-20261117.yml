@@ -12,7 +12,7 @@ concurrency:
   group: traydaq-restore-original-fullscreen-feeds-qa
   cancel-in-progress: true
 env:
-  PRIVATE_SOURCE_SHA: 8dbd384f9ffae8bc32b8fd2bfc1539128db905c0
+  PRIVATE_SOURCE_SHA: 13a122641f009bc299edccefb15631cb6ffe1bc0
   CI: "1"
   EXPO_NO_TELEMETRY: "1"
 
@@ -41,9 +41,9 @@ jobs:
       - name: Install web dependencies
         working-directory: private-src
         run: npm ci --no-audit --no-fund
-      - name: Validate original feed source contract
+      - name: Validate complete original feed restore and all web regression tests
         working-directory: private-src
-        run: node --test tests/restore-original-immersive-feeds-20261117.test.mjs
+        run: npm test
       - name: Typecheck web
         working-directory: private-src
         run: npm run typecheck

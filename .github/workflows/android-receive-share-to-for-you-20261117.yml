@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-android-receive-share-to-for-you-20261117
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: bb112dd8d57dd3111b0d0ca245fcc8048a0d888a
+  PRIVATE_SOURCE_SHA: 7265f2f3feb7999004fad1636fa1a26a4b83fbda
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

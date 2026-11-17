@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-android-music-discussions-market-20261117
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: e169db0ee699dc25773a6866726311030c4ba428
+  PRIVATE_SOURCE_SHA: 19f6a10c47afbfbf6b133931035842a5f84c8680
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

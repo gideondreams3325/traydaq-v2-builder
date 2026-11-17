@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-web-android-feed-default-sound-20261117
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: 7ec322603099ffc9edc31baa94f3a699da8421b1
+  PRIVATE_SOURCE_SHA: e6165beedeb8354f494bef8d71f9530e849e3bdf
   CI: "1"
   EXPO_NO_TELEMETRY: "1"
 jobs:

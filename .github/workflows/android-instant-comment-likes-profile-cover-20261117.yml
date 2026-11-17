@@ -1,0 +1,54 @@
+name: TRAYDAQ Android Instant Comment Likes and Cover QA (NO RELEASE)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/android-instant-comment-likes-profile-cover-20261117.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-instant-likes-cover-20261117
+  cancel-in-progress: false
+env:
+  PRIVATE_SOURCE_SHA: b40437c94c1890121acaffa14f725a26f94be884
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android:
+    name: Android reactions and profile cover full regressions, TypeScript and JS export only
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - name: Checkout immutable private user-app source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Confirm exact pinned source SHA
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked native dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Focused comment reactions and profile layout tests
+        working-directory: private-src/mobile
+        run: node --test tests/android-instant-comment-likes-profile-cover-20261117.test.mjs tests/for-you-tiktok-comments-20261114.test.mjs tests/profile-v2.test.mjs tests/comment-keyboard-layout-parity.test.mjs
+      - name: Full Android regression suite
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Android TypeScript validation
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android JavaScript export only (NO APK or AAB)
+        working-directory: private-src/mobile
+        run: npm run export:android
+# Source-only QA: no signing, APK, AAB, Google Play upload, or release.

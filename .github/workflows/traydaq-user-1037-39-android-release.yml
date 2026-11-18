@@ -133,17 +133,14 @@ jobs:
           set -euo pipefail
           npm ci --no-audit --no-fund
           cp package.json "$RUNNER_TEMP/traydaq-original-packages.json"
-          # Expo's official SDK patch alignment; never skip doctor.
-          npx expo install --fix > "$RUNNER_TEMP/traydaq-expo-patch-fix.log" 2>&1 || {
-            echo '::error::Expo patch alignment failed; package-resolution error summary follows.'
-            grep -Ei 'npm error|ERESOLVE|ENOTFOUND|ETARGET|E404|unable to resolve|could not resolve|peer dependency|Conflicting peer|Failed to resolve|incompatible package|invalid package|Error:' "$RUNNER_TEMP/traydaq-expo-patch-fix.log" \
-              | sed -E 's#https?://[^ ]+#[registry URL]#g; s#(token|password|secret|authorization)[=:][^ ]+#[REDACTED]#Ig' \
-              | tail -n 18 || true
-            echo 'EXPO_PATCH_LOG_TAIL:'
-            tail -n 25 "$RUNNER_TEMP/traydaq-expo-patch-fix.log" \
-              | sed -E 's#https?://[^ ]+#[URL]#g; s#(/home/runner/[^ :]+)+#[runner]#g; s#(token|password|secret|authorization)[=:][^ ]+#[REDACTED]#Ig'
-            exit 1
-          }
+          # Pin only Expo Doctor's eight SDK 57-compatible patch versions.
+          # Do not use expo install --fix: it tries to rewrite TRAYDAQ's dynamic
+          # app.config.js, which deliberately preserves Firebase safety checks.
+          npm install --no-audit --no-fund --save \
+            expo@~57.0.33 expo-asset@~57.0.21 \
+            expo-image-manipulator@~57.0.22 expo-image-picker@~57.0.21 \
+            expo-location@~57.0.23 expo-notifications@~57.0.25 \
+            expo-sharing@~57.0.26 expo-splash-screen@~57.0.11
           node - <<'NODE'
           const fs=require('node:fs');
           const before=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/traydaq-original-packages.json','utf8'));

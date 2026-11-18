@@ -1,0 +1,73 @@
+name: TRAYDAQ V2 Account Erasure Hold Diagnostics QA (No Deployment)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/account-erasure-hold-diagnostics-20261118.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 9827cda35553ba4e0cc0e0d0c11a89b565f1c0b4
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify exact source commit
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "9827cda35553ba4e0cc0e0d0c11a89b565f1c0b4"
+      - name: Install dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: New erasure error contract and existing safety tests
+        working-directory: private-src
+        run: |
+          node --test tests/account-erasure-hold-reasons.test.mjs tests/direct-account-erasure-no-retention-20261118.test.mjs tests/account-erasure-ownership-recovery-database.test.mjs tests/account-erasure-request-targeting.test.mjs tests/account-erasure-client-receipt.test.mjs
+      - name: Full web regression tests
+        working-directory: private-src
+        run: npm test
+      - name: TypeScript check
+        working-directory: private-src
+        if: always()
+        run: npm run typecheck
+      - name: Cloudflare web build
+        working-directory: private-src
+        if: always()
+        run: npm run build
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 9827cda35553ba4e0cc0e0d0c11a89b565f1c0b4
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install native
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Android test suite
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Native TypeScript
+        working-directory: private-src/mobile
+        if: always()
+        run: npm run typecheck
+      - name: JavaScript export
+        working-directory: private-src/mobile
+        if: always()
+        run: npx expo export --platform android --output-dir /tmp/traydaq-erasure-hold-diagnostics-export
+# No production database writes, account deletion, AAB build, or release.

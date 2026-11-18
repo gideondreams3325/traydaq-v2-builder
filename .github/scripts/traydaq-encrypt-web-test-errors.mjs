@@ -19,4 +19,9 @@ const publicKey="-----BEGIN PUBLIC KEY-----\nMIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMII
 const protectedKey=publicEncrypt({key:publicKey,padding:constants.RSA_PKCS1_OAEP_PADDING,oaepHash:'sha256'},key);
 const envelope={key:protectedKey.toString('base64'),iv:iv.toString('base64'),tag:cipher.getAuthTag().toString('base64'),gzip:true,cipher:encrypted.toString('base64')};
 console.log('PRWEB_ENCRYPTED_DIAGNOSTICS='+Buffer.from(JSON.stringify(envelope)).toString('base64'));
+for(let i=0;i<failures.length;i++){
+  const brief=failures[i].split('\\n').filter(x=>/^\\s*(?:not ok \\d+ - |error:|code:|location:|operator:|expected:|actual:|failureType:)/.test(x)).join(' / ').slice(0,280);
+  const sealed=publicEncrypt({key:publicKey,padding:constants.RSA_PKCS1_OAEP_PADDING,oaepHash:'sha256'},Buffer.from(brief,'utf8'));
+  console.log('PRWEB_SHORT_FAILURE_'+(i+1)+'='+sealed.toString('base64'));
+}
 console.log('WEB_FAILURE_COUNT='+failures.length);

@@ -1,0 +1,57 @@
+name: TRAYDAQ 250 MiB Full Synthetic Original Video Proof (No APK)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/creator-250mib-full-video-proof-20261118.yml"
+      - ".github/scripts/creator-250mib-full-video-live-proof-20261118.mjs"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-full-250mib-private-video-proof
+  cancel-in-progress: false
+jobs:
+  synthetic-full-video:
+    name: Test exactly 250MiB / 42 chunks / FFmpeg + private cleanup
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: builder-control
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ef0f0a4f2f500bd157c584951acc048ee637537a
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Verify source and synthetic fixture
+        shell: bash
+        run: |
+          test "$(git -C private-src rev-parse HEAD)" = "ef0f0a4f2f500bd157c584951acc048ee637537a"
+          node --check builder-control/.github/scripts/creator-250mib-full-video-live-proof-20261118.mjs
+          node --check private-src/.github/scripts/process-large-creator-video.mjs
+      - name: Install private pinned SDK
+        working-directory: private-src
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify FFmpeg available
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -qq -y ffmpeg
+          fi
+      - name: Upload full synthetic 250MiB original and process, verify private cleanup
+        env:
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: node builder-control/.github/scripts/creator-250mib-full-video-live-proof-20261118.mjs
+# No real Firebase user, personal media, public content, app deployment or Android build.

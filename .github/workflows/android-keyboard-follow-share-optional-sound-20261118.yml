@@ -1,0 +1,53 @@
+name: TRAYDAQ Android Keyboard Follow Share Optional Sound QA (NO RELEASE)
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/android-keyboard-follow-share-optional-sound-20261118.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-keyboard-follow-share-optional-sound
+  cancel-in-progress: false
+env:
+  PRIVATE_SOURCE_SHA: 4a56fcb50cf716bdea42e402f4b0f49c5400a174
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android:
+    name: Keyboard, Following, privacy share, post audio and regression checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - name: Check out exact private Android candidate (read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify exact private source commit
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Screenshot-specific regression checks
+        working-directory: private-src/mobile
+        run: node --test tests/android-keyboard-follow-privacy-optional-audio-20261118.test.mjs tests/android-reusable-sounds-20261117.test.mjs tests/android-unified-share-sheet-20261117.test.mjs tests/android-share-eligible-peers-deep-links-20261117.test.mjs tests/chat-keyboard-live-parity.test.mjs tests/keyboard-safe-forms.test.mjs
+      - name: Full Android regression suite
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Android TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android JS-only export (NO APK AAB)
+        working-directory: private-src/mobile
+        run: npm run export:android
+# Never sign or generate APK/AAB, upload to Google Play, change web app, or deploy backend.

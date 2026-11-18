@@ -75,6 +75,8 @@ jobs:
           const next=failures(candidate),prev=failures(baseline);
           if(!next.length||JSON.stringify(next)!==JSON.stringify(prev)){
             console.error('New or changed web regression failures:',next.length,'baseline:',prev.length);
+            console.error('New failure test titles:',next.filter(x=>!prev.includes(x))
+              .map(x=>x.replace(/[^A-Za-z0-9 -]/g,'').slice(0,100)).join('; '));
             process.exit(1);
           }
           console.log('PASS: exact same '+next.length+' web test failures already exist on main');

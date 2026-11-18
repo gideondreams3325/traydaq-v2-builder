@@ -149,7 +149,7 @@ jobs:
             'expo-location','expo-notifications','expo-sharing','expo-splash-screen']);
           for(const section of ['dependencies','devDependencies']){
             const a=before[section]||{},b=after[section]||{};
-            if(Object.keys(a).join('|')!==Object.keys(b).join('|'))throw Error('Patch alignment changed dependency membership');
+            if(Object.keys(a).some(name=>!(name in b))||Object.keys(b).some(name=>!(name in a)))throw Error('Patch alignment changed dependency membership');
             for(const name of Object.keys(a)){
               if(a[name]!==b[name]&&!allowed.has(name))
                 throw Error('Unexpected dependency change: '+name);

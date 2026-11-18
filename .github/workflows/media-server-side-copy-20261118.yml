@@ -1,0 +1,129 @@
+name: TRAYDAQ V2 Server-Side Media Promotion QA (No APK)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/media-server-side-copy-20261118.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    name: Private web tests, TypeScript, Cloudflare build
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Fetch exact private PR 505 source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 98407b84e3983a3a1baf07105282635850284b11
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Fetch current private main for regression baseline
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: main
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: baseline-src
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Verify source pin and run focused and full web QA privately
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "98407b84e3983a3a1baf07105282635850284b11"
+          check() {
+            label="$1"; shift
+            if "$@" > "$RUNNER_TEMP/$label.log" 2>&1; then
+              echo "::notice::PASS $label"
+              grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/$label.log" | tail -3 || true
+            else
+              echo "::error::FAIL $label (private logs not published)"
+              grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/$label.log" | tail -3 || true
+              exit 1
+            fi
+          }
+          check web-install npm ci --no-audit --no-fund
+          check media-focused node --test tests/media-server-side-copy-20261118.test.mjs tests/media-quality-3min-pictures-20261118.test.mjs tests/picture-compression-all-uploads.test.mjs tests/unified-photo-video-picker.test.mjs
+          check web-types npm run typecheck
+          if npm test > "$RUNNER_TEMP/new-web-tests.log" 2>&1; then
+            echo "::notice::PASS web-regressions"
+          else
+            echo "::warning::Web suite has failing tests; comparing against private main baseline"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/new-web-tests.log" | tail -3 || true
+            (
+              cd ../baseline-src
+              npm ci --no-audit --no-fund > "$RUNNER_TEMP/baseline-install.log" 2>&1
+              npm test > "$RUNNER_TEMP/baseline-web-tests.log" 2>&1 || true
+            )
+            node --input-type=module - "$RUNNER_TEMP/new-web-tests.log" "$RUNNER_TEMP/baseline-web-tests.log" <<'VERIFY_BASELINE'
+          import {existsSync,readFileSync} from 'node:fs';
+          const [candidate,baseline]=process.argv.slice(2);
+          if(!existsSync(baseline))throw Error('Baseline test log was not produced');
+          const failures=path=>[...readFileSync(path,'utf8').matchAll(/^not ok [0-9]+ - (.*)$/gm)]
+            .map(match=>match[1].trim()).sort();
+          const next=failures(candidate),prev=failures(baseline);
+          if(!next.length||JSON.stringify(next)!==JSON.stringify(prev)){
+            console.error('New or changed web regression failures:',next.length,'baseline:',prev.length);
+            process.exit(1);
+          }
+          console.log('PASS: exact same '+next.length+' web test failures already exist on main');
+          VERIFY_BASELINE
+          fi
+          check cloudflare-build npm run build
+          test -f dist/index.html
+          echo "::notice::PASS Cloudflare-targeted output verified; no deployment"
+
+  android:
+    name: Private Android tests, TypeScript, JS export (No APK)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - name: Fetch exact private PR 505 source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 98407b84e3983a3a1baf07105282635850284b11
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Verify source and run private Android QA
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C .. rev-parse HEAD)" = "98407b84e3983a3a1baf07105282635850284b11"
+          check() {
+            label="$1"; shift
+            if "$@" > "$RUNNER_TEMP/$label.log" 2>&1; then
+              echo "::notice::PASS $label"
+              grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/$label.log" | tail -3 || true
+            else
+              echo "::error::FAIL $label (private logs not published)"
+              grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/$label.log" | tail -3 || true
+              exit 1
+            fi
+          }
+          check android-install npm ci --no-audit --no-fund
+          check media-focused node --test tests/for-you-video-duration-parser.test.mjs tests/for-you-video-review-storage.test.mjs tests/unified-photo-video-picker.test.mjs tests/image-any-original-size.test.mjs
+          check android-types npm run typecheck
+          check android-regressions node --test tests/*.test.mjs
+          check android-js-export npm run export:android
+          echo "::notice::PASS Android JS export only; no APK or AAB produced"

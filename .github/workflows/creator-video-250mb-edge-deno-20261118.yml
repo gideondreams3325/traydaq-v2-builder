@@ -43,7 +43,7 @@ jobs:
             echo "::notice::PASS new authenticated chunk gateway Deno semantic check"
           else
             echo "::error::New video gateway Deno check failed (private diagnostic details withheld)"
-            grep -E 'TS[0-9]+' "$RUNNER_TEMP/new-gateway.log" | sed -E 's/.*(TS[0-9]+).*/\1/' | sort -u | head -10 || true
+            grep -E '^error: TS[0-9]+[^[:cntrl:]]*' "$RUNNER_TEMP/new-gateway.log" | cut -c1-220 | head -6 || true
             exit 1
           fi
       - name: Compare current creator and erasure handler Deno errors to unchanged main

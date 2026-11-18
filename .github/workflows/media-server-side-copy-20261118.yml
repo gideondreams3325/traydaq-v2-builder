@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 98407b84e3983a3a1baf07105282635850284b11
+          ref: d5d80e918ddf0987c884a08f1c2fcd03304fd915
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
           path: private-src
@@ -41,7 +41,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "98407b84e3983a3a1baf07105282635850284b11"
+          test "$(git rev-parse HEAD)" = "d5d80e918ddf0987c884a08f1c2fcd03304fd915"
           check() {
             label="$1"; shift
             if "$@" > "$RUNNER_TEMP/$label.log" 2>&1; then
@@ -95,7 +95,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 98407b84e3983a3a1baf07105282635850284b11
+          ref: d5d80e918ddf0987c884a08f1c2fcd03304fd915
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
           path: private-src
@@ -109,7 +109,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git -C .. rev-parse HEAD)" = "98407b84e3983a3a1baf07105282635850284b11"
+          test "$(git -C .. rev-parse HEAD)" = "d5d80e918ddf0987c884a08f1c2fcd03304fd915"
           check() {
             label="$1"; shift
             if "$@" > "$RUNNER_TEMP/$label.log" 2>&1; then

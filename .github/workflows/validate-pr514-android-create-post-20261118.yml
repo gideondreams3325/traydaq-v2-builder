@@ -321,3 +321,29 @@ jobs:
             echo 'BASELINE: known existing failures are for comparison only'
           fi
           awk '/^# (tests|pass|fail|cancelled|skipped) [0-9]+$/ {print}' "$RUNNER_TEMP/test-results.log"
+
+  locate-android-assertion:
+    name: Find private native File assertion (encrypted path)
+    needs: source-input
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: private-src/mobile
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 8854cc77041b2fa1d8bbe8e6dd197e1056f5e4af
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2-builder
+          ref: ci/validate-pr514-android-create-post-20261118
+          path: builder-tools
+          persist-credentials: false
+      - name: Encrypt native failure test path without printing private filenames
+        run: node "$GITHUB_WORKSPACE/builder-tools/.github/scripts/pr514-find-private-test-path.cjs" tests

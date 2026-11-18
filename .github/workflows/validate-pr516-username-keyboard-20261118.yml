@@ -29,7 +29,7 @@ jobs:
       - name: Validate source SHA and existing read-only connection
         id: validate
         env:
-          REQUESTED_SOURCE_SHA: '588f415cbe88eb3d6cb0b8562a48acc6f92d526a'
+          REQUESTED_SOURCE_SHA: '3b6f31f454537794c1ca2c7b7a8ed0091ee02255'
           SOURCE_TOKEN_CONFIGURED: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
         shell: bash
         run: |
@@ -216,7 +216,7 @@ jobs:
           path: private-src
           persist-credentials: false
       - name: Check immutable source
-        run: test "$(git rev-parse HEAD)" = "588f415cbe88eb3d6cb0b8562a48acc6f92d526a"
+        run: test "$(git rev-parse HEAD)" = "3b6f31f454537794c1ca2c7b7a8ed0091ee02255"
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2-builder

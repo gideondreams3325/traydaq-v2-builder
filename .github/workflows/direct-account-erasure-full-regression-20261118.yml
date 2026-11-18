@@ -1,0 +1,136 @@
+name: TRAYDAQ Direct Account Erasure Full Regression and Deno QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/direct-account-erasure-full-regression-20261118.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    name: Full private web regressions, types and Cloudflare-targeted build
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Fetch exact private PR 506 source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 9328252882c3d29a8f18ea8d3d162b130d74bbd8
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Fetch current private main for regression baseline
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: main
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: baseline-src
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Verify source pin and run focused and full web QA privately
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "9328252882c3d29a8f18ea8d3d162b130d74bbd8"
+          check() {
+            label="$1"; shift
+            if "$@" > "$RUNNER_TEMP/$label.log" 2>&1; then
+              echo "::notice::PASS $label"
+              grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/$label.log" | tail -3 || true
+            else
+              echo "::error::FAIL $label (private logs not published)"
+              grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/$label.log" | tail -3 || true
+              if [ "$label" = "media-focused" ]; then
+                grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/$label.log" | cut -c1-120 | head -8 || true
+              fi
+              exit 1
+            fi
+          }
+          check web-install npm ci --no-audit --no-fund
+          check erasure-focused node --test tests/direct-account-erasure-no-retention-20261118.test.mjs tests/account-owner-self-service-erasure.test.mjs tests/ordinary-identity-erasure-policy.test.mjs tests/account-investigation-retention.test.mjs tests/fraud-evidence-erasure-holds.test.mjs tests/account-recovery-media-holds.test.mjs tests/account-storage-ownership.test.mjs
+          check web-types npm run typecheck
+          check worker-node-syntax node --check .github/scripts/process-large-creator-video.mjs
+          if npm test > "$RUNNER_TEMP/new-web-tests.log" 2>&1; then
+            echo "::notice::PASS web-regressions"
+          else
+            echo "::warning::Web suite has failing tests; comparing against private main baseline"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/new-web-tests.log" | tail -3 || true
+            (
+              cd ../baseline-src
+              npm ci --no-audit --no-fund > "$RUNNER_TEMP/baseline-install.log" 2>&1
+              npm test > "$RUNNER_TEMP/baseline-web-tests.log" 2>&1 || true
+            )
+            node --input-type=module - "$RUNNER_TEMP/new-web-tests.log" "$RUNNER_TEMP/baseline-web-tests.log" <<'VERIFY_BASELINE'
+          import {existsSync,readFileSync} from 'node:fs';
+          const [candidate,baseline]=process.argv.slice(2);
+          if(!existsSync(baseline))throw Error('Baseline test log was not produced');
+          const failures=path=>[...readFileSync(path,'utf8').matchAll(/^not ok [0-9]+ - (.*)$/gm)]
+            .map(match=>match[1].trim()).sort();
+          const next=failures(candidate),prev=failures(baseline);
+          if(!next.length||JSON.stringify(next)!==JSON.stringify(prev)){
+            console.error('New or changed web regression failures:',next.length,'baseline:',prev.length);
+            process.exit(1);
+          }
+          console.log('PASS: exact same '+next.length+' web test failures already exist on main');
+          VERIFY_BASELINE
+          fi
+          check cloudflare-build npm run build
+          test -f dist/index.html
+          echo "::notice::PASS Cloudflare-targeted output verified; no deployment"
+
+  android:
+    name: Full Android regression, typecheck, JS export
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - name: Fetch exact private PR 506 source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 9328252882c3d29a8f18ea8d3d162b130d74bbd8
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Verify source and run private Android QA
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C .. rev-parse HEAD)" = "9328252882c3d29a8f18ea8d3d162b130d74bbd8"
+          check() {
+            label="$1"; shift
+            if "$@" > "$RUNNER_TEMP/$label.log" 2>&1; then
+              echo "::notice::PASS $label"
+              grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/$label.log" | tail -3 || true
+            else
+              echo "::error::FAIL $label (private logs not published)"
+              grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/$label.log" | tail -3 || true
+              if [ "$label" = "android-regressions" ]; then
+                grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/$label.log" | cut -c1-140 | head -8 || true
+              fi
+              exit 1
+            fi
+          }
+          check android-install npm ci --no-audit --no-fund
+          check erasure-focused node --test tests/unified-deletion-parity.test.mjs tests/block-privacy-account-gate-regression.test.mjs
+          check android-types npm run typecheck
+          check android-regressions node --test tests/*.test.mjs
+          check android-js-export npm run export:android
+          echo "::notice::PASS Android JS export only; no APK or AAB produced"

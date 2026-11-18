@@ -1,0 +1,46 @@
+name: TRAYDAQ Synthetic Signed 6MiB TUS Chunk Live Proof (No User Data)
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/creator-large-video-tus-fixture-20261118.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-original-video-signed-tus-fixture
+  cancel-in-progress: false
+jobs:
+  proof:
+    name: Upload, verify and remove only one synthetic 6 MiB chunk
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: builder-control
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 55ce0756c247a048e9e947cbec0b36456494b235
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Verify trusted fixture syntax and private dependency lock
+        run: |
+          test "$(git -C private-src rev-parse HEAD)" = "55ce0756c247a048e9e947cbec0b36456494b235"
+          node --check builder-control/.github/scripts/creator-large-video-signed-tus-fixture-20261118.mjs
+      - name: Install locked private Supabase client
+        working-directory: private-src
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Real signed TUS upload, hash readback, anonymous denial, exact-path cleanup
+        env:
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: node builder-control/.github/scripts/creator-large-video-signed-tus-fixture-20261118.mjs
+# No user identifiers, original videos, metadata tables, build or deployment.

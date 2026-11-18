@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: ef0f0a4f2f500bd157c584951acc048ee637537a
+          ref: a3968af38a42a5ff1e017ea4fd2f5b68c412d08a
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -36,7 +36,7 @@ jobs:
       - name: Verify source and synthetic fixture
         shell: bash
         run: |
-          test "$(git -C private-src rev-parse HEAD)" = "ef0f0a4f2f500bd157c584951acc048ee637537a"
+          test "$(git -C private-src rev-parse HEAD)" = "a3968af38a42a5ff1e017ea4fd2f5b68c412d08a"
           node --check builder-control/.github/scripts/creator-250mib-full-video-live-proof-20261118.mjs
           node --check private-src/.github/scripts/process-large-creator-video.mjs
       - name: Install private pinned SDK

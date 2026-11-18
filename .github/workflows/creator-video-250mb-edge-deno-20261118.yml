@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: ce5ccb86bf88a204b67a072340e1bcae75dbea14
+          ref: f946c5c30fc8e861fc1e19fe37bfa0e72d3a27f7
           path: candidate
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -30,7 +30,7 @@ jobs:
           node-version: '22'
       - name: Confirm immutable private source pins
         run: |
-          test "$(git -C candidate rev-parse HEAD)" = "ce5ccb86bf88a204b67a072340e1bcae75dbea14"
+          test "$(git -C candidate rev-parse HEAD)" = "f946c5c30fc8e861fc1e19fe37bfa0e72d3a27f7"
           test "$(git -C baseline rev-parse HEAD)" = "55ce0756c247a048e9e947cbec0b36456494b235"
       - name: Deno semantic check for new Firebase video upload gateway
         shell: bash

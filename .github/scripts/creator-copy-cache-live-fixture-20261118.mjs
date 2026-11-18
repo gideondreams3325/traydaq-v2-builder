@@ -16,10 +16,11 @@ const client=createClient(ROOT,key,{auth:{autoRefreshToken:false,persistSession:
 const folder='__traydaq_cache_fixture__/'+randomUUID();
 const source=folder+'/private.png';
 const destination=folder+'/public.png';
+const reference=folder+'/public-reference.png';
 const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/RqsAAAAASUVORK5CYII=','base64');
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 const from=client.storage.from(PENDING),to=client.storage.from(PUBLIC);
-const status={readOnlySource:false,privateSourceUploaded:false,sourceCachePrivate:false,copyAccepted:false,publicCacheVerified:false,publicContentTypeVerified:false,publicBytesVerified:false,privateSourceProtected:false,sourceRemoved:false,copyRemoved:false,existingMediaAccessed:false,productionRowsModified:false};
+const status={readOnlySource:false,privateSourceUploaded:false,sourceCachePrivate:false,copyAccepted:false,publicCacheVerified:false,publicContentTypeVerified:false,publicBytesVerified:false,privateSourceProtected:false,sourceRemoved:false,copyRemoved:false,referenceRemoved:false,referenceUploaded:false,referenceHeadAge:-1,copyHeadAge:-1,copyInfoCache:'unknown',referenceInfoCache:'unknown',existingMediaAccessed:false,productionRowsModified:false};
 let stage='preflight',failure='';
 function maxAge(response){
  const value=response.headers.get('cache-control')||'';
@@ -35,7 +36,7 @@ try{
  const [pending,publicBucket]=await Promise.all([client.storage.getBucket(PENDING),client.storage.getBucket(PUBLIC)]);
  if(pending.error||publicBucket.error||pending.data?.public!==false||publicBucket.data?.public!==true)
   throw Error('Existing creator bucket privacy settings differ from expected');
- if(!(await absent(from,'private.png'))||!(await absent(to,'public.png')))
+ if(!(await absent(from,'private.png'))||!(await absent(to,'public.png'))||!(await absent(to,'public-reference.png')))
   throw Error('Fixture path already exists');
  status.readOnlySource=true;
  stage='private-upload';
@@ -80,9 +81,22 @@ try{
  const probe=await fetch(publicUrl+'?cache_check='+randomUUID(),{
   method:'HEAD',cache:'no-store',redirect:'manual',signal:AbortSignal.timeout(12000)
  });
+ status.copyHeadAge=probe.ok?maxAge(probe):-1;
  status.publicCacheVerified=probe.ok&&maxAge(probe)>=3600;
  status.publicContentTypeVerified=probe.ok&&
   (probe.headers.get('content-type')||'').split(';')[0].trim().toLowerCase()==='image/png';
+ stage='public-reference-upload';
+ const referenceUpload=await to.upload(reference,new Blob([png],{type:'image/png'}),{contentType:'image/png',cacheControl:'3600',upsert:false});
+ if(referenceUpload.error)throw Error('Public reference upload failed');
+ status.referenceUploaded=true;
+ const refUrl=to.getPublicUrl(reference).data.publicUrl;
+ const refHead=await fetch(refUrl+'?cache_check='+randomUUID(),{method:'HEAD',cache:'no-store',signal:AbortSignal.timeout(12000)});
+ status.referenceHeadAge=refHead.ok?maxAge(refHead):-1;
+ const copyInfo=await to.info(destination);
+ const refInfo=await to.info(reference);
+ const cacheValue=data=>String(data?.cacheControl||data?.cache_control||data?.metadata?.cacheControl||'unknown').slice(0,40);
+ status.copyInfoCache=copyInfo.error?'unavailable':cacheValue(copyInfo.data);
+ status.referenceInfoCache=refInfo.error?'unavailable':cacheValue(refInfo.data);
  stage='public-GET';
  const downloaded=await fetch(publicUrl+'?byte_check='+randomUUID(),{
   method:'GET',cache:'no-store',redirect:'manual',signal:AbortSignal.timeout(12000)
@@ -99,9 +113,10 @@ try{
  // Remove ONLY the freshly generated fixture filenames. Never list, mutate
  // or clean up other paths; exact-name presence is checked after deletion.
  try{
-  const removed=await to.remove([destination]);
+  const removed=await to.remove([destination,reference]);
   if(removed.error)throw Error('Unable to remove destination fixture');
   status.copyRemoved=await absent(to,'public.png');
+  status.referenceRemoved=await absent(to,'public-reference.png');
  }catch{failure+=(failure?'; ':'')+'Destination cleanup unverified';}
  try{
   const removed=await from.remove([source]);
@@ -111,10 +126,10 @@ try{
 }
 const pass=!failure&&status.privateSourceUploaded&&status.privateSourceProtected&&
  status.sourceCachePrivate&&status.copyAccepted&&status.publicCacheVerified&&
- status.publicContentTypeVerified&&status.publicBytesVerified&&status.copyRemoved&&status.sourceRemoved;
+ status.publicContentTypeVerified&&status.publicBytesVerified&&status.copyRemoved&&status.referenceRemoved&&status.sourceRemoved;
 console.log(JSON.stringify({
  result:pass?'PASS':'FAIL',checks:status,
  ...(failure?{failedStage:failure}:{}),
- ...(!status.copyRemoved||!status.sourceRemoved?{fixtureFolderForSafeManualCleanup:folder}:{})
+ ...(!status.copyRemoved||!status.referenceRemoved||!status.sourceRemoved?{fixtureFolderForSafeManualCleanup:folder}:{})
 }));
 if(!pass)process.exitCode=1;

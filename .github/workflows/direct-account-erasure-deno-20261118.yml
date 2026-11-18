@@ -1,0 +1,64 @@
+name: TRAYDAQ Direct Account Erasure Deno Semantic QA
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/direct-account-erasure-deno-20261118.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  deno-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 9328252882c3d29a8f18ea8d3d162b130d74bbd8
+          path: candidate
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: a3968af38a42a5ff1e017ea4fd2f5b68c412d08a
+          path: baseline
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Confirm immutable private source pins
+        run: |
+          test "$(git -C candidate rev-parse HEAD)" = "9328252882c3d29a8f18ea8d3d162b130d74bbd8"
+          test "$(git -C baseline rev-parse HEAD)" = "a3968af38a42a5ff1e017ea4fd2f5b68c412d08a"
+      - name: Prepare Edge handler trees for semantic comparison
+        run: |
+          mkdir -p "$RUNNER_TEMP/candidate-fn" "$RUNNER_TEMP/baseline-fn"
+          cp -R candidate/supabase/functions/. "$RUNNER_TEMP/candidate-fn/"
+          cp -R baseline/supabase/functions/. "$RUNNER_TEMP/baseline-fn/"
+      - name: Check changed erasure function Deno semantics against production baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          rc_candidate=0
+          npx --yes deno@2.9.6 check --no-config --node-modules-dir=auto --no-lock "$RUNNER_TEMP/candidate-fn/firebase-account-erasure/index.ts" > "$RUNNER_TEMP/candidate.log" 2>&1 || rc_candidate=$?
+          rc_baseline=0
+          npx --yes deno@2.9.6 check --no-config --node-modules-dir=auto --no-lock "$RUNNER_TEMP/baseline-fn/firebase-account-erasure/index.ts" > "$RUNNER_TEMP/baseline.log" 2>&1 || rc_baseline=$?
+          python3 - "$RUNNER_TEMP/candidate.log" "$RUNNER_TEMP/baseline.log" "$rc_candidate" "$rc_baseline" <<'VERIFY'
+          import collections,re,sys
+          def codes(path):
+            with open(path,encoding='utf-8',errors='ignore') as f:
+              return collections.Counter(re.findall(r'TS[0-9]{4,5}',f.read()))
+          a,b=codes(sys.argv[1]),codes(sys.argv[2])
+          ra,rb=map(int,sys.argv[3:5])
+          if ra==rb==0:
+            print('PASS both Edge functions Deno checked')
+          elif ra!=0 and rb!=0 and a and a==b:
+            print('PASS no new Deno type errors beyond unchanged main baseline')
+          else:
+            print('FAIL changed Edge type errors (codes only)')
+            print('Candidate:',dict(a),'baseline:',dict(b))
+            sys.exit(1)
+          VERIFY
+# Read-only source checking. No user or storage writes, Cloudflare or APK.

@@ -1,0 +1,51 @@
+name: TRAYDAQ Media Publication Edge Typecheck (No Deploy)
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/media-publication-edge-typecheck-20261118.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    name: Private Supabase media helper and handlers, no deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: f3eff7ee1c0b9fa28f01316e3321c082a5f0b1e6
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify pinned private SHA
+        run: test "$(git -C private-src rev-parse HEAD)" = "f3eff7ee1c0b9fa28f01316e3321c082a5f0b1e6"
+      - name: Deno semantic typecheck of server-only media helper
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/media-ts"
+          cp -R private-src/supabase/functions/. "$RUNNER_TEMP/media-ts/"
+          if npx --yes deno@2.9.6 check --no-config --node-modules-dir=auto --no-lock               "$RUNNER_TEMP/media-ts/_shared/promoteApprovedCreatorAsset.ts"               > "$RUNNER_TEMP/media-helper-check.log" 2>&1; then
+            echo "::notice::PASS media helper Deno TypeScript semantic check"
+          else
+            echo "::error::FAIL media helper Deno TypeScript check; private diagnostic details withheld"
+            grep -E 'TS[0-9]+' "$RUNNER_TEMP/media-helper-check.log" | sed -E 's/.*(TS[0-9]+).*/\1/' | sort -u | head -8 || true
+            exit 1
+          fi
+      - name: Validate creator and security handler dependency resolution
+        shell: bash
+        run: |
+          set -euo pipefail
+          if npx --yes deno@2.9.6 check --no-config --node-modules-dir=auto --no-lock               "$RUNNER_TEMP/media-ts/firebase-native-content/index.ts"               "$RUNNER_TEMP/media-ts/firebase-security-hub/index.ts"               > "$RUNNER_TEMP/media-edge-check.log" 2>&1; then
+            echo "::notice::PASS both creator and security Edge Functions Deno checks"
+          else
+            echo "::error::FAIL Edge Function Deno check (private logs withheld)"
+            grep -E 'TS[0-9]+' "$RUNNER_TEMP/media-edge-check.log" | sed -E 's/.*(TS[0-9]+).*/\1/' | sort -u | head -8 || true
+            exit 1
+          fi
+# Only read-only source/build checks. No Edge deploy, file upload or release.

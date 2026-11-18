@@ -99,6 +99,7 @@ try{
  status.copyInfoCache=copyInfo.error?'unavailable':cacheValue(copyInfo.data);
  status.referenceInfoCache=refInfo.error?'unavailable':cacheValue(refInfo.data);
  status.sourceInfoCache=sourceInfo.error?'unavailable':cacheValue(sourceInfo.data);
+ status.sourceCachePrivate=status.sourceInfoCache==='max-age=0';
  const [copyRender,refRender]=await Promise.all([destination,reference].map(name=>
   fetch(ROOT+'/storage/v1/render/image/public/'+PUBLIC+'/'+name+'?width=1&fixture='+randomUUID(),{
    method:'GET',cache:'no-store',redirect:'manual',signal:AbortSignal.timeout(12000)
@@ -116,7 +117,9 @@ try{
   const bytes=Buffer.from(await downloaded.arrayBuffer());
   status.publicBytesVerified=bytes.length===png.length&&sha(bytes)===sha(png);
  }
- if(!status.publicCacheVerified||!status.publicContentTypeVerified||!status.publicBytesVerified)
+ if(status.copyRenderAge<3600||status.referenceRenderAge<3600||
+    status.copyInfoCache!=='max-age=3600'||status.referenceInfoCache!=='max-age=3600'||
+    !status.publicContentTypeVerified||!status.publicBytesVerified)
   throw Error('Public copy metadata or bytes failed verification');
 }catch(e){
  failure=(e instanceof Error?e.message:'Fixture failure')+' at '+stage;
@@ -136,8 +139,8 @@ try{
  }catch{failure+=(failure?'; ':'')+'Source cleanup unverified';}
 }
 const pass=!failure&&status.privateSourceUploaded&&status.privateSourceProtected&&
- status.sourceCachePrivate&&status.copyAccepted&&status.publicCacheVerified&&
- status.publicContentTypeVerified&&status.publicBytesVerified&&status.copyRemoved&&status.referenceRemoved&&status.sourceRemoved;
+ status.sourceCachePrivate&&status.copyAccepted&&status.copyRenderAge>=3600&&status.referenceRenderAge>=3600&&
+ status.copyInfoCache==='max-age=3600'&&status.referenceInfoCache==='max-age=3600'&&status.publicContentTypeVerified&&status.publicBytesVerified&&status.copyRemoved&&status.referenceRemoved&&status.sourceRemoved;
 console.log(JSON.stringify({
  result:pass?'PASS':'FAIL',checks:status,
  ...(failure?{failedStage:failure}:{}),

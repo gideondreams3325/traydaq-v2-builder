@@ -1,0 +1,67 @@
+name: TRAYDAQ V2 Google Account Deletion Full Logout QA (No APK)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/google-account-deletion-logout-20261118.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  google-deletion:
+    name: Receipt and Google session regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 87ea19ea200625e9cf3acb2afbd04b96467b5ef8
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify exact commit
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "87ea19ea200625e9cf3acb2afbd04b96467b5ef8"
+      - name: Install
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Google owner deletion and existing receipt tests
+        working-directory: private-src
+        run: node --test tests/android-google-account-deletion-signout.test.mjs tests/account-erasure-client-receipt.test.mjs tests/direct-account-erasure-no-retention-20261118.test.mjs tests/account-erasure-hold-reasons.test.mjs
+      - name: Web baseline TypeScript
+        working-directory: private-src
+        if: always()
+        run: npm run typecheck
+  android:
+    name: Android full validation without APK/AAB
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 87ea19ea200625e9cf3acb2afbd04b96467b5ef8
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: All Android tests
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Android TypeScript
+        working-directory: private-src/mobile
+        if: always()
+        run: npm run typecheck
+      - name: Android JavaScript export
+        working-directory: private-src/mobile
+        if: always()
+        run: npx expo export --platform android --output-dir /tmp/traydaq-deleted-google-session-export
+# Source validation only: never delete real accounts, release builds, or deploy.

@@ -1,0 +1,89 @@
+name: TRAYDAQ Direct Account Erasure — No Default Retention QA
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/direct-account-erasure-20261118.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-direct-erasure-20261118
+  cancel-in-progress: false
+jobs:
+  web:
+    name: Verify owner-only deletion, backup cleanup, TypeScript and web build
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ff4011ad75e79097258d001ea9f498eb65f31ba4
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Verify immutable code revision
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "ff4011ad75e79097258d001ea9f498eb65f31ba4"
+      - name: Install locked dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Owner self-service, no archive, backups, ownership, case safety regression suite
+        working-directory: private-src
+        run: |
+          node --test \
+            tests/direct-account-erasure-no-retention-20261118.test.mjs \
+            tests/account-owner-self-service-erasure.test.mjs \
+            tests/ordinary-identity-erasure-policy.test.mjs \
+            tests/account-investigation-retention.test.mjs \
+            tests/fraud-evidence-erasure-holds.test.mjs \
+            tests/account-storage-ownership.test.mjs \
+            tests/account-recovery-media-holds.test.mjs \
+            tests/account-erasure-session.test.mjs \
+            tests/account-erasure-release-lock.test.mjs \
+            tests/account-staging-erasure-holds.test.mjs
+      - name: TypeScript typecheck
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Cloudflare-targeted web build (no deploy)
+        working-directory: private-src
+        run: npm run build
+  android:
+    name: Verify native account deletion and Android export; no APK or AAB
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ff4011ad75e79097258d001ea9f498eb65f31ba4
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Verify exact private source
+        run: test "$(git -C private-src rev-parse HEAD)" = "ff4011ad75e79097258d001ea9f498eb65f31ba4"
+      - name: Install mobile pinned dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Android user deletion parity tests
+        working-directory: private-src/mobile
+        run: node --test tests/unified-deletion-parity.test.mjs tests/block-privacy-account-gate-regression.test.mjs
+      - name: Android TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android JavaScript export without packaging
+        working-directory: private-src/mobile
+        run: npm run export:android
+# This workflow never reads real account data or invokes account deletion.

@@ -1,9 +1,10 @@
-name: TRAYDAQ Large Video Private Storage Bucket Gate (No App Deploy)
+name: TRAYDAQ Private 6 MiB Video Chunk Bucket Gate (No App Deploy)
 on:
   push:
     branches: [main]
     paths:
       - ".github/workflows/creator-video-private-bucket-setup-20261118.yml"
+      - ".github/scripts/creator-video-private-bucket-setup-20261118.mjs"
   workflow_dispatch:
 permissions:
   contents: read
@@ -12,7 +13,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   isolated-private-bucket:
-    name: Verify or create exact private MP4-only 250MiB bucket
+    name: Verify or create exact private binary 6MiB video chunk bucket
     if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 12
@@ -41,7 +42,7 @@ jobs:
       - name: Install pinned server-only Supabase SDK
         working-directory: private-src
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Create only isolated private original-video bucket, or report global-limit blocker
+      - name: Create isolated 6 MiB chunk bucket without raising global limits
         env:
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: node builder-control/.github/scripts/creator-video-private-bucket-setup-20261118.mjs

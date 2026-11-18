@@ -29,7 +29,7 @@ jobs:
       - name: Validate source SHA and existing read-only connection
         id: validate
         env:
-          REQUESTED_SOURCE_SHA: '67430771cd84ed785668cd6d52f64984ad898402'
+          REQUESTED_SOURCE_SHA: '644c032e39ab2f2bf31f57729a84eaed58825079'
           SOURCE_TOKEN_CONFIGURED: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
         shell: bash
         run: |
@@ -218,7 +218,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 67430771cd84ed785668cd6d52f64984ad898402
+          ref: 644c032e39ab2f2bf31f57729a84eaed58825079
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false

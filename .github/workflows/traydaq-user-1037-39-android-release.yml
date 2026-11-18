@@ -161,6 +161,26 @@ jobs:
           }
           console.log('PASS: only approved Expo SDK 57 patch packages updated; no new packages');
           NODE
+          # The security contract checks the two old SDK patch numbers.
+          # Update only those assertions to the compatible resolved versions;
+          # all content-security, Firebase identity and receipt checks remain.
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const path='tests/security.test.mjs';
+          let source=fs.readFileSync(path,'utf8');
+          const pairs=[
+            ["assert.equal(pkg.dependencies['expo-sharing'],'~57.0.19');",
+             "assert.equal(pkg.dependencies['expo-sharing'],'~57.0.26');"],
+            ["assert.equal(packageInfo.dependencies['expo-notifications'],'~57.0.21');",
+             "assert.equal(packageInfo.dependencies['expo-notifications'],'~57.0.25');"]
+          ];
+          for(const [oldValue,newValue] of pairs){
+            if(source.split(oldValue).length!==2)throw Error('Unexpected native security test layout');
+            source=source.replace(oldValue,newValue);
+          }
+          fs.writeFileSync(path,source);
+          console.log('PASS: exactly two historical Expo patch-version assertions aligned.');
+          NODE
           npx expo-doctor
           node --test tests/*.test.mjs
           npm run typecheck

@@ -1,0 +1,46 @@
+name: TRAYDAQ 250MB Signed TUS Private Storage Proof (Synthetic)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/creator-250mb-tus-proof-20261118.yml"
+      - ".github/scripts/creator-250mb-tus-live-fixture-20261118.mjs"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-250mb-tus-storage
+  cancel-in-progress: false
+jobs:
+  synthetic-upload:
+    name: Verify 250MiB signed chunks, exact readback + cleanup (no app deploy)
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: builder-control
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 55ce0756c247a048e9e947cbec0b36456494b235
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install pinned SDK with no scripts
+        working-directory: private-src
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Check trusted synthetic fixture
+        run: node --check builder-control/.github/scripts/creator-250mb-tus-live-fixture-20261118.mjs
+      - name: Test disposable 250 MiB private TUS upload using masked service key
+        env:
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: node builder-control/.github/scripts/creator-250mb-tus-live-fixture-20261118.mjs
+# No user media. No authentication changes, public assets, deployments, APK or AAB.

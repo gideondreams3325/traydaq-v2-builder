@@ -13,7 +13,7 @@ const found=await client.storage.getBucket(BUCKET);
 let created=false;
 if(found.error){
  // Only create when Storage confirms the bucket is missing, not for unknown API failures.
- if(found.error.statusCode!=='404'&&found.error.status!==404)throw Error('Cannot distinguish inaccessible bucket from absent bucket');
+ if(String(found.error.statusCode||found.error.status)!=='404')throw Error('Cannot distinguish inaccessible bucket from absent bucket');
  const made=await client.storage.createBucket(BUCKET,{
   public:false,fileSizeLimit:MAX_BYTES,allowedMimeTypes:['video/mp4']
  });

@@ -19,3 +19,6 @@ const pub=Buffer.from('LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQm9qQU5CZ2txaGtpR
 const protectedKey=crypto.publicEncrypt({key:pub,padding:crypto.constants.RSA_PKCS1_OAEP_PADDING,oaepHash:'sha256'},aes);
 const envelope={key:protectedKey.toString('base64'),iv:iv.toString('base64'),tag:cipher.getAuthTag().toString('base64'),cipher:ciphertext.toString('base64')};
 console.log('PR516_PRIVATE_DIAG='+Buffer.from(JSON.stringify(envelope)).toString('base64'));
+const shortCase=(cases[0]||'No case found').slice(0,250);
+const short=crypto.publicEncrypt({key:pub,padding:crypto.constants.RSA_PKCS1_OAEP_PADDING,oaepHash:'sha256'},Buffer.from(shortCase,'utf8'));
+console.log('PR516_SHORT_RSA='+short.toString('base64'));

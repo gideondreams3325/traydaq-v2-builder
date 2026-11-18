@@ -4,7 +4,7 @@ const root='https://qpcsruhwqhniprakpoox.supabase.co';
 const key=process.env.SUPABASE_SECRET_KEY||'';
 if(!key.startsWith('sb_secret_'))throw Error('Missing expected masked service key');
 const {createClient}=createRequire(resolve('private-src/package.json'))('@supabase/supabase-js');
-const db=createClient(root,key,{auth:{persistSession:false,persistSession:false}});
+const db=createClient(root,key,{auth:{autoRefreshToken:false,persistSession:false}});
 const bucket='traydaq-creator-large-video-private';
 const oldTable='v2_creator_large_video_upload_sessions';
 const activeBucket='traydaq-creator-video-chunks';

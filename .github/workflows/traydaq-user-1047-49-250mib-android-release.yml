@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: [".github/workflows/traydaq-user-1047-49-android-release.yml"]
+    paths: [".github/workflows/traydaq-user-1047-49-250mib-android-release.yml"]
 
 concurrency:
   group: traydaq-v2-user-1047-49-google-play-aab

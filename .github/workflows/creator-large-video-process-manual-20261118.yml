@@ -1,0 +1,50 @@
+name: TRAYDAQ Private Large Video Transcode Worker (Manual Fixture Only)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-private-video-transcode
+  cancel-in-progress: false
+jobs:
+  transcode:
+    name: Verify and compress authorized 250MiB private media; no APK
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 92486e43966b024931587dae52648847e4fd6185
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Verify pinned private processing code
+        shell: bash
+        run: |
+          test "$(git -C private-src rev-parse HEAD)" = "92486e43966b024931587dae52648847e4fd6185"
+          node --check private-src/.github/scripts/process-large-creator-video.mjs
+      - name: Install private locked dependencies
+        working-directory: private-src
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify ffmpeg and ffprobe
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -qq -y ffmpeg
+          fi
+          ffmpeg -version | head -n 1
+      - name: Process at most two owner-verified queued originals
+        env:
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: node private-src/.github/scripts/process-large-creator-video.mjs
+# Not scheduled while large-video release is gated.
+# Never posts original media, publishes user paths, builds APK/AAB or exposes secrets.

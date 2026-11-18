@@ -1,0 +1,56 @@
+name: TRAYDAQ Synthetic Private Large Video Conversion Live Proof (No User Data)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/creator-large-video-worker-live-fixture-20261118.yml"
+      - ".github/scripts/creator-large-video-worker-live-fixture-20261118.mjs"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-large-video-worker-isolated-proof
+  cancel-in-progress: false
+jobs:
+  fixture:
+    name: Synthetic 18MiB MP4 multi-chunk FFmpeg test with exact cleanup
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: builder-control
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ce5ccb86bf88a204b67a072340e1bcae75dbea14
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Verify pinned source and safe runner syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C private-src rev-parse HEAD)" = "ce5ccb86bf88a204b67a072340e1bcae75dbea14"
+          node --check private-src/.github/scripts/process-large-creator-video.mjs
+          node --check builder-control/.github/scripts/creator-large-video-worker-live-fixture-20261118.mjs
+      - name: Install pinned Supabase SDK
+        working-directory: private-src
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Confirm FFmpeg tools present
+        run: |
+          command -v ffprobe
+          command -v ffmpeg
+      - name: Run isolated private 18MiB original chunk + FFmpeg proof
+        env:
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: node builder-control/.github/scripts/creator-large-video-worker-live-fixture-20261118.mjs
+# Always clean up the one synthetic reservation and its exact chunk paths.
+# No TRAYDAQ account, staff role, Firebase user, real media or public bucket touched.

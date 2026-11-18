@@ -128,12 +128,38 @@ jobs:
           console.log('Verified existing upload certificate against Firebase Android OAuth client.');
           NODE
 
-      - name: Install and validate TRAYDAQ V2 user app
+      - name: Install and align installed Expo SDK 57 patch packages
         run: |
           set -euo pipefail
-          npm install --no-audit --no-fund
-          node --test tests/*.test.mjs
+          npm ci --no-audit --no-fund
+          cp package.json "$RUNNER_TEMP/traydaq-original-packages.json"
+          # Expo's official SDK patch alignment; never skip doctor.
+          npx expo install --fix > "$RUNNER_TEMP/traydaq-expo-patch-fix.log" 2>&1 || {
+            echo '::error::Expo patch alignment failed; see temporary protected runner diagnostics.'
+            exit 1
+          }
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const before=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/traydaq-original-packages.json','utf8'));
+          const after=require('./package.json');
+          const allowed=new Set(['expo','expo-asset','expo-image-manipulator','expo-image-picker',
+            'expo-location','expo-notifications','expo-sharing','expo-splash-screen']);
+          for(const section of ['dependencies','devDependencies']){
+            const a=before[section]||{},b=after[section]||{};
+            if(Object.keys(a).join('|')!==Object.keys(b).join('|'))throw Error('Patch alignment changed dependency membership');
+            for(const name of Object.keys(a)){
+              if(a[name]!==b[name]&&!allowed.has(name))
+                throw Error('Unexpected dependency change: '+name);
+            }
+          }
+          for(const name of allowed){
+            const resolved=require('./node_modules/'+name+'/package.json').version;
+            if(!resolved.startsWith('57.0.'))throw Error('Expo 57 dependency escaped intended SDK: '+name);
+          }
+          console.log('PASS: only approved Expo SDK 57 patch packages updated; no new packages');
+          NODE
           npx expo-doctor
+          node --test tests/*.test.mjs
           npm run typecheck
 
       - name: Configure newer user release and remove development overlay permission
@@ -268,6 +294,8 @@ jobs:
           mkdir -p play-release
           java -jar "$TOOL" dump manifest --bundle="$AAB" > play-release/AndroidManifest.xml
           keytool -exportcert -rfc -keystore "$TRAYDAQ_UPLOAD_KEYSTORE" -storepass:env STORE_PASS -alias "$TRAYDAQ_UPLOAD_ALIAS" > play-release/TRAYDAQ-public-signing-certificate.pem
+          cp package.json play-release/resolved-expo-package.json
+          cp package-lock.json play-release/resolved-expo-package-lock.json
           cp "$AAB" play-release/TRAYDAQ-1.0.37-39.aab
           cp "$APK" play-release/TRAYDAQ-1.0.37-39.apk
           cp "$MAP" play-release/mapping.txt

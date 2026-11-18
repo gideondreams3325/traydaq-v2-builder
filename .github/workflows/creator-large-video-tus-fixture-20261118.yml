@@ -2,7 +2,9 @@ name: TRAYDAQ Synthetic Signed 6MiB TUS Chunk Live Proof (No User Data)
 on:
   push:
     branches: [main]
-    paths: [".github/workflows/creator-large-video-tus-fixture-20261118.yml"]
+    paths:
+      - ".github/workflows/creator-large-video-tus-fixture-20261118.yml"
+      - ".github/scripts/creator-large-video-signed-tus-fixture-20261118.mjs"
   workflow_dispatch:
 permissions:
   contents: read

@@ -1,0 +1,38 @@
+name: TRAYDAQ 250MiB Video Gateway v2 — Live Denial Smoke (No Release)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/creator-video-gateway-v2-denial-20261118.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  denial-smoke:
+    name: Verify unauthenticated large-video operations fail closed
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check live v2 gateway denies anonymous or forged uploads
+        shell: bash
+        run: |
+          set -euo pipefail
+          url='https://qpcsruhwqhniprakpoox.supabase.co/functions/v1/firebase-native-video-upload'
+          check() {
+            name="$1"; expected="$2"; shift 2
+            status="$(curl -sS --max-time 20 -o /dev/null -w '%{http_code}' "$@")"
+            if [ "$status" != "$expected" ]; then
+              echo "::error::$name expected HTTP $expected, got $status"
+              exit 1
+            fi
+            echo "::notice::PASS $name (HTTP $status)"
+          }
+          check 'OPTIONS' 204 -X OPTIONS "$url?action=begin"
+          check 'unrecognized action' 404 -X POST "$url?action=invalid"
+          check 'anonymous begin denied' 401 -X POST "$url?action=begin" -H 'Content-Type: application/json' --data '{"bytes":20000000,"mime":"video/mp4"}'
+          check 'forged token denied' 401 -X POST "$url?action=chunk&id=00000000-0000-4000-8000-000000000000&index=0" -H 'Authorization: Bearer forged' -H 'Content-Type: application/octet-stream' --data-binary 'nothing'
+          check 'anonymous cancellation denied' 401 -X POST "$url?action=cancel" -H 'Content-Type: application/json' --data '{"id":"00000000-0000-4000-8000-000000000000"}'
+          echo 'Live gateway authorization smoke passed; rollout not enabled; no APK/AAB.'

@@ -1,0 +1,73 @@
+name: TRAYDAQ 250MiB Creator Gateway Deno and Erasure QA (No Deployment)
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/creator-video-250mb-edge-deno-20261118.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  deno-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ce5ccb86bf88a204b67a072340e1bcae75dbea14
+          path: candidate
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 55ce0756c247a048e9e947cbec0b36456494b235
+          path: baseline
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Confirm immutable private source pins
+        run: |
+          test "$(git -C candidate rev-parse HEAD)" = "ce5ccb86bf88a204b67a072340e1bcae75dbea14"
+          test "$(git -C baseline rev-parse HEAD)" = "55ce0756c247a048e9e947cbec0b36456494b235"
+      - name: Deno semantic check for new Firebase video upload gateway
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/candidate-fn" "$RUNNER_TEMP/baseline-fn"
+          cp -R candidate/supabase/functions/. "$RUNNER_TEMP/candidate-fn/"
+          cp -R baseline/supabase/functions/. "$RUNNER_TEMP/baseline-fn/"
+          if npx --yes deno@2.9.6 check --no-config --node-modules-dir=auto --no-lock "$RUNNER_TEMP/candidate-fn/firebase-native-video-upload/index.ts" > "$RUNNER_TEMP/new-gateway.log" 2>&1; then
+            echo "::notice::PASS new authenticated chunk gateway Deno semantic check"
+          else
+            echo "::error::New video gateway Deno check failed (private diagnostic details withheld)"
+            grep -E 'TS[0-9]+' "$RUNNER_TEMP/new-gateway.log" | sed -E 's/.*(TS[0-9]+).*/\1/' | sort -u | head -10 || true
+            exit 1
+          fi
+      - name: Compare current creator and erasure handler Deno errors to unchanged main
+        shell: bash
+        run: |
+          set -euo pipefail
+          rc_candidate=0
+          npx --yes deno@2.9.6 check --no-config --node-modules-dir=auto --no-lock "$RUNNER_TEMP/candidate-fn/firebase-native-content/index.ts" "$RUNNER_TEMP/candidate-fn/firebase-account-erasure/index.ts" > "$RUNNER_TEMP/candidate.log" 2>&1 || rc_candidate=$?
+          rc_baseline=0
+          npx --yes deno@2.9.6 check --no-config --node-modules-dir=auto --no-lock "$RUNNER_TEMP/baseline-fn/firebase-native-content/index.ts" "$RUNNER_TEMP/baseline-fn/firebase-account-erasure/index.ts" > "$RUNNER_TEMP/baseline.log" 2>&1 || rc_baseline=$?
+          python3 - "$RUNNER_TEMP/candidate.log" "$RUNNER_TEMP/baseline.log" "$rc_candidate" "$rc_baseline" <<'VERIFY'
+          import collections,re,sys
+          def codes(path):
+            with open(path,encoding='utf-8',errors='ignore') as f:
+              return collections.Counter(re.findall(r'TS[0-9]{4,5}',f.read()))
+          a,b=codes(sys.argv[1]),codes(sys.argv[2])
+          ra,rb=map(int,sys.argv[3:5])
+          if ra==rb==0:
+            print('PASS both Edge functions Deno checked')
+          elif ra!=0 and rb!=0 and a and a==b:
+            print('PASS no new Deno type errors beyond unchanged main baseline')
+          else:
+            print('FAIL changed Edge type errors (codes only)')
+            print('Candidate:',dict(a),'baseline:',dict(b))
+            sys.exit(1)
+          VERIFY
+# Read-only source checking. No user or storage writes, Cloudflare or APK.

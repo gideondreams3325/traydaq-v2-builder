@@ -28,19 +28,24 @@ try{
  status.signed=true;
  const meta={bucketName:BUCKET,objectName:path,contentType:'application/octet-stream',cacheControl:'0'};
  const encoded=Object.entries(meta).map(([k,v])=>k+' '+Buffer.from(v,'utf8').toString('base64')).join(',');
- const res=await fetch(TUS,{method:'POST',redirect:'error',
-  headers:{'Tus-Resumable':'1.0.0','x-signature':ticket.data.token,
-   'Upload-Length':String(bytes),'Upload-Metadata':encoded},
-  signal:AbortSignal.timeout(25000)});
- if(res.status!==201){
-  const body=await res.text().catch(()=>'');
-  const safe=body.slice(0,380).replace(/[^A-Za-z0-9 _.,:{}"'-]/g,'');
-  throw Error('Signed TUS start returned '+res.status+' '+safe);
+ const token=String(ticket.data.token);
+ status.tokenShape=token.split('.').length===3?'three-segment-JWS':'non-JWS-'+token.split('.').length;
+ status.tokenBytes=token.length;
+ let res=null,activeTus='',failures=[];
+ for(const endpoint of [TUS,ROOT+'/storage/v1/upload/resumable']){
+  const attempt=await fetch(endpoint,{method:'POST',redirect:'error',
+   headers:{'Tus-Resumable':'1.0.0','x-signature':token,
+    'Upload-Length':String(bytes),'Upload-Metadata':encoded},
+   signal:AbortSignal.timeout(25000)});
+  if(attempt.status===201){res=attempt;activeTus=endpoint;break;}
+  const body=await attempt.text().catch(()=>'');
+  failures.push(attempt.status+':'+body.slice(0,180).replace(/[^A-Za-z0-9 _.,:{}"'-]/g,''));
  }
+ if(!res)throw Error('Both supported signed TUS hosts failed ('+failures.join('; ')+')');
  const loc=res.headers.get('location')||'';
  if(!loc)throw Error('No signed TUS upload URL');
- const url=new URL(loc,TUS);
- if(url.origin!==new URL(TUS).origin||!url.pathname.startsWith('/storage/v1/upload/resumable/'))
+ const url=new URL(loc,activeTus);
+ if(url.origin!==new URL(activeTus).origin||!url.pathname.startsWith('/storage/v1/upload/resumable/'))
   throw Error('Unexpected TUS upload URL');
  status.tusCreated=true;
  const head=async()=>{

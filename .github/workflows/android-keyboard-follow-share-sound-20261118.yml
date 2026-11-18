@@ -1,0 +1,53 @@
+name: TRAYDAQ Android Keyboard Follow Share Sound QA (NO RELEASE)
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/android-keyboard-follow-share-sound-20261118.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-keyboard-follow-share-sound-20261118
+  cancel-in-progress: false
+env:
+  PRIVATE_SOURCE_SHA: c4cfdb5e197f7c6e113e2a5253ce77b78478f61b
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android:
+    name: Native Android keyboard, follow state, private share and optional sounds
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - name: Check out exact private candidate (read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify pinned private source commit
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Targeted Android regressions
+        working-directory: private-src/mobile
+        run: node --test tests/android-keyboard-follow-share-sound-20261118.test.mjs tests/android-unified-share-sheet-20261117.test.mjs tests/android-share-report-repost-following-20261117.test.mjs
+      - name: Full Android regression suite
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Native TypeScript checks
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android JavaScript export only
+        working-directory: private-src/mobile
+        run: npm run export:android
+# Builder QA only; no APK/AAB, signing, Play Store release, web or staff deployment.

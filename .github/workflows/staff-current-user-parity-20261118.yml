@@ -19,13 +19,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 97add638c3e72e563ffa772045dab5aef5fee932
+          ref: eb8b2492a7a33f6ef03bb5b8103fc590b6e21eba
           path: source
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
       - name: Enforce immutable source pin
         working-directory: source
-        run: test "$(git rev-parse HEAD)" = "97add638c3e72e563ffa772045dab5aef5fee932"
+        run: test "$(git rev-parse HEAD)" = "eb8b2492a7a33f6ef03bb5b8103fc590b6e21eba"
       - name: Node.js 22
         uses: actions/setup-node@v4
         with:

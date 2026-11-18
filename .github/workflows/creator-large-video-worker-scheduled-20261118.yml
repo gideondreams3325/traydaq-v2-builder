@@ -3,7 +3,7 @@ name: TRAYDAQ Private Large Video Worker — Scheduled (Release Gated)
 # disabled in Supabase until authenticated end-to-end release validation passes.
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '3-58/5 * * * *'
   workflow_dispatch:
   push:
     branches: [main]

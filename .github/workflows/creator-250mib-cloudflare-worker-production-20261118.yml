@@ -1,0 +1,76 @@
+name: TRAYDAQ 250MiB Web — Existing Cloudflare Worker Production
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/creator-250mib-cloudflare-worker-production-20261118.yml"
+
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-250mib-existing-customer-worker-production
+  cancel-in-progress: false
+
+jobs:
+  deploy-existing:
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    name: Validate and publish only the existing traydaq-v2 Worker
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Checkout exact merged TRAYDAQ private V2 source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: a3968af38a42a5ff1e017ea4fd2f5b68c412d08a
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Verify immutable reviewed source, Worker target and hosting isolation
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "a3968af38a42a5ff1e017ea4fd2f5b68c412d08a"
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const j=JSON.parse(fs.readFileSync('wrangler.jsonc','utf8'));
+          if(j.name!=='traydaq-v2'||j.main!=='./worker/seo.js'||j.assets?.directory!=='./dist')
+            throw Error('Only the existing TRAYDAQ customer Worker can be deployed');
+          console.log('Verified expected customer Worker with preserved static asset binding');
+          NODE
+      - name: Install pinned web dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Focused 250 MiB video, image and worker regression suite
+        working-directory: private-src
+        run: node --test tests/creator-large-video-250mb-20261118.test.mjs tests/creator-large-video-worker-recovery-20261118.test.mjs tests/media-quality-3min-pictures-20261118.test.mjs tests/picture-compression-all-uploads.test.mjs tests/unified-photo-video-picker.test.mjs
+      - name: Check Web TypeScript
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Build production user web and embedded staff assets
+        working-directory: private-src
+        run: npm run build
+      - name: Verify Cloudflare credentials and existing Worker before any write
+        working-directory: private-src
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/verify-existing-customer-worker.mjs
+      - name: Deploy only the existing traydaq-v2 Cloudflare Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          workingDirectory: private-src
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4.156.2"
+          command: deploy --config wrangler.jsonc
+      - name: Confirm production source
+        run: echo 'Published existing TRAYDAQ customer Worker from merged 250 MiB source; no legal or staff Worker was targeted.'
+# Builder is the independent validator; no Play upload, no DNS edits, no new Worker creation.

@@ -43,22 +43,7 @@ jobs:
             echo "::notice::PASS new authenticated chunk gateway Deno semantic check"
           else
             echo "::error::New video gateway Deno check failed (private diagnostic details withheld)"
-            python3 - "$RUNNER_TEMP/new-gateway.log" <<'SAFE_DIAGNOSTIC'
-            import re,sys
-            with open(sys.argv[1],encoding='utf-8',errors='ignore') as f:
-              lines=f.read().splitlines()
-            clean=[re.sub(r'\x1b\[[0-9;]*m','',line) for line in lines]
-            for i,line in enumerate(clean):
-              if 'TS2345' not in line: continue
-              print('Type mismatch:',line.strip()[:190])
-              for extra in clean[i+1:i+3]:
-                msg=extra.strip()
-                if 'Argument' in msg or 'parameter' in msg or 'assignable' in msg:
-                  print('Detail:',msg[:185])
-              for loc in clean[max(0,i-6):i+8]:
-                m=re.search(r'firebase-native-video-upload/index.ts:(\d+):(\d+)',loc)
-                if m:print('Line:',m.group(1),'column:',m.group(2));break
-            SAFE_DIAGNOSTIC
+            grep -E 'TS2345' "$RUNNER_TEMP/new-gateway.log" | cut -c1-190 | head -6 || true
             exit 1
           fi
       - name: Compare current creator and erasure handler Deno errors to unchanged main

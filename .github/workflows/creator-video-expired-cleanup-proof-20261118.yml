@@ -1,0 +1,47 @@
+name: TRAYDAQ 250MiB Video Worker Expiry Recovery Live Proof (Synthetic Only)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/creator-video-expired-cleanup-proof-20261118.yml"
+      - ".github/scripts/creator-video-expired-cleanup-proof-20261118.mjs"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-private-creator-video-proof
+  cancel-in-progress: false
+jobs:
+  fixture:
+    name: Test interrupted/expired reservation cleanup with disposable private objects
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: builder-control
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: bd1f298144481a3e3a19ec90317c2d4ebb2a314c
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Verify exact private worker SHA
+        run: test "$(git -C private-src rev-parse HEAD)" = "bd1f298144481a3e3a19ec90317c2d4ebb2a314c"
+      - name: Install pinned SDK without scripts
+        working-directory: private-src
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify test source syntax
+        run: node --check builder-control/.github/scripts/creator-video-expired-cleanup-proof-20261118.mjs
+      - name: Run disposable expired/processing video cleanup proof
+        env:
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: node builder-control/.github/scripts/creator-video-expired-cleanup-proof-20261118.mjs
+# No users selected and no public media changes; no deployment, APK, AAB.

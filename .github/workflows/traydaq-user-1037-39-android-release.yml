@@ -139,6 +139,9 @@ jobs:
             grep -Ei 'npm error|ERESOLVE|ENOTFOUND|ETARGET|E404|unable to resolve|could not resolve|peer dependency|Conflicting peer|Failed to resolve|incompatible package|invalid package|Error:' "$RUNNER_TEMP/traydaq-expo-patch-fix.log" \
               | sed -E 's#https?://[^ ]+#[registry URL]#g; s#(token|password|secret|authorization)[=:][^ ]+#[REDACTED]#Ig' \
               | tail -n 18 || true
+            echo 'EXPO_PATCH_LOG_TAIL:'
+            tail -n 25 "$RUNNER_TEMP/traydaq-expo-patch-fix.log" \
+              | sed -E 's#https?://[^ ]+#[URL]#g; s#(/home/runner/[^ :]+)+#[runner]#g; s#(token|password|secret|authorization)[=:][^ ]+#[REDACTED]#Ig'
             exit 1
           }
           node - <<'NODE'

@@ -1,0 +1,198 @@
+name: Validate TRAYDAQ User 1.0.49 Build 51 (No APK/AAB)
+
+# Temporary pinned same-repo PR validation for user app version 1.0.49.
+# Never merge this controller into Builder main.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: user-1049-51-validate-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+env:
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+
+jobs:
+  source-input:
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.head_ref == 'ci/validate-user-1049-51-20261118' && github.event.pull_request.head.repo.full_name == github.repository
+    name: Require immutable private source revision
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      source_sha: ${{ steps.validate.outputs.source_sha }}
+    steps:
+      - name: Validate source SHA and existing read-only connection
+        id: validate
+        env:
+          REQUESTED_SOURCE_SHA: '425da7f1d8701ea68215a60636b1a4e4833fa2b2'
+          SOURCE_TOKEN_CONFIGURED: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$REQUESTED_SOURCE_SHA" =~ ^[0-9a-fA-F]{40}$ ]]; then
+            echo '::error::source_sha must be a full 40-character Git commit SHA.'
+            exit 1
+          fi
+          if [[ "$SOURCE_TOKEN_CONFIGURED" != true ]]; then
+            echo '::error::The existing read-only private-source connection is missing.'
+            exit 1
+          fi
+          printf 'source_sha=%s\n' "${REQUESTED_SOURCE_SHA,,}" >> "$GITHUB_OUTPUT"
+
+  android:
+    name: Android runtime regressions, TypeScript and JS export
+    needs: source-input
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      PRIVATE_SOURCE_SHA: ${{ needs.source-input.outputs.source_sha }}
+    defaults:
+      run:
+        working-directory: private-src/mobile
+        shell: bash
+    steps:
+      - name: Checkout exact private user-app source without saved credentials
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify immutable checkout
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install pinned native dependencies with private diagnostics
+        id: install
+        run: |
+          set -euo pipefail
+          if npm ci --no-audit --no-fund > "$RUNNER_TEMP/android-feed-install.log" 2>&1; then
+            echo 'PASS: pinned Android dependencies'
+          else
+            echo '::error::Android dependency installation failed. Diagnostics remain on the temporary runner.'
+            exit 1
+          fi
+      - name: Complete Android test suite including feed runtime regressions
+        id: tests
+        run: |
+          set -euo pipefail
+          if node --test tests/*.test.mjs > "$RUNNER_TEMP/android-feed-tests.log" 2>&1; then
+            echo 'PASS: complete Android regression suite'
+            awk '/^# (tests|pass|fail|cancelled|skipped|todo) [0-9]+$/ {print}' "$RUNNER_TEMP/android-feed-tests.log"
+          else
+            echo '::error::Android regression suite failed. Private source and diagnostics were not published.'
+            awk '/^# (tests|pass|fail|cancelled|skipped|todo) [0-9]+$/ {print}' "$RUNNER_TEMP/android-feed-tests.log"
+            exit 1
+          fi
+      - name: Android TypeScript
+        if: always() && steps.install.outcome == 'success'
+        run: |
+          set -euo pipefail
+          if npm run typecheck > "$RUNNER_TEMP/android-feed-typescript.log" 2>&1; then
+            echo 'PASS: Android TypeScript'
+          else
+            echo '::error::Android TypeScript failed. Diagnostics remain on the temporary runner.'
+            exit 1
+          fi
+      - name: Android JavaScript and assets export only
+        if: always() && steps.install.outcome == 'success'
+        run: |
+          set -euo pipefail
+          if npm run export:android > "$RUNNER_TEMP/android-feed-export.log" 2>&1; then
+            echo 'PASS: Android JavaScript and assets export; no Android binary generated'
+          else
+            echo '::error::Android JavaScript export failed. Private bundle diagnostics were not published.'
+            exit 1
+          fi
+
+  web-cloudflare:
+    name: Unchanged web regression, TypeScript and Cloudflare asset validation
+    needs: source-input
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      PRIVATE_SOURCE_SHA: ${{ needs.source-input.outputs.source_sha }}
+    defaults:
+      run:
+        working-directory: private-src
+        shell: bash
+    steps:
+      - name: Checkout same immutable private source without saved credentials
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify immutable checkout and existing Cloudflare target
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+          node --input-type=module <<'NODE'
+          import {readFileSync} from 'node:fs';
+          const configuration=JSON.parse(readFileSync('wrangler.jsonc','utf8'));
+          if(configuration.name!=='traydaq-v2'||configuration.assets?.directory!=='./dist') {
+            console.error('Unexpected Cloudflare asset target. No deployment was attempted.');
+            process.exit(1);
+          }
+          NODE
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install pinned web dependencies with private diagnostics
+        id: install
+        run: |
+          set -euo pipefail
+          if npm ci --no-audit --no-fund > "$RUNNER_TEMP/android-feed-web-install.log" 2>&1; then
+            echo 'PASS: pinned web dependencies'
+          else
+            echo '::error::Web dependency installation failed. Diagnostics remain on the temporary runner.'
+            exit 1
+          fi
+      - name: Complete web regression suite
+        run: |
+          set -euo pipefail
+          if npm test > "$RUNNER_TEMP/android-feed-web-tests.log" 2>&1; then
+            echo 'PASS: complete web regression suite'
+            awk '/^# (tests|pass|fail|cancelled|skipped|todo) [0-9]+$/ {print}' "$RUNNER_TEMP/android-feed-web-tests.log"
+          else
+            echo '::error::Web regression suite failed. Private source and diagnostics were not published.'
+            awk '/^# (tests|pass|fail|cancelled|skipped|todo) [0-9]+$/ {print}' "$RUNNER_TEMP/android-feed-web-tests.log"
+            exit 1
+          fi
+      - name: Web TypeScript
+        if: always() && steps.install.outcome == 'success'
+        run: |
+          set -euo pipefail
+          if npm run typecheck > "$RUNNER_TEMP/android-feed-web-typescript.log" 2>&1; then
+            echo 'PASS: web TypeScript'
+          else
+            echo '::error::Web TypeScript failed. Diagnostics remain on the temporary runner.'
+            exit 1
+          fi
+      - name: Validate existing Cloudflare web assets without deployment
+        if: always() && steps.install.outcome == 'success'
+        run: |
+          set -euo pipefail
+          if npm run build > "$RUNNER_TEMP/android-feed-web-build.log" 2>&1 && test -f dist/index.html; then
+            echo 'PASS: Cloudflare-targeted web asset build; no deployment'
+          else
+            echo '::error::Cloudflare asset build failed. Private build diagnostics were not published.'
+            exit 1
+          fi
+
+# No Expo prebuild, Gradle, APK/AAB, signing, artifact upload, deployment,
+# Google Play submission, or release. Private source and generated assets
+# remain only on disposable runners; the public log contains results/counts.

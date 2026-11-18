@@ -1,0 +1,40 @@
+name: TRAYDAQ Redundant 250MiB TUS Fixture Bucket Cleanup (No User Objects)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/creator-redundant-tus-cleanup-20261118.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  remove-unused-fixture-bucket:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: builder-control
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 55ce0756c247a048e9e947cbec0b36456494b235
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install pinned SDK
+        working-directory: private-src
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify fixture syntax
+        run: node --check builder-control/.github/scripts/creator-redundant-tus-cleanup-20261118.mjs
+      - name: Remove only exact empty redundant bucket using Storage API
+        env:
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: node builder-control/.github/scripts/creator-redundant-tus-cleanup-20261118.mjs
+# Never removes any existing Storage objects or users.

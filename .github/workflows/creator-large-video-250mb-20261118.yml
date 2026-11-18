@@ -50,6 +50,9 @@ jobs:
             else
               echo "::error::FAIL $label (private logs not published)"
               grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/$label.log" | tail -3 || true
+              if [ "$label" = "media-focused" ]; then
+                grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/$label.log" | cut -c1-120 | head -8 || true
+              fi
               exit 1
             fi
           }

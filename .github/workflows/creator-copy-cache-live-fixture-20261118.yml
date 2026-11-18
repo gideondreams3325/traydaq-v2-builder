@@ -1,0 +1,60 @@
+name: TRAYDAQ Creator Media Copy Cache Live Fixture (Synthetic Only)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/creator-copy-cache-live-fixture-20261118.yml"
+      - ".github/scripts/creator-copy-cache-live-fixture-20261118.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: traydaq-creator-cache-fixture
+  cancel-in-progress: false
+
+jobs:
+  private-to-public-cache:
+    name: Disposable Storage copy / cache proof, no application deployment
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      PRIVATE_SOURCE_SHA: 4649e8cc912a29804ab1cbeef05b28aca96104f9
+    steps:
+      - name: Checkout trusted public builder control
+        uses: actions/checkout@v4
+        with:
+          path: builder-control
+          persist-credentials: false
+      - name: Checkout pinned private dependencies without persisting credentials
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Verify immutable dependency source
+        working-directory: private-src
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install pinned Supabase SDK without postinstall hooks
+        working-directory: private-src
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Validate harmless synthetic fixture script
+        run: node --check builder-control/.github/scripts/creator-copy-cache-live-fixture-20261118.mjs
+      - name: Verify copy metadata against disposable real Storage PNG, then delete it
+        env:
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: node builder-control/.github/scripts/creator-copy-cache-live-fixture-20261118.mjs
+
+# No real user paths, Firebase identities, table writes, project settings,
+# Cloudflare deployments, APKs or AABs. Exact random fixture paths removed.

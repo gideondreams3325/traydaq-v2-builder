@@ -136,16 +136,9 @@ jobs:
           # Expo's official SDK patch alignment; never skip doctor.
           npx expo install --fix > "$RUNNER_TEMP/traydaq-expo-patch-fix.log" 2>&1 || {
             echo '::error::Expo patch alignment failed; package-resolution error summary follows.'
-            node - <<'NODE'
-            const fs=require('fs');
-            const log=fs.readFileSync(process.env.RUNNER_TEMP+'/traydaq-expo-patch-fix.log','utf8').split(/\\r?\\n/);
-            const matches=log.filter(line=>/npm error|ERESOLVE|ENOTFOUND|ETARGET|E404|unable to resolve|could not resolve|peer dependency|Conflicting peer|Failed to resolve|incompatible package|invalid package|Error:/i.test(line));
-            for(const item of matches.slice(-18)){
-              const clean=item.replace(/https?:\\/\\/\\S+/g,'[registry URL]').replace(/(token|password|secret|authorization)[=:]\\S+/ig,'[REDACTED]').slice(0,220);
-              console.log('SDK_FIX_DIAGNOSTIC:',clean);
-            }
-            console.log('SDK_FIX_DIAGNOSTIC_MATCH_COUNT:',matches.length);
-            NODE
+            grep -Ei 'npm error|ERESOLVE|ENOTFOUND|ETARGET|E404|unable to resolve|could not resolve|peer dependency|Conflicting peer|Failed to resolve|incompatible package|invalid package|Error:' "$RUNNER_TEMP/traydaq-expo-patch-fix.log" \
+              | sed -E 's#https?://[^ ]+#[registry URL]#g; s#(token|password|secret|authorization)[=:][^ ]+#[REDACTED]#Ig' \
+              | tail -n 18 || true
             exit 1
           }
           node - <<'NODE'

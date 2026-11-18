@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: f946c5c30fc8e861fc1e19fe37bfa0e72d3a27f7
+          ref: bd1f298144481a3e3a19ec90317c2d4ebb2a314c
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
           path: private-src
@@ -41,7 +41,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "f946c5c30fc8e861fc1e19fe37bfa0e72d3a27f7"
+          test "$(git rev-parse HEAD)" = "bd1f298144481a3e3a19ec90317c2d4ebb2a314c"
           check() {
             label="$1"; shift
             if "$@" > "$RUNNER_TEMP/$label.log" 2>&1; then
@@ -57,7 +57,7 @@ jobs:
             fi
           }
           check web-install npm ci --no-audit --no-fund
-          check media-focused node --test tests/creator-large-video-250mb-20261118.test.mjs tests/media-quality-3min-pictures-20261118.test.mjs tests/picture-compression-all-uploads.test.mjs tests/unified-photo-video-picker.test.mjs
+          check media-focused node --test tests/creator-large-video-250mb-20261118.test.mjs tests/creator-large-video-worker-recovery-20261118.test.mjs tests/media-quality-3min-pictures-20261118.test.mjs tests/picture-compression-all-uploads.test.mjs tests/unified-photo-video-picker.test.mjs
           check web-types npm run typecheck
           check worker-node-syntax node --check .github/scripts/process-large-creator-video.mjs
           if npm test > "$RUNNER_TEMP/new-web-tests.log" 2>&1; then
@@ -99,7 +99,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: f946c5c30fc8e861fc1e19fe37bfa0e72d3a27f7
+          ref: bd1f298144481a3e3a19ec90317c2d4ebb2a314c
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
           path: private-src
@@ -113,7 +113,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git -C .. rev-parse HEAD)" = "f946c5c30fc8e861fc1e19fe37bfa0e72d3a27f7"
+          test "$(git -C .. rev-parse HEAD)" = "bd1f298144481a3e3a19ec90317c2d4ebb2a314c"
           check() {
             label="$1"; shift
             if "$@" > "$RUNNER_TEMP/$label.log" 2>&1; then

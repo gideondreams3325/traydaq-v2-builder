@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 9328252882c3d29a8f18ea8d3d162b130d74bbd8
+          ref: f321a540829e97c46c222c8575aa5283e3591781
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
           path: private-src
@@ -41,7 +41,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "9328252882c3d29a8f18ea8d3d162b130d74bbd8"
+          test "$(git rev-parse HEAD)" = "f321a540829e97c46c222c8575aa5283e3591781"
           check() {
             label="$1"; shift
             if "$@" > "$RUNNER_TEMP/$label.log" 2>&1; then
@@ -79,6 +79,7 @@ jobs:
           const next=failures(candidate),prev=failures(baseline);
           if(!next.length||JSON.stringify(next)!==JSON.stringify(prev)){
             console.error('New or changed web regression failures:',next.length,'baseline:',prev.length);
+            console.error('New failure titles:',next.filter(name=>!prev.includes(name)).slice(0,10));
             process.exit(1);
           }
           console.log('PASS: exact same '+next.length+' web test failures already exist on main');
@@ -99,7 +100,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 9328252882c3d29a8f18ea8d3d162b130d74bbd8
+          ref: f321a540829e97c46c222c8575aa5283e3591781
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
           path: private-src
@@ -113,7 +114,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git -C .. rev-parse HEAD)" = "9328252882c3d29a8f18ea8d3d162b130d74bbd8"
+          test "$(git -C .. rev-parse HEAD)" = "f321a540829e97c46c222c8575aa5283e3591781"
           check() {
             label="$1"; shift
             if "$@" > "$RUNNER_TEMP/$label.log" 2>&1; then

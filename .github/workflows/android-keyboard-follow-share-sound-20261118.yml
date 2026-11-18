@@ -10,7 +10,7 @@ concurrency:
   group: traydaq-android-keyboard-follow-share-sound-20261118
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: c4cfdb5e197f7c6e113e2a5253ce77b78478f61b
+  PRIVATE_SOURCE_SHA: 7b47a39e0df209a165909d4fef3fef1de582e2c0
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

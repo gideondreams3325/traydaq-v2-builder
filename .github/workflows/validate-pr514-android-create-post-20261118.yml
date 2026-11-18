@@ -196,3 +196,112 @@ jobs:
 # No Expo prebuild, Gradle, APK/AAB, signing, artifact upload, deployment,
 # Google Play submission, or release. Private source and generated assets
 # remain only on disposable runners; the public log contains results/counts.
+
+
+  android-focused:
+    name: PR514 focused Android media and publishing tests
+    needs: source-input
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: baseline/mobile
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 8854cc77041b2fa1d8bbe8e6dd197e1056f5e4af
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: baseline
+          persist-credentials: false
+      - name: Verify immutable source
+        run: test "$(git rev-parse HEAD)" = 8854cc77041b2fa1d8bbe8e6dd197e1056f5e4af
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: baseline/mobile/package-lock.json
+      - name: Run tests and report private-source-safe counts
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/test-install.log" 2>&1
+          if node --test tests/android-creator-publish-upload-20261118.test.mjs tests/for-you-video-review-storage.test.mjs > "$RUNNER_TEMP/test-results.log" 2>&1; then
+            echo 'PR514 FOCUSED: PASS'
+          else
+            echo 'PR514 FOCUSED: FAILED'
+            echo '::error::Focused Android tests failed'; exit 1
+          fi
+          awk '/^# (tests|pass|fail|cancelled|skipped) [0-9]+$/ {print}' "$RUNNER_TEMP/test-results.log"
+
+  baseline-android:
+    name: Baseline Android tests (pre-PR514)
+    needs: source-input
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: baseline/mobile
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 91d64a33445de85dde357f019c5b96dab4a81202
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: baseline
+          persist-credentials: false
+      - name: Verify immutable source
+        run: test "$(git rev-parse HEAD)" = 91d64a33445de85dde357f019c5b96dab4a81202
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: baseline/mobile/package-lock.json
+      - name: Run tests and report private-source-safe counts
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/test-install.log" 2>&1
+          if node --test tests/*.test.mjs > "$RUNNER_TEMP/test-results.log" 2>&1; then
+            echo 'BASELINE ANDROID: PASS'
+          else
+            echo 'BASELINE ANDROID: FAILED'
+            echo 'BASELINE: known existing failures are for comparison only'
+          fi
+          awk '/^# (tests|pass|fail|cancelled|skipped) [0-9]+$/ {print}' "$RUNNER_TEMP/test-results.log"
+
+  baseline-web:
+    name: Baseline web tests (pre-PR514)
+    needs: source-input
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: baseline
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 91d64a33445de85dde357f019c5b96dab4a81202
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: baseline
+          persist-credentials: false
+      - name: Verify immutable source
+        run: test "$(git rev-parse HEAD)" = 91d64a33445de85dde357f019c5b96dab4a81202
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: baseline/package-lock.json
+      - name: Run tests and report private-source-safe counts
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/test-install.log" 2>&1
+          if npm test > "$RUNNER_TEMP/test-results.log" 2>&1; then
+            echo 'BASELINE WEB: PASS'
+          else
+            echo 'BASELINE WEB: FAILED'
+            echo 'BASELINE: known existing failures are for comparison only'
+          fi
+          awk '/^# (tests|pass|fail|cancelled|skipped) [0-9]+$/ {print}' "$RUNNER_TEMP/test-results.log"

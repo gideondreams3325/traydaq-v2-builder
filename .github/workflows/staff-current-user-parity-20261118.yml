@@ -1,0 +1,48 @@
+name: TRAYDAQ STAFF current user-app parity source QA (2026-11-18)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/staff-current-user-parity-20261118.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  staff-source-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - name: Checkout exact TRAYDAQ V2 STAFF candidate SHA
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 97add638c3e72e563ffa772045dab5aef5fee932
+          path: source
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Enforce immutable source pin
+        working-directory: source
+        run: test "$(git rev-parse HEAD)" = "97add638c3e72e563ffa772045dab5aef5fee932"
+      - name: Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: All native STAFF security and compatibility regressions
+        working-directory: source/admin-native
+        run: npm run test:security
+      - name: Install native STAFF TypeScript dependencies
+        working-directory: source/admin-native
+        run: npm install --no-audit --no-fund
+      - name: Native STAFF TypeScript typecheck
+        working-directory: source/admin-native
+        run: npm run typecheck
+      - name: No account recovery, release, or unrelated app changes
+        working-directory: source
+        run: |
+          test ! -e admin-native/src/DeletionReviews.tsx
+          test -f admin-native/tests/recent-user-feature-compat.test.mjs
+          test -f admin-native/tests/final-media-review-coverage.test.mjs
+          echo "Source-only validation: no APK, AAB, Android build, Cloudflare deploy, or production mutation."

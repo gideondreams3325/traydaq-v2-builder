@@ -32,7 +32,11 @@ try{
   headers:{'Tus-Resumable':'1.0.0','x-signature':ticket.data.token,
    'Upload-Length':String(bytes),'Upload-Metadata':encoded},
   signal:AbortSignal.timeout(25000)});
- if(res.status!==201)throw Error('Signed TUS start returned '+res.status);
+ if(res.status!==201){
+  const body=await res.text().catch(()=>'');
+  const safe=body.slice(0,380).replace(/[^A-Za-z0-9 _.,:{}"'-]/g,'');
+  throw Error('Signed TUS start returned '+res.status+' '+safe);
+ }
  const loc=res.headers.get('location')||'';
  if(!loc)throw Error('No signed TUS upload URL');
  const url=new URL(loc,TUS);

@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: b10b91763af30a160ba7f0c8e5c21ef0dd4f3779
+          ref: 9328252882c3d29a8f18ea8d3d162b130d74bbd8
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
           path: private-src
@@ -29,7 +29,7 @@ jobs:
           cache-dependency-path: private-src/package-lock.json
       - name: Verify immutable code revision
         working-directory: private-src
-        run: test "$(git rev-parse HEAD)" = "b10b91763af30a160ba7f0c8e5c21ef0dd4f3779"
+        run: test "$(git rev-parse HEAD)" = "9328252882c3d29a8f18ea8d3d162b130d74bbd8"
       - name: Install locked dependencies
         working-directory: private-src
         run: npm ci --no-audit --no-fund
@@ -63,7 +63,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: b10b91763af30a160ba7f0c8e5c21ef0dd4f3779
+          ref: 9328252882c3d29a8f18ea8d3d162b130d74bbd8
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
           path: private-src
@@ -73,7 +73,7 @@ jobs:
           cache: npm
           cache-dependency-path: private-src/mobile/package-lock.json
       - name: Verify exact private source
-        run: test "$(git -C private-src rev-parse HEAD)" = "b10b91763af30a160ba7f0c8e5c21ef0dd4f3779"
+        run: test "$(git -C private-src rev-parse HEAD)" = "9328252882c3d29a8f18ea8d3d162b130d74bbd8"
       - name: Install mobile pinned dependencies
         working-directory: private-src/mobile
         run: npm ci --no-audit --no-fund

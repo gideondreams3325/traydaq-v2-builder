@@ -196,3 +196,46 @@ jobs:
 # No Expo prebuild, Gradle, APK/AAB, signing, artifact upload, deployment,
 # Google Play submission, or release. Private source and generated assets
 # remain only on disposable runners; the public log contains results/counts.
+
+
+  android-regression-diagnostic:
+    name: Encrypted single Android regression diagnosis
+    needs: source-input
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: private-src/mobile
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ needs.source-input.outputs.source_sha }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Check immutable source
+        run: test "$(git rev-parse HEAD)" = "588f415cbe88eb3d6cb0b8562a48acc6f92d526a"
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2-builder
+          ref: ci/validate-pr516-username-keyboard-20261118
+          path: builder-diagnostics
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Report only an encrypted failure excerpt
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/pr516-install.log" 2>&1
+          if node --test tests/*.test.mjs > "$RUNNER_TEMP/pr516-test.log" 2>&1; then
+            echo 'FOCUSED ALL: PASS'
+          else
+            echo 'FOCUSED ALL: failed case stays encrypted'
+          fi
+          node "$GITHUB_WORKSPACE/builder-diagnostics/.github/scripts/pr516-encrypted-native-failure.cjs" "$RUNNER_TEMP/pr516-test.log"
+          awk '/^# (tests|pass|fail) [0-9]+$/ {print}' "$RUNNER_TEMP/pr516-test.log"

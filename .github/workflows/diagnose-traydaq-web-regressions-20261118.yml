@@ -1,0 +1,56 @@
+name: Diagnose TRAYDAQ Web Regressions (No Release)
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+concurrency:
+  group: web-regression-diagnostics-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  private-web-tests:
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.head_ref == 'ci/diagnose-web-regressions-20261118' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: private-src
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ba92ce8790474a6639981d5c2f9a7f8ce997a9e1
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify pinned private source
+        run: test "$(git rev-parse HEAD)" = ba92ce8790474a6639981d5c2f9a7f8ce997a9e1
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2-builder
+          ref: ci/diagnose-web-regressions-20261118
+          path: builder-tools
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install pinned web dependencies with private logs
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/web-install.log" 2>&1
+          echo 'Pinned dependencies installed'
+      - name: Count failures and emit encrypted diagnostics only
+        run: |
+          set -euo pipefail
+          if npm test > "$RUNNER_TEMP/web-tests.log" 2>&1; then
+            echo 'PASS: all web tests'
+          else
+            echo 'BASELINE WEB TESTS: failures recorded confidentially'
+          fi
+          node "$GITHUB_WORKSPACE/builder-tools/.github/scripts/traydaq-encrypt-web-test-errors.mjs" "$RUNNER_TEMP/web-tests.log"
+          awk '/^# (tests|pass|fail) [0-9]+$/ {print}' "$RUNNER_TEMP/web-tests.log"
+# Never print source text, actual test diagnostics or secrets.
+# No cloud build, deployment, APK/AAB, signing, artifacts or releases.

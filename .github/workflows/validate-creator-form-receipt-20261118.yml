@@ -204,3 +204,29 @@ jobs:
 # No Expo prebuild, Gradle, APK/AAB, signing, artifact upload, deployment,
 # Google Play submission, or release. Private source and generated assets
 # remain only on disposable runners; the public log contains results/counts.
+
+  locate-confirmation-test:
+    name: Locate old Android confirmation assertion (encrypted path)
+    needs: source-input
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: private-src/mobile
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 67430771cd84ed785668cd6d52f64984ad898402
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2-builder
+          ref: ci/validate-creator-form-receipt-20261118
+          path: builder-tools
+          persist-credentials: false
+      - name: Emit only encrypted private test filename
+        run: node "$GITHUB_WORKSPACE/builder-tools/.github/scripts/pr515-encrypted-test-path.cjs" tests

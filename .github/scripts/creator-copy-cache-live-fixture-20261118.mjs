@@ -20,7 +20,7 @@ const reference=folder+'/public-reference.png';
 const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/RqsAAAAASUVORK5CYII=','base64');
 const sha=bytes=>createHash('sha256').update(bytes).digest('hex');
 const from=client.storage.from(PENDING),to=client.storage.from(PUBLIC);
-const status={readOnlySource:false,privateSourceUploaded:false,sourceCachePrivate:false,copyAccepted:false,publicCacheVerified:false,publicContentTypeVerified:false,publicBytesVerified:false,privateSourceProtected:false,sourceRemoved:false,copyRemoved:false,referenceRemoved:false,referenceUploaded:false,referenceHeadAge:-1,copyHeadAge:-1,copyInfoCache:'unknown',referenceInfoCache:'unknown',existingMediaAccessed:false,productionRowsModified:false};
+const status={readOnlySource:false,privateSourceUploaded:false,sourceCachePrivate:false,copyAccepted:false,publicCacheVerified:false,publicContentTypeVerified:false,publicBytesVerified:false,privateSourceProtected:false,sourceRemoved:false,copyRemoved:false,referenceRemoved:false,referenceUploaded:false,referenceHeadAge:-1,copyHeadAge:-1,copyRenderAge:-1,referenceRenderAge:-1,copyRenderStatus:-1,referenceRenderStatus:-1,sourceInfoCache:'unknown',copyInfoCache:'unknown',referenceInfoCache:'unknown',existingMediaAccessed:false,productionRowsModified:false};
 let stage='preflight',failure='';
 function maxAge(response){
  const value=response.headers.get('cache-control')||'';
@@ -94,9 +94,20 @@ try{
  status.referenceHeadAge=refHead.ok?maxAge(refHead):-1;
  const copyInfo=await to.info(destination);
  const refInfo=await to.info(reference);
+ const sourceInfo=await from.info(source);
  const cacheValue=data=>String(data?.cacheControl||data?.cache_control||data?.metadata?.cacheControl||'unknown').slice(0,40);
  status.copyInfoCache=copyInfo.error?'unavailable':cacheValue(copyInfo.data);
  status.referenceInfoCache=refInfo.error?'unavailable':cacheValue(refInfo.data);
+ status.sourceInfoCache=sourceInfo.error?'unavailable':cacheValue(sourceInfo.data);
+ const [copyRender,refRender]=await Promise.all([destination,reference].map(name=>
+  fetch(ROOT+'/storage/v1/render/image/public/'+PUBLIC+'/'+name+'?width=1&fixture='+randomUUID(),{
+   method:'GET',cache:'no-store',redirect:'manual',signal:AbortSignal.timeout(12000)
+  })
+ ));
+ status.copyRenderAge=copyRender.ok?maxAge(copyRender):-1;
+ status.referenceRenderAge=refRender.ok?maxAge(refRender):-1;
+ status.copyRenderStatus=copyRender.status;
+ status.referenceRenderStatus=refRender.status;
  stage='public-GET';
  const downloaded=await fetch(publicUrl+'?byte_check='+randomUUID(),{
   method:'GET',cache:'no-store',redirect:'manual',signal:AbortSignal.timeout(12000)

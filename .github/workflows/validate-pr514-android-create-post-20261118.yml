@@ -81,6 +81,13 @@ jobs:
             echo '::error::Android dependency installation failed. Diagnostics remain on the temporary runner.'
             exit 1
           fi
+      - name: Checkout temporary encrypted diagnostic helper (public-only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2-builder
+          ref: ci/validate-pr514-android-create-post-20261118
+          path: builder-tools
+          persist-credentials: false
       - name: Complete Android test suite including feed runtime regressions
         id: tests
         run: |
@@ -89,6 +96,7 @@ jobs:
             echo 'PASS: complete Android regression suite'
             awk '/^# (tests|pass|fail|cancelled|skipped|todo) [0-9]+$/ {print}' "$RUNNER_TEMP/android-feed-tests.log"
           else
+            node "$GITHUB_WORKSPACE/builder-tools/.github/scripts/pr514-encrypt-private-test-errors.cjs" "$RUNNER_TEMP/android-feed-tests.log"
             echo '::error::Android regression suite failed. Private source and diagnostics were not published.'
             awk '/^# (tests|pass|fail|cancelled|skipped|todo) [0-9]+$/ {print}' "$RUNNER_TEMP/android-feed-tests.log"
             exit 1
@@ -161,6 +169,13 @@ jobs:
             echo '::error::Web dependency installation failed. Diagnostics remain on the temporary runner.'
             exit 1
           fi
+      - name: Checkout temporary encrypted diagnostic helper (public-only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2-builder
+          ref: ci/validate-pr514-android-create-post-20261118
+          path: builder-tools
+          persist-credentials: false
       - name: Complete web regression suite
         run: |
           set -euo pipefail
@@ -168,6 +183,7 @@ jobs:
             echo 'PASS: complete web regression suite'
             awk '/^# (tests|pass|fail|cancelled|skipped|todo) [0-9]+$/ {print}' "$RUNNER_TEMP/android-feed-web-tests.log"
           else
+            node "$GITHUB_WORKSPACE/builder-tools/.github/scripts/pr514-encrypt-private-test-errors.cjs" "$RUNNER_TEMP/android-feed-web-tests.log"
             echo '::error::Web regression suite failed. Private source and diagnostics were not published.'
             awk '/^# (tests|pass|fail|cancelled|skipped|todo) [0-9]+$/ {print}' "$RUNNER_TEMP/android-feed-web-tests.log"
             exit 1

@@ -1,0 +1,46 @@
+name: TRAYDAQ WhatsApp exact post thumbnail live smoke (No APK)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/traydaq-live-whatsapp-specific-post-20261119.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  live-og:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Confirm live Cloudflare WhatsApp preview is the actual post thumbnail
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import html,re,time,urllib.request,urllib.error
+          post='b7207876-c2c2-4784-bf5e-e02d5acc4a94'
+          page='https://traydaq.com/?post='+post
+          exact='https://qpcsruhwqhniprakpoox.supabase.co/storage/v1/object/public/traydaq-native-creator-public/'+post+'/share-poster.jpg'
+          def get(url,agent):
+            request=urllib.request.Request(url,headers={'User-Agent':agent,'Accept':'text/html,image/jpeg,*/*'})
+            with urllib.request.urlopen(request,timeout=25) as response:
+              return response.status,response.headers,response.read(190000)
+          for agent in ['WhatsApp/2.24.10.78 A','facebookexternalhit/1.1','Mozilla/5.0 (Linux; Android 15)']:
+            status,headers,body=get(page,agent)
+            if status!=200 or 'text/html' not in headers.get('content-type',''):
+              raise ValueError('Shared post HTML is unavailable')
+            data=body.decode('utf-8','replace')
+            fields={k:html.unescape(v) for k,v in re.findall(r'<meta\s+(?:property|name)="([^"]+)"\s+content="([^"]*)"',data,re.I)}
+            if fields.get('og:image')!=exact or fields.get('twitter:image')!=exact:
+              raise ValueError('Live '+agent+' still shows generic logo/missing thumbnail')
+            if fields.get('og:url')!=page:
+              raise ValueError('Live shared URL is not canonical')
+            if fields.get('twitter:card')!='summary_large_image':
+              raise ValueError('Large content preview is missing')
+            if '<script' not in data:
+              raise ValueError('Original SPA shell should remain functional')
+            print('PASS: '+agent.split('/')[0]+' exact post thumbnail advertised')
+          status,headers,body=get(exact,'WhatsApp/2.24.10.78 A')
+          if status!=200 or 'image/jpeg' not in headers.get('content-type','') or len(body)<1024 or body[:3]!=b'\xff\xd8\xff':
+            raise ValueError('Advertised JPEG is not publicly retrievable')
+          print('PASS: actual content JPEG responds with valid image bytes')
+          PY
+# Read-only live requests. Never deploys any app or customer website.

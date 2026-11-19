@@ -1,0 +1,71 @@
+name: TRAYDAQ Android Topics Tags Booking Galleries QA
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/android-topic-tag-service-gallery-qa-20261119.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-topic-tag-service-gallery-qa
+  cancel-in-progress: false
+env:
+  PRIVATE_SOURCE_SHA: 4377247dccdd8f8d8c35fd16bd8c9f2b359184eb
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android:
+    name: Full Android regression tests, TypeScript and JavaScript export (no APK)
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout exact private source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: candidate
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Verify immutable candidate
+        run: test "$(git -C candidate rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: candidate/mobile/package-lock.json
+      - name: Install locked native dependencies
+        working-directory: candidate/mobile
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/npm-android.log" 2>&1
+      - name: Focused Android topic tag sound service gallery tests
+        working-directory: candidate/mobile
+        run: |
+          node --test tests/android-topic-tag-service-gallery-20261119.test.mjs > "$RUNNER_TEMP/focused.log" 2>&1 || {
+            grep -A 18 -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/focused.log" | tail -100 || true
+            grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/focused.log" | tail -4 || true
+            exit 1
+          }
+          grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/focused.log" | tail -4
+      - name: Full Android regression tests
+        working-directory: candidate/mobile
+        run: |
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/all.log" 2>&1 || {
+            grep -A 22 -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/all.log" | tail -180 || true
+            grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/all.log" | tail -4 || true
+            exit 1
+          }
+          grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/all.log" | tail -4
+      - name: Android TypeScript and JS export
+        working-directory: candidate/mobile
+        run: |
+          npm run typecheck > "$RUNNER_TEMP/ts.log" 2>&1 || {
+            grep -E 'error TS' "$RUNNER_TEMP/ts.log" | head -30 || true
+            exit 1
+          }
+          npm run export:android > "$RUNNER_TEMP/export.log" 2>&1 || {
+            tail -28 "$RUNNER_TEMP/export.log" || true
+            exit 1
+          }
+          echo 'PASS Android regressions, TS and JS export - no APK/AAB produced.'
+# Source-only validation. No APK, AAB, signing, production writes or Play rollout.

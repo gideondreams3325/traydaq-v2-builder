@@ -8,7 +8,7 @@ permissions:
   contents: read
 concurrency:
   group: traydaq-smart-quality-storage-proof
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   synthetic-storage:
     if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'

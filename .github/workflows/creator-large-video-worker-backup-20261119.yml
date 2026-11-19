@@ -1,0 +1,197 @@
+name: TRAYDAQ Private Large Video Worker — Independent Backup
+# Run only from the trusted Builder default branch. An authenticated upload
+# remains fail-closed if all workers stop sending their verified heartbeat.
+on:
+  schedule:
+    - cron: '7,17,27,37,47,57 * * * *'
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/creator-large-video-worker-backup-20261119.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: traydaq-private-large-video-production-worker
+  cancel-in-progress: false
+
+jobs:
+  policy-check:
+    name: Validate backup schedule and credential isolation (no secrets)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify immutable source, shared queue lock and main-only credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs=require('fs');
+          const w=fs.readFileSync('.github/workflows/creator-large-video-worker-backup-20261119.yml','utf8');
+          const main=fs.readFileSync('.github/workflows/creator-large-video-worker-scheduled-20261118.yml','utf8');
+          if(!w.includes('cron: \'7,17,27,37,47,57 * * * *\'') ||
+             !w.includes('github.event_name != \'pull_request\'') ||
+             !w.includes('github.ref == \'refs/heads/main\'') ||
+             !w.includes('ref: b7ce1e6e10fc6e75c38fe5977f6ce03c17c30d58') ||
+             !w.includes('token: 
+    name: Private FFmpeg queue, cleanup and heartbeat (no APK/AAB)
+    if: github.event_name != 'pull_request' && github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - name: Fetch exact reviewed private worker source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: b7ce1e6e10fc6e75c38fe5977f6ce03c17c30d58
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Verify source SHA and worker syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C private-src rev-parse HEAD)" = "b7ce1e6e10fc6e75c38fe5977f6ce03c17c30d58"
+          node --check private-src/.github/scripts/process-large-creator-video.mjs
+      - name: Install locked private dependencies
+        working-directory: private-src
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify local FFmpeg / FFprobe
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -qq -y ffmpeg
+          fi
+          ffmpeg -version | head -n 1
+      - name: Drain owner-bound private queue, recover interrupted jobs, clean source, write heartbeat
+        env:
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # No original video, storage key, user ID or public media may be logged/artifacted.
+          node private-src/.github/scripts/process-large-creator-video.mjs
+# Security boundaries:
+# - No GitHub PR, fork or untrusted branch can run this credentialed workflow.
+# - No upload rollout switch is modified, and no Android package is built.
+# - Reviewed main source is pinned by immutable commit SHA; no PR source runs with secrets.
++'{{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}') ||
+             !w.includes('SUPABASE_SECRET_KEY: 
+    name: Private FFmpeg queue, cleanup and heartbeat (no APK/AAB)
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - name: Fetch exact reviewed private worker source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: b7ce1e6e10fc6e75c38fe5977f6ce03c17c30d58
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Verify source SHA and worker syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C private-src rev-parse HEAD)" = "b7ce1e6e10fc6e75c38fe5977f6ce03c17c30d58"
+          node --check private-src/.github/scripts/process-large-creator-video.mjs
+      - name: Install locked private dependencies
+        working-directory: private-src
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify local FFmpeg / FFprobe
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -qq -y ffmpeg
+          fi
+          ffmpeg -version | head -n 1
+      - name: Drain owner-bound private queue, recover interrupted jobs, clean source, write heartbeat
+        env:
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # No original video, storage key, user ID or public media may be logged/artifacted.
+          node private-src/.github/scripts/process-large-creator-video.mjs
+# Security boundaries:
+# - No GitHub PR, fork or untrusted branch can run this credentialed workflow.
+# - No upload rollout switch is modified, and no Android package is built.
+# - Reviewed main source is pinned by immutable commit SHA; no PR source runs with secrets.
++'{{ secrets.SUPABASE_SECRET_KEY }}') ||
+             !w.includes('group: traydaq-private-large-video-production-worker') ||
+             !main.includes('group: traydaq-private-large-video-production-worker'))
+             throw Error('Unsafe or unexpected private-worker backup configuration');
+          console.log('PASS: backup schedule isolated to trusted main and shared queue');
+          NODE
+  private-queue:
+    name: Private FFmpeg queue, cleanup and heartbeat (no APK/AAB)
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - name: Fetch exact reviewed private worker source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: b7ce1e6e10fc6e75c38fe5977f6ce03c17c30d58
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Verify source SHA and worker syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C private-src rev-parse HEAD)" = "b7ce1e6e10fc6e75c38fe5977f6ce03c17c30d58"
+          node --check private-src/.github/scripts/process-large-creator-video.mjs
+      - name: Install locked private dependencies
+        working-directory: private-src
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify local FFmpeg / FFprobe
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -qq -y ffmpeg
+          fi
+          ffmpeg -version | head -n 1
+      - name: Drain owner-bound private queue, recover interrupted jobs, clean source, write heartbeat
+        env:
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # No original video, storage key, user ID or public media may be logged/artifacted.
+          node private-src/.github/scripts/process-large-creator-video.mjs
+# Security boundaries:
+# - No GitHub PR, fork or untrusted branch can run this credentialed workflow.
+# - No upload rollout switch is modified, and no Android package is built.
+# - Reviewed main source is pinned by immutable commit SHA; no PR source runs with secrets.

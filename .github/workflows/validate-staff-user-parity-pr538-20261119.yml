@@ -1,0 +1,86 @@
+name: Validate TRAYDAQ Staff user parity PR 538 (source-only)
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/validate-staff-user-parity-pr538-20261119.yml'
+permissions:
+  contents: read
+concurrency:
+  group: staff-parity-pr538
+  cancel-in-progress: false
+jobs:
+  verify:
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.head_ref == 'ci/validate-staff-pr538-20261119' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      PRIVATE_SOURCE_SHA: '11a93679e2ae8cede694f25d799c8c8a56c90614'
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - name: Checkout immutable private Staff source with existing read-only token
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify source commit
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+          test -f admin-native/src/TextModerationReviews.tsx
+          test -f staff-pwa/src/workQueues.ts
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Cross-platform Staff tests including notification and iPhone role isolation
+        working-directory: private-src
+        run: |
+          set -euo pipefail
+          if node --test tests/staff-*.test.mjs tests/native-staff-api-quotas.test.mjs tests/security-hub-native-only.test.mjs tests/legacy-security-hub-retirement.test.mjs > "$RUNNER_TEMP/staff-parity-cross.log" 2>&1; then
+            echo 'PASS: cross-platform Staff source contracts'
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/staff-parity-cross.log" || true
+          else
+            echo '::error::Cross-platform Staff source checks failed; diagnostic detail remains private.'
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/staff-parity-cross.log" || true
+            exit 1
+          fi
+      - name: Install iPhone Staff pinned dependencies
+        working-directory: private-src
+        run: |
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/staff-iphone-install.log" 2>&1 || { echo '::error::iPhone Staff dependency install failed'; exit 1; }
+      - name: iPhone Staff TypeScript, regression contracts and production asset build
+        working-directory: private-src
+        run: |
+          set -euo pipefail
+          npm run typecheck:staff > "$RUNNER_TEMP/staff-iphone-ts.log" 2>&1 || { echo '::error::iPhone Staff TypeScript failed'; exit 1; }
+          node --test tests/staff-iphone-pwa.test.mjs > "$RUNNER_TEMP/staff-iphone-tests.log" 2>&1 || { echo '::error::iPhone Staff contract tests failed'; exit 1; }
+          npm run build:staff > "$RUNNER_TEMP/staff-iphone-build.log" 2>&1 || { echo '::error::iPhone Staff build failed'; exit 1; }
+          echo 'PASS: iPhone Staff TypeScript, tests and build; no Cloudflare deployment'
+      - name: Install Android Staff dependencies
+        working-directory: private-src/admin-native
+        run: |
+          npm install --no-audit --no-fund > "$RUNNER_TEMP/staff-native-install.log" 2>&1 || { echo '::error::Native Staff dependency install failed'; exit 1; }
+      - name: Full native Staff tests and typecheck
+        working-directory: private-src/admin-native
+        run: |
+          set -euo pipefail
+          if npm run test:security > "$RUNNER_TEMP/staff-native-tests.log" 2>&1; then
+            echo 'PASS: native Staff security regressions'
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/staff-native-tests.log" || true
+          else
+            echo '::error::Native Staff regressions failed; diagnostic detail remains private.'
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/staff-native-tests.log" || true
+            exit 1
+          fi
+          npm run typecheck > "$RUNNER_TEMP/staff-native-ts.log" 2>&1 || { echo '::error::Native Staff TypeScript failed'; exit 1; }
+          echo 'PASS: native Staff TypeScript; no APK/AAB'
+# This temporary Builder PR must never be merged into Builder main.
+# No deployment, signing, production database, member data or build artifacts.

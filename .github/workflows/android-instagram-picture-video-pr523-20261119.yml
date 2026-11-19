@@ -1,0 +1,63 @@
+name: TRAYDAQ Android Instagram Picture or Video Sharing PR523 (No Release)
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/android-instagram-picture-video-pr523-20261119.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-instagram-picture-video-pr523
+  cancel-in-progress: false
+env:
+  PRIVATE_SOURCE_SHA: 64f26708ed368eb2df62567c30b51c9efde69230
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  native:
+    name: Native sharing regression, full tests, TypeScript, JS export
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    defaults:
+      run:
+        shell: bash
+        working-directory: private-src/mobile
+    steps:
+      - name: Check required read-only token
+        working-directory: .
+        env:
+          TOKEN_CONFIGURED: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$TOKEN_CONFIGURED" = true
+      - name: Checkout pinned private candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Verify candidate SHA
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Instagram image/video and existing share regressions
+        run: |
+          node --test \
+            tests/android-instagram-picture-video-sharing-20261119.test.mjs \
+            tests/android-keyboard-follow-share-sound-20261118.test.mjs \
+            tests/android-unified-share-sheet-20261117.test.mjs \
+            tests/unified-photo-video-picker.test.mjs
+      - name: All native regression tests
+        run: node --test tests/*.test.mjs
+      - name: Native TypeScript
+        run: npm run typecheck
+      - name: Android JavaScript export only
+        run: npm run export:android
+# Read-only validation: no APK/AAB, signing, staff/web deployment or Android release.

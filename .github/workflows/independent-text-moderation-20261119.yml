@@ -61,7 +61,21 @@ jobs:
           deno check supabase/functions/web-content-edits/index.ts
           deno check supabase/functions/firebase-store-reviews/index.ts
           deno check supabase/functions/firebase-entrepreneur/index.ts
-          deno check supabase/functions/firebase-admin-workspace/index.ts
+      - name: Syntax check Staff workspace Edge handler (legacy TS generics)
+        working-directory: private-src
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";
+            import ts from "typescript";
+            const file="supabase/functions/firebase-admin-workspace/index.ts";
+            const result=ts.transpileModule(fs.readFileSync(file,"utf8"),{
+              fileName:file,reportDiagnostics:true,
+              compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}
+            });
+            const bad=(result.diagnostics||[]).filter(d=>d.category===ts.DiagnosticCategory.Error);
+            for(const item of bad)console.error(ts.flattenDiagnosticMessageText(item.messageText," "));
+            if(bad.length)process.exit(1);
+          '
       - name: TypeScript web
         working-directory: private-src
         run: npm run typecheck

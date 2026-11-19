@@ -29,7 +29,7 @@ jobs:
       - name: Validate source SHA and existing read-only connection
         id: validate
         env:
-          REQUESTED_SOURCE_SHA: '2af485f06d710b2eada3de4097b6b22444e359ea'
+          REQUESTED_SOURCE_SHA: 'ddc0a49c3a02f62586bf54fd9864de5695ffd51b'
           SOURCE_TOKEN_CONFIGURED: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
         shell: bash
         run: |

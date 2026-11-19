@@ -1,6 +1,6 @@
 name: TRAYDAQ Private Large Video Worker — Scheduled (Release Gated)
-# Run only from the trusted Builder default branch. Video upload rollout remains
-# disabled in Supabase until authenticated end-to-end release validation passes.
+# Run only from the trusted Builder default branch. An authenticated upload
+# remains fail-closed if all workers stop sending their verified heartbeat.
 on:
   schedule:
     - cron: '3-58/5 * * * *'
@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: a3968af38a42a5ff1e017ea4fd2f5b68c412d08a
+          ref: b7ce1e6e10fc6e75c38fe5977f6ce03c17c30d58
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
           path: private-src
@@ -41,7 +41,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git -C private-src rev-parse HEAD)" = "a3968af38a42a5ff1e017ea4fd2f5b68c412d08a"
+          test "$(git -C private-src rev-parse HEAD)" = "b7ce1e6e10fc6e75c38fe5977f6ce03c17c30d58"
           node --check private-src/.github/scripts/process-large-creator-video.mjs
       - name: Install locked private dependencies
         working-directory: private-src
@@ -66,4 +66,4 @@ jobs:
 # Security boundaries:
 # - No GitHub PR, fork or untrusted branch can run this credentialed workflow.
 # - No upload rollout switch is modified, and no Android package is built.
-# - Release requires updating this SHA to the reviewed merged private main.
+# - Reviewed main source is pinned by immutable commit SHA; no PR source runs with secrets.

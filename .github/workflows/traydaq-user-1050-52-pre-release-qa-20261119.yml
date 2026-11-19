@@ -10,7 +10,7 @@ concurrency:
   group: traydaq-user-1050-52-pre-release-qa
   cancel-in-progress: false
 env:
-  TRAYDAQ_SOURCE_SHA: 35ea4b947670319da2179afdc61aa1d7e2d92d6
+  TRAYDAQ_SOURCE_SHA: 35ea4b947670319da2179afdc61aa1d7e2d92d6d
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

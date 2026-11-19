@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/shared-post-video-poster.yml'
+      - '.github/scripts/traydaq_shared_post_poster.py'
   schedule:
     - cron: '17,47 * * * *'
 
@@ -22,7 +23,7 @@ concurrency:
 jobs:
   public-video-frame:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     steps:
       - name: Checkout public TRAYDAQ builder scripts (not private app source)
         uses: actions/checkout@v4
@@ -37,6 +38,8 @@ jobs:
           fi
           ffmpeg -version | head -n 1
           ffprobe -version | head -n 1
+      - name: Validate thumbnail generator syntax
+        run: python3 -m py_compile .github/scripts/traydaq_shared_post_poster.py
       - name: Create still frames for reviewed public posts only
         run: python3 .github/scripts/traydaq_shared_post_poster.py
 
@@ -47,3 +50,7 @@ jobs:
 # Retry after approved-only Supabase preview function v2 safely records each poster for deletion.
 
 # 2026-11-19: Refresh approved public video preview frames after PR526 metadata rollout.
+
+# 2026-11-19: Video sizes above 17 MiB now stream safely to disk up to the
+# existing 250 MiB upload cap. This run covers the exact public post whose
+# WhatsApp preview previously fell back to the TRAYDAQ site logo.

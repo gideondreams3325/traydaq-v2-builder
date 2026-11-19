@@ -117,7 +117,12 @@ jobs:
             echo 'PASS: protected comment + Staff Edge Deno typecheck, not deployed'
           else
             echo '::error::Affected Supabase functions failed Deno typecheck'
-            grep -E '^error:|^TS[0-9]+' "$RUNNER_TEMP/comment-edge-ts.log" | head -25 || true
+            # Preserve credentials and source confidentiality; print only compiler
+            # error headers with ANSI styling removed, never source snippets.
+            sed -E 's/\x1B\[[0-9;]*[[:alpha:]]//g' "$RUNNER_TEMP/comment-edge-ts.log" |
+              grep -E 'error:|TS[0-9]+|Download failed|Module not found|Import .+ failed|not found' |
+              sed -E 's#private-src/#SOURCE/#g' |
+              head -30 || true
             exit 1
           fi
 # Source-only validation; do not merge this temporary Builder PR.

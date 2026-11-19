@@ -47,25 +47,16 @@ try{
  }
  // Build an actual playable MP4 and append an ISO BMFF free box to
  // exercise >15 MiB object transport without uploading personal media.
- const seed=join(folder,'seed.mp4');
- execFileSync('ffmpeg',['-nostdin','-hide_banner','-loglevel','error','-y',
-  '-f','lavfi','-i','color=c=green:s=320x240:r=12',
-  '-f','lavfi','-i','sine=frequency=440:sample_rate=32000',
-  '-t','2','-c:v','libx264','-preset','ultrafast','-pix_fmt','yuv420p',
-  '-c:a','aac','-b:a','48k','-movflags','+faststart','-f','mp4',seed],
-  {timeout:45000});
- const media=readFileSync(seed);
- if(media.length>=targetBytes-8)throw Error('Synthetic source is unexpectedly large');
+ // A real 2-second H.264 MP4 was generated and validated offline with
+ // ffprobe. Bundle it so the CI fixture never needs apt-get or FFmpeg.
+ const media=Buffer.from('AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAMrbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAlZ0cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAKAAAABaAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAAAAABAAAAAAHObWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAgABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABeW1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAATlzdGJsAAAAuXN0c2QAAAAAAAAAAQAAAKlhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAKAAWgBIAAAASAAAAAAAAAABFUxhdmM2MS4xOS4xMDEgbGlieDI2NAAAAAAAAAAAAAAAGP//AAAAL2F2Y0MBQsAK/+EAGGdCwAraCjfkwEQAAAMABAAAAwAIPEiagAEABGjOD8gAAAAQcGFzcAAAAAEAAAABAAAAFGJ0cnQAAAAAAAAKmAAAAAAAAAAYc3R0cwAAAAAAAAABAAAAAgAAQAAAAAAUc3RzcwAAAAAAAAABAAAAAQAAABxzdHNjAAAAAAAAAAEAAAABAAAAAgAAAAEAAAAcc3RzegAAAAAAAAAAAAAAAgAAApwAAAAKAAAAFHN0Y28AAAAAAAAAAQAAA1sAAABhdWR0YQAAAFltZXRhAAAAAAAAACFoZGxyAAAAAAAAAABtZGlyYXBwbAAAAAAAAAAAAAAAACxpbHN0AAAAJKl0b28AAAAcZGF0YQAAAAEAAAAATGF2ZjYxLjcuMTAzAAAACGZyZWUAAAKubWRhdAAAAlMGBf//T9xF6b3m2Ui3lizYINkj7u94MjY0IC0gY29yZSAxNjQgcjMxMDggMzFlMTlmOSAtIEguMjY0L01QRUctNCBBVkMgY29kZWMgLSBDb3B5bGVmdCAyMDAzLTIwMjMgLSBodHRwOi8vd3d3LnZpZGVvbGFuLm9yZy94MjY0Lmh0bWwgLSBvcHRpb25zOiBjYWJhYz0wIHJlZj0xIGRlYmxvY2s9MDowOjAgYW5hbHlzZT0wOjAgcHN5PTEgcHN5X3JkPTEuMDA6MC4wMCBtaXhlZF9yZWY9MCBtZV9yYW5nZT0xNiBjaHJvbWFfbWU9MSB0cmVsbGlzPTAgOHg4ZGN0PTAgY3FtPTAgZGVhZHpvbmU9MjEsMTEgZmFzdF9wc2tpcD0xIGNocm9tYV9xcF9vZmZzZXQ9MCB0aHJlYWRzPTMgbG9va2FoZWFkX3RocmVhZHM9MSBzbGljZWRfdGhyZWFkcz0wIG5yPTAgZGVjaW1hdGU9MSBpbnRlcmxhY2VkPTAgYmx1cmF5X2NvbXBhdD0wIGNvbnN0cmFpbmVkX2ludHJhPTAgYmZyYW1lcz0wIHdlaWdodHA9MCBrZXlpbnQ9MjUwIGtleWludF9taW49MSBzY2VuZWN1dD0wIGludHJhX3JlZnJlc2g9MCByYz1jcmYgbWJ0cmVlPTAgY3JmPTIzLjAgcWNvbXA9MC42MCBxcG1pbj0wIHFwbWF4PTY5IHFwc3RlcD00IGlwX3JhdGlvPTEuNDAgYXE9MACAAAAAQWWIhDoRigACGPHAAEDmOAAIKcnJycnJycnJyddddddddddddddddddddddddddddddddddddddddddeAAAABkGaIBagew==','base64');
+ if(media.length<1000||media.length>5000||media.toString('ascii',4,8)!=='ftyp')
+  throw Error('Bundled synthetic MP4 seed is invalid');
  const free=Buffer.alloc(targetBytes-media.length);
  free.writeUInt32BE(free.length,0);free.write('free',4,'ascii');
  const bytes=Buffer.concat([media,free]);
  if(bytes.byteLength!==targetBytes)throw Error('Synthetic MP4 size is wrong');
- const sample=join(folder,'large.mp4');
- writeFileSync(sample,bytes);
- const probe=JSON.parse(execFileSync('ffprobe',['-v','error','-show_entries',
-  'format=duration','-of','json',sample],{encoding:'utf8',timeout:10000}));
- if(!Number.isFinite(Number(probe.format?.duration))||
-    Number(probe.format.duration)<1)throw Error('Synthetic MP4 is not playable');
+ const sample=join(folder,'large.mp4');writeFileSync(sample,bytes);
  const signed=await supa.storage.from(privateBucket).createSignedUploadUrl(source);
  if(signed.error||!signed.data?.signedUrl)
   throw Error('Storage cannot issue a signed creator video upload');

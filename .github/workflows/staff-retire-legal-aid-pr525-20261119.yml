@@ -18,7 +18,7 @@ jobs:
     env:
       CI: '1'
       EXPO_NO_TELEMETRY: '1'
-      PRIVATE_SOURCE_SHA: 22aa9f62b88fbeef898d36c983657907d1435fbd
+      PRIVATE_SOURCE_SHA: 977615183ed2bd651f389d92ebe1a53a11220647
     steps:
       - name: Checkout exact private candidate SHA
         uses: actions/checkout@v4

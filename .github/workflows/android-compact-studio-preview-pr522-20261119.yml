@@ -1,0 +1,85 @@
+name: TRAYDAQ Android Compact Post Media Preview PR522 (No Release)
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/android-compact-studio-preview-pr522-20261119.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-pr522-compact-studio-preview
+  cancel-in-progress: false
+env:
+  PRIVATE_SOURCE_SHA: fca9bd950e0f53f478868e5248d5473fd879c4c6
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android:
+    name: Focused + full native source QA, TypeScript and Android JS export
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    defaults:
+      run:
+        working-directory: private-src/mobile
+        shell: bash
+    steps:
+      - name: Check read-only private source token is configured
+        working-directory: .
+        env:
+          SOURCE_TOKEN_CONFIGURED: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: |
+          test "$SOURCE_TOKEN_CONFIGURED" = true || { echo '::error::Private source read token unavailable'; exit 1; }
+      - name: Checkout exact candidate without persisting credentials
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Verify pinned private commit
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install Android dependencies without exposing full logs
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/compact-studio-install.log" 2>&1 || {
+            echo '::error::Native dependency installation failed'; exit 1;
+          }
+      - name: Focused compact media and existing media regressions
+        run: |
+          set -euo pipefail
+          node --test             tests/android-compact-studio-media-preview-20261119.test.mjs             tests/unified-photo-video-picker.test.mjs             tests/android-three-minute-video-upload.test.mjs > "$RUNNER_TEMP/compact-studio-focused.log" 2>&1 || {
+              echo '::error::Focused native media regression failed';
+              grep -E '^not ok [0-9]+|^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/compact-studio-focused.log" | tail -15 || true;
+              exit 1;
+            }
+          grep -E '^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/compact-studio-focused.log" | tail -3
+      - name: Complete native regression suite
+        run: |
+          set -euo pipefail
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/compact-studio-all.log" 2>&1 || {
+            echo '::error::Full native regression suite failed';
+            grep -E '^not ok [0-9]+|^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/compact-studio-all.log" | tail -24 || true;
+            exit 1;
+          }
+          grep -E '^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/compact-studio-all.log" | tail -3
+      - name: Android TypeScript
+        run: |
+          npm run typecheck > "$RUNNER_TEMP/compact-studio-typescript.log" 2>&1 || {
+            echo '::error::Android TypeScript failed'; exit 1;
+          }
+          echo 'PASS: Android TypeScript'
+      - name: Export Android JavaScript (never build APK/AAB)
+        run: |
+          npm run export:android > "$RUNNER_TEMP/compact-studio-export.log" 2>&1 || {
+            echo '::error::Android JS export failed'; exit 1;
+          }
+          echo 'PASS: Android JS export'
+# Read-only validation only: no Gradle, APK/AAB, release, Cloudflare deploy or private-source artifact.

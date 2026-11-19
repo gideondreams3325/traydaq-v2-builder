@@ -1,0 +1,123 @@
+name: Validate TRAYDAQ post-publication comments PR 540 (source-only)
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/validate-postpublish-comments-pr540-20261119.yml'
+permissions:
+  contents: read
+concurrency:
+  group: validate-comments-pr540
+  cancel-in-progress: false
+jobs:
+  verify:
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.head_ref == 'ci/validate-postpublish-comments-pr540-20261119' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      PRIVATE_SOURCE_SHA: '0597a3c69b4a81f770663ad05453a2a35dfa4079'
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+    steps:
+      - name: Fetch immutable private source without saved credentials
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Check exact commit
+        working-directory: private-src
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+          test -f supabase/migrations/20261119163500_post_publish_comment_staff_review.sql
+          test -f admin-native/src/PublishedCommentReviews.tsx
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install pinned web and SQL test dependencies
+        working-directory: private-src
+        run: |
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/comment-root-install.log" 2>&1 || { echo '::error::Web/test dependency install failed'; exit 1; }
+      - name: Execute PGlite SQL lifecycle and comment contracts
+        working-directory: private-src
+        run: |
+          set -euo pipefail
+          if node --test tests/comment-staff-post-publication*.test.mjs > "$RUNNER_TEMP/comment-db-tests.log" 2>&1; then
+            echo 'PASS: post-publish SQL routing, Head decisions and single removal notice'
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/comment-db-tests.log" || true
+          else
+            echo '::error::Post-publish SQL contract or integration test failed'
+            grep -E '^(not ok|# (tests|pass|fail))' "$RUNNER_TEMP/comment-db-tests.log" | head -25 || true
+            exit 1
+          fi
+      - name: Web comment regression and iPhone Staff TypeScript/build
+        working-directory: private-src
+        run: |
+          set -euo pipefail
+          if node --test tests/comment-*.test.mjs tests/for-you-tiktok-comments-20261114.test.mjs > "$RUNNER_TEMP/comment-web-tests.log" 2>&1; then
+            echo 'PASS: web comment regressions'
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/comment-web-tests.log" || true
+          else
+            echo '::error::Existing web comment regressions failed'
+            grep -E '^(not ok|# (tests|pass|fail))' "$RUNNER_TEMP/comment-web-tests.log" | head -25 || true
+            exit 1
+          fi
+          npm run typecheck:staff > "$RUNNER_TEMP/comment-iphone-ts.log" 2>&1 || { echo '::error::iPhone Staff TS failed'; exit 1; }
+          npm run build:staff > "$RUNNER_TEMP/comment-iphone-build.log" 2>&1 || { echo '::error::iPhone Staff build failed'; exit 1; }
+          echo 'PASS: iPhone Staff TS and build, no deployment'
+      - name: Install native Staff dependencies
+        working-directory: private-src/admin-native
+        run: |
+          npm install --no-audit --no-fund > "$RUNNER_TEMP/comment-staff-install.log" 2>&1 || { echo '::error::Native Staff install failed'; exit 1; }
+      - name: Native Staff role tests and TypeScript
+        working-directory: private-src/admin-native
+        run: |
+          set -euo pipefail
+          if npm run test:security > "$RUNNER_TEMP/comment-staff-tests.log" 2>&1; then
+            echo 'PASS: native Staff security regressions'
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/comment-staff-tests.log" || true
+          else
+            echo '::error::Native Staff regression failure'
+            grep -E '^(not ok|# (tests|pass|fail))' "$RUNNER_TEMP/comment-staff-tests.log" | head -25 || true
+            exit 1
+          fi
+          npm run typecheck > "$RUNNER_TEMP/comment-staff-ts.log" 2>&1 || { echo '::error::Staff native TS failed'; grep -E '^src/.*error TS[0-9]+' "$RUNNER_TEMP/comment-staff-ts.log" | head -20 || true; exit 1; }
+          echo 'PASS: native Staff TypeScript'
+      - name: Install Android user dependencies
+        working-directory: private-src/mobile
+        run: |
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/comment-mobile-install.log" 2>&1 || { echo '::error::User Android install failed'; exit 1; }
+      - name: Android comments regressions and TypeScript
+        working-directory: private-src/mobile
+        run: |
+          set -euo pipefail
+          if node --test tests/*comment*.test.mjs > "$RUNNER_TEMP/comment-mobile-tests.log" 2>&1; then
+            echo 'PASS: Android comment regressions'
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/comment-mobile-tests.log" || true
+          else
+            echo '::error::Android comment regression failure'
+            grep -E '^(not ok|# (tests|pass|fail))' "$RUNNER_TEMP/comment-mobile-tests.log" | head -25 || true
+            exit 1
+          fi
+          npm run typecheck > "$RUNNER_TEMP/comment-mobile-ts.log" 2>&1 || { echo '::error::Android user TS failed'; exit 1; }
+          echo 'PASS: Android user TypeScript; no APK/AAB'
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Check affected Supabase Edge functions
+        run: |
+          set -euo pipefail
+          if deno check private-src/supabase/functions/firebase-admin-workspace/index.ts private-src/supabase/functions/firebase-discussions/index.ts > "$RUNNER_TEMP/comment-edge-ts.log" 2>&1; then
+            echo 'PASS: protected comment + Staff Edge Deno typecheck, not deployed'
+          else
+            echo '::error::Affected Supabase functions failed Deno typecheck'
+            grep -E '^error:|^TS[0-9]+' "$RUNNER_TEMP/comment-edge-ts.log" | head -25 || true
+            exit 1
+          fi
+# Source-only validation; do not merge this temporary Builder PR.
+# No APK, AAB, IPA, Cloudflare deployment, production schema or Edge deployment.

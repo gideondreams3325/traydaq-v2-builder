@@ -1,0 +1,64 @@
+name: TRAYDAQ Smart Quality Private Storage Synthetic Proof and Configuration
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/creator-smart-quality-storage-production-proof-20261119.yml'
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-smart-quality-storage-proof
+  cancel-in-progress: false
+jobs:
+  synthetic-storage:
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    name: Private-only 20MiB synthetic signed upload, range validation, copy and cleanup
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+    steps:
+      - name: Verify production secret configured without displaying it
+        env:
+          PRESENT: ${{ secrets.SUPABASE_SECRET_KEY != '' }}
+        run: test "$PRESENT" = true
+      - uses: actions/checkout@v4
+        with:
+          path: builder-control
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 8042b6c976199aa66659822601307688f690bbbf
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Check reviewed exact source
+        shell: bash
+        run: test "$(git -C private-src rev-parse HEAD)" = "8042b6c976199aa66659822601307688f690bbbf"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install pinned private dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/smart-video-install.log" 2>&1
+      - name: Ensure FFmpeg synthetic fixture generator
+        shell: bash
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -qq -y ffmpeg
+          fi
+      - name: Run isolated upload / inspect / server-copy verification and cleanup
+        working-directory: private-src
+        shell: bash
+        run: |
+          cp ../builder-control/.github/scripts/smart-video-quality-storage-proof-20261119.mjs ./.smart-video-storage-proof.mjs
+          node ./.smart-video-storage-proof.mjs
+          rm -f ./.smart-video-storage-proof.mjs
+# Changes only the two creator pending/public bucket size limits (to 250MiB);
+# restores previous bucket configurations on failure and cleans disposable
+# synthetic MP4 objects. Does not touch media belonging to a real member.

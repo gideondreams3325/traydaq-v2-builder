@@ -10,7 +10,7 @@ concurrency:
   group: traydaq-android-quality-draft-sound-live-qa
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: 80695cf493ab7594a05ca83953855bf8e66641a7
+  PRIVATE_SOURCE_SHA: eda058fec4b7259d7a00e2352f8806f04e32507f
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

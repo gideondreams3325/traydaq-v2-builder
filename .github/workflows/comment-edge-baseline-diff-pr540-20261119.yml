@@ -13,7 +13,7 @@ jobs:
     timeout-minutes: 20
     env:
       BASE_SOURCE_SHA: 'c949bff9a18535961a53151ef936080286127573'
-      CANDIDATE_SOURCE_SHA: '542772b404bd903183c81b37fe2d3382571064dc'
+      CANDIDATE_SOURCE_SHA: '27e72cb2c06f0aa050f7ac02363cdeb85a6f5276'
     steps:
       - name: Checkout baseline production-main source
         uses: actions/checkout@v4

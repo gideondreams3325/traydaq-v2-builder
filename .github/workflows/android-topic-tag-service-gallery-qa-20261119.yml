@@ -10,7 +10,7 @@ concurrency:
   group: traydaq-android-topic-tag-service-gallery-qa
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: 4cbb5807b8fc755a5ab978c46997121253e0dbea
+  PRIVATE_SOURCE_SHA: 91c8c4bdb76131e742fac64006ee4a8e382f5a5f
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

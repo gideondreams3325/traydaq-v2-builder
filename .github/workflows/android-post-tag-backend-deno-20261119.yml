@@ -8,6 +8,7 @@ permissions:
   contents: read
 env:
   PRIVATE_SOURCE_SHA: 91c8c4bdb76131e742fac64006ee4a8e382f5a5f
+  DENO_NODE_MODULES_DIR: auto
 jobs:
   deno:
     runs-on: ubuntu-latest

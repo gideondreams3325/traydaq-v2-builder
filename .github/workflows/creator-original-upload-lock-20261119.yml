@@ -40,9 +40,9 @@ jobs:
         run: |
           set -euo pipefail
           cd private-src
-          npm install --package-lock-only --ignore-scripts --no-audit --no-fund > "$RUNNER_TEMP/web-npm.locklog" 2>&1
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund > "$RUNNER_TEMP/web-npm.locklog" 2>&1 || { grep -E "npm error|npm ERR|ERESOLVE|ETARGET|404|not found|conflicting peer" "$RUNNER_TEMP/web-npm.locklog" | tail -20 || true; exit 1; }
           cd mobile
-          npm install --package-lock-only --ignore-scripts --no-audit --no-fund > "$RUNNER_TEMP/native-npm.locklog" 2>&1
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund > "$RUNNER_TEMP/native-npm.locklog" 2>&1 || { grep -E "npm error|npm ERR|ERESOLVE|ETARGET|404|not found|conflicting peer" "$RUNNER_TEMP/native-npm.locklog" | tail -20 || true; exit 1; }
           cd ..
           echo "LOCK_PATCH_WEB_BEGIN"
           git diff -- package-lock.json | base64 -w0

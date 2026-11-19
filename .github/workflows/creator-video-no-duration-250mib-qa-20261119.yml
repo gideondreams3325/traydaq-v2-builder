@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-video-no-duration-250mib-qa
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: 66704a8b8d6526a6dd51f766ea1ef58f11e42d9b
+  PRIVATE_SOURCE_SHA: f7373d1e9464cfbfe47f72fa944942f1690f3fe9
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

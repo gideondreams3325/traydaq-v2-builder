@@ -2,8 +2,12 @@ name: TRAYDAQ Private Large Video Worker — Scheduled (Release Gated)
 # Run only from the trusted Builder default branch. Video upload rollout remains
 # disabled in Supabase until authenticated end-to-end release validation passes.
 on:
+  # Offset the recurring worker away from the busy top-of-hour window.
+  # Two staggered expressions retain a ~5-minute processing opportunity;
+  # GitHub schedule is best-effort, so the server still checks heartbeat age.
   schedule:
-    - cron: '3-58/5 * * * *'
+    - cron: '7-57/10 * * * *'
+    - cron: '12-52/10 * * * *'
   workflow_dispatch:
   push:
     branches: [main]

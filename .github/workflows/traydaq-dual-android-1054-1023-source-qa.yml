@@ -1,0 +1,83 @@
+name: TRAYDAQ User 1.0.54 and Staff 1.0.23 V2 Builder Pre-release QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/traydaq-dual-android-1054-1023-source-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PRIVATE_SOURCE_SHA: 'b111ba54b5ff38494981aaa14c1deaff3615d317'
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  user-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: candidate
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Verify exact User release candidate
+        working-directory: candidate
+        run: |
+          test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+          node - <<'NODE'
+          const a=require('./mobile/app.json').expo;
+          if(a.android.package!=='com.traydaq.app'||a.version!=='1.0.54'||a.android.versionCode!==56)
+            throw Error('Wrong User release identity');
+          NODE
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: candidate/mobile/package-lock.json
+      - name: Install locked Android dependencies
+        working-directory: candidate/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Run complete Android regression suite
+        working-directory: candidate/mobile
+        run: node --test tests/*.test.mjs
+      - name: Android TypeScript and export
+        working-directory: candidate/mobile
+        run: |
+          npm run typecheck
+          npm run export:android
+  staff-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: candidate
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Verify exact Staff release candidate
+        working-directory: candidate
+        run: |
+          test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+          node - <<'NODE'
+          const a=require('./admin-native/app.config.js').expo;
+          if(a.android.package!=='com.traydaq.admin'||a.version!=='1.0.23'||a.android.versionCode!==26||JSON.stringify(a.platforms)!=='["android"]')
+            throw Error('Wrong Staff release identity');
+          NODE
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Staff native dependencies
+        working-directory: candidate/admin-native
+        run: npm install --no-audit --no-fund
+      - name: Run Staff role isolation and security regressions
+        working-directory: candidate/admin-native
+        run: npm run test:security
+      - name: Staff native TypeScript
+        working-directory: candidate/admin-native
+        run: npm run typecheck
+# Source-only release gate. Does not create APK, AAB, deploy, or publish.

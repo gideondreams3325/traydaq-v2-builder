@@ -52,6 +52,8 @@ jobs:
       - name: Deno check all changed moderation endpoints
         working-directory: private-src
         run: |
+          # Deno 2 installs explicit npm: version imports into its isolated cache.
+          printf '{"nodeModulesDir":"auto"}\n' > deno.json
           deno check supabase/functions/_shared/independentTextModeration.ts
           deno check supabase/functions/firebase-discussions/index.ts
           deno check supabase/functions/firebase-native-content/index.ts

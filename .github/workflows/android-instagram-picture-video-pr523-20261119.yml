@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-android-instagram-picture-video-pr523
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: 64f26708ed368eb2df62567c30b51c9efde69230
+  PRIVATE_SOURCE_SHA: 7e1510993925f7994c2d21b2c382feb1697eb7fc
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

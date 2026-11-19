@@ -45,3 +45,5 @@ jobs:
 # Source-only preview service now active; run public video poster check after rollout.
 
 # Retry after approved-only Supabase preview function v2 safely records each poster for deletion.
+
+# 2026-11-19: Refresh approved public video preview frames after PR526 metadata rollout.

@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-silent-privacy-checks-qa
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: 65a52ceb6375c247daa663da125b2b63faf393aa
+  PRIVATE_SOURCE_SHA: aef3298f52c1bcc19e3f2d87785604d7d9de2190
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

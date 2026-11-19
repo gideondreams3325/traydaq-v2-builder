@@ -10,7 +10,7 @@ concurrency:
   group: traydaq-android-topic-tag-service-gallery-qa
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: 4377247dccdd8f8d8c35fd16bd8c9f2b359184eb
+  PRIVATE_SOURCE_SHA: 4cbb5807b8fc755a5ab978c46997121253e0dbea
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -51,12 +51,13 @@ jobs:
         working-directory: candidate/mobile
         run: |
           node --test tests/*.test.mjs > "$RUNNER_TEMP/all.log" 2>&1 || {
-            grep -A 22 -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/all.log" | tail -180 || true
+            grep -A 9 -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/all.log" | head -200 || true
             grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/all.log" | tail -4 || true
             exit 1
           }
           grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/all.log" | tail -4
       - name: Android TypeScript and JS export
+        if: always()
         working-directory: candidate/mobile
         run: |
           npm run typecheck > "$RUNNER_TEMP/ts.log" 2>&1 || {

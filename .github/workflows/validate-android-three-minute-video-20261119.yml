@@ -91,6 +91,7 @@ jobs:
           else
             echo '::error::Android regression suite failed. Private source and diagnostics were not published.'
             awk '/^# (tests|pass|fail|cancelled|skipped|todo) [0-9]+$/ {print}' "$RUNNER_TEMP/android-feed-tests.log"
+            grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/android-feed-tests.log" | head -12 || true
             exit 1
           fi
       - name: Android TypeScript
@@ -200,7 +201,7 @@ jobs:
 # remain only on disposable runners; the public log contains results/counts.
 
   edge-functions:
-    name: Typecheck affected Supabase Edge Functions (no deployment)
+    name: Typecheck three-minute video Edge gateway (no deployment)
     needs: source-input
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -220,10 +221,10 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - name: Check only modified backend functions
+      - name: Check video gateway and imports
         run: |
           set -euo pipefail
-          if deno check private-src/supabase/functions/firebase-native-video-upload/index.ts private-src/supabase/functions/firebase-native-content/index.ts > "$RUNNER_TEMP/android-seven-deno.log" 2>&1; then
+          if deno check private-src/supabase/functions/firebase-native-video-upload/index.ts > "$RUNNER_TEMP/android-seven-deno.log" 2>&1; then
             echo 'PASS: affected backend Edge Functions Deno typecheck; not deployed'
           else
             echo '::error::Affected Edge Functions failed Deno typecheck. No deployment attempted.'

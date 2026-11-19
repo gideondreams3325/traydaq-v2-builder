@@ -1,0 +1,66 @@
+name: TRAYDAQ User 1.0.51 (52) Pre-release V2 Builder QA
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/traydaq-user-1051-53-pre-release-qa-20261119.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-user-1051-53-pre-release-qa
+  cancel-in-progress: false
+env:
+  TRAYDAQ_SOURCE_SHA: 4299df0d190e9e63978312d2f4029a609e7d4762
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android:
+    name: Verify exact 1.0.51 Android user candidate (no binary build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.TRAYDAQ_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Verify source, package, version, sharing and video chunk fallback
+        run: |
+          test "$(git -C .. rev-parse HEAD)" = "$TRAYDAQ_SOURCE_SHA"
+          node - <<'NODE'
+          const fs=require('fs');
+          const a=require('./app.json').expo;
+          if(a.android.package!=='com.traydaq.app'||a.version!=='1.0.51'||a.android.versionCode!==53)
+            throw Error('Wrong TRAYDAQ Android release identity or monotonic version');
+          const share=fs.readFileSync('src/new-design/TraydaqShareSheet.tsx','utf8');
+          const post=fs.readFileSync('src/new-design/HomeFeedScreen.tsx','utf8');
+          if(!share.includes('const openInstalledApp=(app:InstalledApp)=>shareExternally(app)')||
+             !post.includes('Share.share({message,previewImage})'))
+            throw Error('External content sharing or exact post preview is missing');
+          const large=fs.readFileSync('src/lib/largeVideoUpload.ts','utf8');
+          if(!large.includes('sendNativeFileChunk')||!large.includes('UploadType.BINARY_CONTENT'))
+            throw Error('Android large-video chunk transport fallback missing');
+          console.log('Release package and source integrity verified');
+          NODE
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Focused sharing and publisher regressions
+        run: |
+          node --test tests/android-three-minute-video-upload.test.mjs tests/android-external-share-prefilled-preview-20261119.test.mjs tests/android-unified-share-sheet-20261117.test.mjs tests/android-instagram-picture-video-sharing-20261119.test.mjs
+      - name: Full Android user regression suite
+        run: node --test tests/*.test.mjs
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Android JavaScript export
+        run: npm run export:android
+# Validation only. Never builds/releases an APK or AAB or modifies production.

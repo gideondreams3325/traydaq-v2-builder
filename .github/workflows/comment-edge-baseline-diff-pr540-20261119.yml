@@ -47,12 +47,11 @@ jobs:
             deno check "baseline-src/supabase/functions/$function_name/index.ts" > "$RUNNER_TEMP/baseline-$function_name.log" 2>&1 || true
             deno check "private-src/supabase/functions/$function_name/index.ts" > "$RUNNER_TEMP/candidate-$function_name.log" 2>&1 || true
             # Filter only compiler errors, not actual source snippets or secrets.
+            # The legacy nullable image union is identical when order differs.
             for scope in baseline candidate; do
               sed -E 's/\x1B\[[0-9;]*[[:alpha:]]//g' "$RUNNER_TEMP/$scope-$function_name.log" |
                 grep -E 'TS[0-9]+ \[ERROR\]:' |
                 sed -E 's/^.*(TS[0-9]+ \[ERROR\]:)/\1/' |
-                # Only normalize the order of an identical string-literal union
-                # in an EXISTING identity-evidence error. Do not ignore other changes.
                 sed -E 's/"video" \| "image"/"image" | "video"/g' |
                 sort > "$RUNNER_TEMP/$scope-$function_name.errors" || true
             done

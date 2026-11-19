@@ -10,7 +10,7 @@ concurrency:
   group: traydaq-original-upload-3m-250m-qa
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: 6c62d4de429bd888eef633996b9985f42ed9dbe7
+  PRIVATE_SOURCE_SHA: 13399cab1666f87bc3c5c99fe1d98ad6d34f91d0
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

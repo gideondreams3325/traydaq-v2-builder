@@ -1,0 +1,104 @@
+name: TRAYDAQ Android External Share + Exact Link Thumbnail PR526 (No Release)
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/android-external-share-og-preview-pr526-20261119.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PRIVATE_SOURCE_SHA: ceeb4e714806b9eecda54d5d8fcaccb54970d48b
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  native:
+    name: Android share + all native regression tests and export
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    defaults:
+      run:
+        shell: bash
+        working-directory: private-src/mobile
+    steps:
+      - name: Checkout exact private change
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Verify pinned SHA
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install Android dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Focused native share regression
+        run: |
+          node --test tests/android-external-share-prefilled-preview-20261119.test.mjs tests/android-unified-share-sheet-20261117.test.mjs tests/android-share-eligible-peers-deep-links-20261117.test.mjs tests/android-session-retention-share-warmup-20261117.test.mjs
+      - name: All Android native regressions
+        run: node --test tests/*.test.mjs
+      - name: Android TypeScript check
+        run: npm run typecheck
+      - name: Android JS export, no APK/AAB
+        run: npm run export:android
+  web:
+    name: Exact OG thumbnail and complete web QA
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    defaults:
+      run:
+        shell: bash
+        working-directory: private-src
+    steps:
+      - name: Checkout exact private change
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Verify pinned SHA
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install web dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Focused public preview and privacy regressions
+        run: |
+          node --test tests/precise-social-link-cards-20261119.test.mjs tests/shared-post-link-preview.test.mjs tests/all-content-shared-previews.test.mjs tests/public-post-preview-erasure.test.mjs
+      - name: All web tests
+        run: npm test
+      - name: Web TypeScript
+        run: npm run typecheck
+      - name: Cloudflare customer web build (no deployment)
+        run: npm run build
+  backend:
+    name: Supabase public preview Edge Function Deno check only
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Verify pinned SHA
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Deno typecheck exact public preview handler
+        run: deno check private-src/supabase/functions/firebase-public-post-preview/index.ts
+# Read-only pinned-source checks. No APK, AAB, Play Store, staff release or Supabase deploy.

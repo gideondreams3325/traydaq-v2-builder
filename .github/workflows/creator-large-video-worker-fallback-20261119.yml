@@ -70,3 +70,4 @@ jobs:
 # - No upload rollout switch is modified, and no Android package is built.
 # - Release requires updating this SHA to the reviewed merged private main.
 # Operational recovery: 2026-11-19 07:20 UTC; trigger trusted worker after scheduled runs failed to recur. No upload gate/secret changes.
+# Operational recovery: 2026-11-19 07:56 UTC. Preserve existing authentication, full validation and safe heartbeat updates.

@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 env:
-  PRIVATE_SOURCE_SHA: 91660cd4a04dc7f05c04a16a27a3f89736bf2dc0
+  PRIVATE_SOURCE_SHA: 3241c4e0c7e2bf36e299b219c8af101dd3c50c9b
   DENO_NODE_MODULES_DIR: auto
 jobs:
   deno:

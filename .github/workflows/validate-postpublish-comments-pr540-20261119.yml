@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 50
     env:
-      PRIVATE_SOURCE_SHA: 'f6313f48899321bd7f8c2152ff80caf47ce99bff'
+      PRIVATE_SOURCE_SHA: '66e6c6d82061cb63eeeacef8f39466ef8c964df4'
       CI: '1'
       EXPO_NO_TELEMETRY: '1'
     steps:
@@ -110,20 +110,38 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - name: Check affected Supabase Edge functions
+      - name: Checkout immutable baseline for Deno comparison
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: c949bff9a18535961a53151ef936080286127573
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: baseline-src
+          persist-credentials: false
+      - name: Compare affected Edge Deno errors to known baseline
+        shell: bash
         run: |
           set -euo pipefail
-          if deno check private-src/supabase/functions/firebase-admin-workspace/index.ts private-src/supabase/functions/firebase-discussions/index.ts > "$RUNNER_TEMP/comment-edge-ts.log" 2>&1; then
-            echo 'PASS: protected comment + Staff Edge Deno typecheck, not deployed'
-          else
-            echo '::error::Affected Supabase functions failed Deno typecheck'
-            # Preserve credentials and source confidentiality; print only compiler
-            # error headers with ANSI styling removed, never source snippets.
-            sed -E 's/\x1B\[[0-9;]*[[:alpha:]]//g' "$RUNNER_TEMP/comment-edge-ts.log" |
-              grep -E 'error:|TS[0-9]+|Download failed|Module not found|Import .+ failed|not found' |
-              sed -E 's#private-src/#SOURCE/#g' |
-              head -30 || true
-            exit 1
-          fi
+          for function_name in firebase-discussions firebase-admin-workspace; do
+            for scope in baseline private; do
+              deno check "$scope-src/supabase/functions/$function_name/index.ts" > "$RUNNER_TEMP/$scope-$function_name.log" 2>&1 || true
+              sed -E 's/\x1B\[[0-9;]*[[:alpha:]]//g' "$RUNNER_TEMP/$scope-$function_name.log" |
+                grep -E 'TS[0-9]+ \[ERROR\]:' |
+                sed -E 's/^.*(TS[0-9]+ \[ERROR\]:)/\1/' |
+                sort > "$RUNNER_TEMP/$scope-$function_name.errors" || true
+              if grep -Eiq 'Download failed|Module not found|Import .+ failed' "$RUNNER_TEMP/$scope-$function_name.log"; then
+                echo "::error::$function_name $scope dependency resolution failed"
+                exit 1
+              fi
+            done
+            echo "$function_name baseline $(wc -l < "$RUNNER_TEMP/baseline-$function_name.errors") errors; candidate $(wc -l < "$RUNNER_TEMP/private-$function_name.errors") errors"
+            comm -13 "$RUNNER_TEMP/baseline-$function_name.errors" "$RUNNER_TEMP/private-$function_name.errors" > "$RUNNER_TEMP/new-$function_name.errors"
+            if test -s "$RUNNER_TEMP/new-$function_name.errors"; then
+              echo "::error::New $function_name Deno errors"
+              head -12 "$RUNNER_TEMP/new-$function_name.errors"
+              exit 1
+            fi
+            echo "PASS: no new Edge Deno compiler errors for $function_name"
+          done
 # Source-only validation; do not merge this temporary Builder PR.
 # No APK, AAB, IPA, Cloudflare deployment, production schema or Edge deployment.

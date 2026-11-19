@@ -1,0 +1,150 @@
+name: TRAYDAQ Smart Video Quality 15MiB Preferred 250MiB Private QA (No Release)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/creator-adaptive-quality-250mib-qa-20261119.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-adaptive-quality-250mib-qa
+  cancel-in-progress: false
+env:
+  PRIVATE_SOURCE_SHA: d55b2cee037f82ed4eecfab8e4b637ddee12c05c
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  web:
+    name: Full web, TypeScript, Cloudflare build, private MP4 inspector proof
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    defaults:
+      run:
+        working-directory: candidate
+        shell: bash
+    steps:
+      - name: Verify read-only private token
+        working-directory: .
+        env:
+          TOKEN_PRESENT: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$TOKEN_PRESENT" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: candidate
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Verify pin
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: candidate/package-lock.json
+      - name: Install pinned private web dependencies
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/install-web.log" 2>&1
+      - name: Focused creator upload, private MP4 validation and worker tests
+        run: |
+          node --test tests/creator-smart-video-250mb-20261119.test.mjs tests/creator-large-video-250mb-20261118.test.mjs tests/media-quality-3min-pictures-20261118.test.mjs tests/creator-large-video-worker-recovery-20261118.test.mjs > "$RUNNER_TEMP/focused.log" 2>&1 || {
+            grep -E '^not ok [0-9]+ - |^# (tests|pass|fail)' "$RUNNER_TEMP/focused.log" | tail -28 || true
+            exit 1
+          }
+          grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/focused.log" | tail -3
+      - name: Full Web regressions, TypeScript, Cloudflare build
+        run: |
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/all-web.log" 2>&1 || {
+            grep -E '^not ok [0-9]+ - |^# (tests|pass|fail)' "$RUNNER_TEMP/all-web.log" | tail -30 || true
+            exit 1
+          }
+          npm run typecheck > "$RUNNER_TEMP/web-ts.log" 2>&1 || { grep -E 'error TS' "$RUNNER_TEMP/web-ts.log" | head -12 || true; exit 1; }
+          npm run build > "$RUNNER_TEMP/web-build.log" 2>&1
+          test -f dist/index.html
+          echo 'PASS web tests, TypeScript and Cloudflare build'
+  android:
+    name: Full Android tests, TypeScript and JS export; no APK/AAB
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    defaults:
+      run:
+        working-directory: candidate/mobile
+        shell: bash
+    steps:
+      - name: Verify private token
+        working-directory: .
+        env:
+          TOKEN_PRESENT: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$TOKEN_PRESENT" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: candidate
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Verify pin
+        run: test "$(git -C .. rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: candidate/mobile/package-lock.json
+      - name: Install pinned private Android dependencies
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/install-mobile.log" 2>&1
+      - name: Focused Android media upload regressions
+        run: |
+          node --test tests/android-three-minute-video-upload.test.mjs tests/android-creator-publish-upload-20261118.test.mjs tests/unified-photo-video-picker.test.mjs > "$RUNNER_TEMP/focused-android.log" 2>&1 || {
+            grep -E '^not ok [0-9]+ - |^# (tests|pass|fail)' "$RUNNER_TEMP/focused-android.log" | tail -25 || true
+            exit 1
+          }
+      - name: Full Android regressions and TypeScript
+        run: |
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/all-android.log" 2>&1 || {
+            grep -E '^not ok [0-9]+ - |^# (tests|pass|fail)' "$RUNNER_TEMP/all-android.log" | tail -30 || true
+            exit 1
+          }
+          npm run typecheck > "$RUNNER_TEMP/android-ts.log" 2>&1 || { grep -E 'error TS' "$RUNNER_TEMP/android-ts.log" | head -12 || true; exit 1; }
+      - name: Android JavaScript export only
+        run: npm run export:android > "$RUNNER_TEMP/android-export.log" 2>&1
+  deno:
+    name: Private Supabase gateway, content and MP4 inspector Deno checks
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: candidate
+        shell: bash
+    steps:
+      - name: Verify private token
+        working-directory: .
+        env:
+          TOKEN_PRESENT: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$TOKEN_PRESENT" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: candidate
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Verify pin
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check private MP4 inspector, signed upload gateway and creator publisher
+        run: |
+          set -euo pipefail
+          npx --yes deno@2.9.6 check --no-config --node-modules-dir=auto --no-lock supabase/functions/_shared/verifyLargeCreatorMp4.ts supabase/functions/firebase-native-video-upload/index.ts supabase/functions/firebase-native-content/index.ts > "$RUNNER_TEMP/deno.log" 2>&1 || {
+            grep -E '^error:|TS[0-9]{4,5}|^  -->|^    at' "$RUNNER_TEMP/deno.log" | head -22 || true
+            exit 1
+          }
+          echo 'PASS Edge Deno typecheck'
+# No credentials to user data; private source fetched read-only; no APK/AAB, deployments, schema changes or publication.

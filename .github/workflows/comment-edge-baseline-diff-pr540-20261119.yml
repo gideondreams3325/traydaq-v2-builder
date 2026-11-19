@@ -66,6 +66,13 @@ jobs:
                 sed -E 's#(at file:///[^ ]*/)(baseline-src|private-src)/#at SOURCE/#g' |
                 head -28 || true
             done
+            for scope in baseline candidate; do
+              echo "Potential $scope TS2322 source location for $function_name"
+              sed -E 's/\x1B\[[0-9;]*[[:alpha:]]//g' "$RUNNER_TEMP/$scope-$function_name.log" |
+                awk '/TS2322 \[ERROR\]:/{heading=$0; scanning=1}
+                     scanning && /at file:\/\// {print heading; print $0; scanning=0}' |
+                sed -E 's#(baseline-src|private-src)/#SOURCE/#g' | tail -12 || true
+            done
             comm -13 "$RUNNER_TEMP/baseline-$function_name.errors" "$RUNNER_TEMP/candidate-$function_name.errors" > "$RUNNER_TEMP/new-$function_name.errors"
             if test -s "$RUNNER_TEMP/new-$function_name.errors"; then
               echo "::error::New Edge TypeScript errors introduced by the Staff comments update in $function_name"

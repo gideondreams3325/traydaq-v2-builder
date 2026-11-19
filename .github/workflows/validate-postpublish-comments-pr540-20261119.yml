@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 50
     env:
-      PRIVATE_SOURCE_SHA: '0597a3c69b4a81f770663ad05453a2a35dfa4079'
+      PRIVATE_SOURCE_SHA: 'f6313f48899321bd7f8c2152ff80caf47ce99bff'
       CI: '1'
       EXPO_NO_TELEMETRY: '1'
     steps:
@@ -84,6 +84,7 @@ jobs:
           else
             echo '::error::Native Staff regression failure'
             grep -E '^(not ok|# (tests|pass|fail))' "$RUNNER_TEMP/comment-staff-tests.log" | head -25 || true
+            grep -A 18 '^not ok ' "$RUNNER_TEMP/comment-staff-tests.log" | head -40 || true
             exit 1
           fi
           npm run typecheck > "$RUNNER_TEMP/comment-staff-ts.log" 2>&1 || { echo '::error::Staff native TS failed'; grep -E '^src/.*error TS[0-9]+' "$RUNNER_TEMP/comment-staff-ts.log" | head -20 || true; exit 1; }

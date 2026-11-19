@@ -45,13 +45,6 @@ jobs:
       - name: Install pinned private dependencies
         working-directory: private-src
         run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/smart-video-install.log" 2>&1
-      - name: Ensure FFmpeg synthetic fixture generator
-        shell: bash
-        run: |
-          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
-            sudo apt-get update -qq
-            sudo apt-get install -qq -y ffmpeg
-          fi
       - name: Run isolated upload / inspect / server-copy verification and cleanup
         working-directory: private-src
         shell: bash

@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-original-upload-lock-qa
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: 9089469b3b0a2094609d90577b9a5b68b6a68683
+  PRIVATE_SOURCE_SHA: b938bd2d55a76503d4fb59469385f129b58db94d
 jobs:
   dependency:
     name: Generate deterministic compressor locks for private candidate only
@@ -39,15 +39,9 @@ jobs:
       - name: Generate web and Android lock updates without running package scripts
         run: |
           set -euo pipefail
-          cd private-src
-          npm install --package-lock-only --ignore-scripts --no-audit --no-fund > "$RUNNER_TEMP/web-npm.locklog" 2>&1 || { grep -E "npm error|npm ERR|ERESOLVE|ETARGET|404|not found|conflicting peer" "$RUNNER_TEMP/web-npm.locklog" | tail -20 || true; exit 1; }
-          cd mobile
+          cd private-src/mobile
           npm install --package-lock-only --ignore-scripts --no-audit --no-fund > "$RUNNER_TEMP/native-npm.locklog" 2>&1 || { grep -E "npm error|npm ERR|ERESOLVE|ETARGET|404|not found|conflicting peer" "$RUNNER_TEMP/native-npm.locklog" | tail -20 || true; exit 1; }
           cd ..
-          echo "LOCK_PATCH_WEB_BEGIN"
-          git diff -- package-lock.json | base64 -w0
-          echo
-          echo "LOCK_PATCH_WEB_END"
           echo "LOCK_PATCH_NATIVE_BEGIN"
           git diff -- mobile/package-lock.json | base64 -w0
           echo

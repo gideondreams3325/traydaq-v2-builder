@@ -1,0 +1,62 @@
+name: TRAYDAQ V2 Staff Legal Aid Navigation Retirement PR525 QA (No Release)
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/staff-retire-legal-aid-pr525-20261119.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-staff-pr525-navigation
+  cancel-in-progress: false
+jobs:
+  validate:
+    name: Staff Android + iPhone source checks (no build release)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+      PRIVATE_SOURCE_SHA: 22aa9f62b88fbeef898d36c983657907d1435fbd
+    steps:
+      - name: Checkout exact private candidate SHA
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: source
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Require pinned commit
+        working-directory: source
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: source/package-lock.json
+      - name: Staff Android full security regression suite
+        working-directory: source/admin-native
+        run: npm run test:security
+      - name: Install native STAFF dependencies (no APK/AAB)
+        working-directory: source/admin-native
+        run: npm install --no-audit --no-fund
+      - name: Native staff TypeScript validation
+        working-directory: source/admin-native
+        run: npm run typecheck
+      - name: Install staff web dependencies
+        working-directory: source
+        run: npm ci --no-audit --no-fund
+      - name: iPhone Staff TypeScript
+        working-directory: source
+        run: npm run typecheck:staff
+      - name: iPhone Staff PWA build (not deployed)
+        working-directory: source
+        run: npm run build:staff
+      - name: Ensure private retention and authentication services untouched in this candidate
+        working-directory: source
+        run: |
+          test ! -f admin-native/src/DeletionReviews.tsx
+          echo 'STAFF source-only QA completed. No APK/AAB build, release, deployment, migration or account erasure.'

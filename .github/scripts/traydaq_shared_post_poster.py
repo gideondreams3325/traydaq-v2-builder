@@ -16,7 +16,10 @@ import urllib.request
 
 BASE = "https://qpcsruhwqhniprakpoox.supabase.co/functions/v1/firebase-public-post-preview"
 ORIGIN = "https://qpcsruhwqhniprakpoox.supabase.co/storage/v1/object/public/traydaq-native-creator-public/"
-MAX_MP4_BYTES = 17 * 1024 * 1024
+# The public creator upload limit is 250 MiB. Stream directly to a temporary
+# file; never allocate the entire video in Python memory.
+MAX_MP4_BYTES = 250 * 1024 * 1024
+MAX_API_BYTES = 1024 * 1024
 MAX_JPEG_BYTES = 650000
 MAX_PAGES = 8
 MAX_IMAGES = 25
@@ -25,7 +28,38 @@ MAX_IMAGES = 25
 def request(url, *, data=None, headers=None, timeout=35):
     request_object = urllib.request.Request(url, data=data, headers=headers or {})
     with urllib.request.urlopen(request_object, timeout=timeout) as response:
-        return response.read(MAX_MP4_BYTES + 1)
+        body = response.read(MAX_API_BYTES + 1)
+        if len(body) > MAX_API_BYTES:
+            raise ValueError("Preview API response too large")
+        return body
+
+
+def stream_public_video(url: str, output: pathlib.Path):
+    """Bounded streaming transfer. Source URLs are checked against approved
+    server-owned Storage paths before this function is reached."""
+    request_object = urllib.request.Request(url, headers={"Accept": "video/mp4"})
+    with urllib.request.urlopen(request_object, timeout=110) as response:
+        mime = (response.headers.get("Content-Type") or "").split(";")[0].lower().strip()
+        if mime not in ("video/mp4", "application/octet-stream"):
+            raise ValueError("Public source is not MP4")
+        claimed = response.headers.get("Content-Length")
+        if claimed and int(claimed) > MAX_MP4_BYTES:
+            raise ValueError("Public video exceeds 250 MiB")
+        total = 0
+        with output.open("wb") as handle:
+            while True:
+                piece = response.read(1024 * 1024)
+                if not piece:
+                    break
+                total += len(piece)
+                if total > MAX_MP4_BYTES:
+                    raise ValueError("Public video exceeds 250 MiB")
+                handle.write(piece)
+        if total < 500 or (claimed and total != int(claimed)):
+            raise ValueError("Public video was incomplete")
+    with output.open("rb") as handle:
+        if handle.read(8)[4:8] != b"ftyp":
+            raise ValueError("Invalid MP4 source")
 
 
 def identity_token():
@@ -79,17 +113,10 @@ def main():
                 continue
             examined += 1
             try:
-                movie = request(source, timeout=100)
-                if len(movie) < 500 or len(movie) > MAX_MP4_BYTES:
-                    skipped += 1
-                    continue
-                if movie[4:8] != b"ftyp":
-                    skipped += 1
-                    continue
                 with tempfile.TemporaryDirectory() as temp:
                     movie_path = pathlib.Path(temp) / "video.mp4"
                     frame_path = pathlib.Path(temp) / "share-preview.jpg"
-                    movie_path.write_bytes(movie)
+                    stream_public_video(source, movie_path)
                     picture = jpeg_frame(movie_path, frame_path)
                     if picture is None:
                         skipped += 1

@@ -1,0 +1,115 @@
+name: TRAYDAQ PR530 Creator Video Upload Fix QA (No Release)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/creator-video-upload-pr530-validation-20261119.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-pr530-video-upload-validation
+  cancel-in-progress: false
+env:
+  PRIVATE_SOURCE_SHA: e1a39ae9ef20a3b4736ef68ef495296f91c777d3
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  web:
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    name: Verified private web source, video regression, TypeScript and Cloudflare build
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: private-src
+        shell: bash
+    steps:
+      - name: Verify trusted private source credential
+        working-directory: .
+        env:
+          TOKEN_PRESENT: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$TOKEN_PRESENT" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+          fetch-depth: 1
+      - name: Verify exact source and setup dependencies
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install locked web dependencies
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/web-install.log" 2>&1
+      - name: Run focused video, worker, forms and error regressions
+        run: |
+          node --test tests/creator-large-video-250mb-20261118.test.mjs tests/creator-large-video-worker-recovery-20261118.test.mjs tests/creator-form-reliability-20261113.test.mjs > "$RUNNER_TEMP/web-video.log" 2>&1 || {
+            grep -E '^not ok [0-9]+ - |^# (tests|pass|fail)' "$RUNNER_TEMP/web-video.log" | tail -20
+            exit 1
+          }
+          grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/web-video.log" | tail -3
+      - name: Verify web TypeScript and production output (no deployment)
+        run: |
+          npm run typecheck > "$RUNNER_TEMP/web-ts.log" 2>&1 || { grep -E 'error TS' "$RUNNER_TEMP/web-ts.log" | head -10; exit 1; }
+          npm run build > "$RUNNER_TEMP/web-build.log" 2>&1
+          test -f dist/index.html
+  android:
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    name: Verified private Android video, full tests, TypeScript and JS export (no APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    defaults:
+      run:
+        working-directory: private-src/mobile
+        shell: bash
+    steps:
+      - name: Verify trusted private source credential
+        working-directory: .
+        env:
+          TOKEN_PRESENT: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$TOKEN_PRESENT" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+          fetch-depth: 1
+      - name: Verify source SHA
+        run: test "$(git -C .. rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked native dependencies
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/android-install.log" 2>&1
+      - name: Focused Android video transfer tests
+        run: |
+          node --test tests/android-three-minute-video-upload.test.mjs tests/android-creator-publish-upload-20261118.test.mjs > "$RUNNER_TEMP/android-video.log" 2>&1 || {
+            grep -E '^not ok [0-9]+ - |^# (tests|pass|fail)' "$RUNNER_TEMP/android-video.log" | tail -20
+            exit 1
+          }
+          grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/android-video.log" | tail -3
+      - name: All native regression tests and TypeScript
+        run: |
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/android-all.log" 2>&1 || {
+            grep -E '^not ok [0-9]+ - |^# (tests|pass|fail)' "$RUNNER_TEMP/android-all.log" | tail -25
+            exit 1
+          }
+          npm run typecheck > "$RUNNER_TEMP/android-types.log" 2>&1 || {
+            grep -E 'error TS' "$RUNNER_TEMP/android-types.log" | head -10
+            exit 1
+          }
+      - name: JavaScript export only; never build APK or AAB
+        run: npm run export:android > "$RUNNER_TEMP/android-export.log" 2>&1
+# Read-only pinned private source, no upload credentials or user media, no deployments, no APK/AAB.

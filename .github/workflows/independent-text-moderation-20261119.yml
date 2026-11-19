@@ -45,6 +45,21 @@ jobs:
       - name: Full web regression tests
         working-directory: private-src
         run: npm test
+      - name: Install Deno for Supabase server function checks
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Deno check all changed moderation endpoints
+        working-directory: private-src
+        run: |
+          deno check supabase/functions/_shared/independentTextModeration.ts
+          deno check supabase/functions/firebase-discussions/index.ts
+          deno check supabase/functions/firebase-native-content/index.ts
+          deno check supabase/functions/firebase-content-edits/index.ts
+          deno check supabase/functions/web-content-edits/index.ts
+          deno check supabase/functions/firebase-store-reviews/index.ts
+          deno check supabase/functions/firebase-entrepreneur/index.ts
+          deno check supabase/functions/firebase-admin-workspace/index.ts
       - name: TypeScript web
         working-directory: private-src
         run: npm run typecheck

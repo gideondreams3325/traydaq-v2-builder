@@ -1,0 +1,103 @@
+name: TRAYDAQ Original Creator Upload 3min 250MiB Validation (No APK)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/creator-original-upload-3min-250mb-qa-20261119.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-original-upload-3m-250m-qa
+  cancel-in-progress: false
+env:
+  PRIVATE_SOURCE_SHA: 6c62d4de429bd888eef633996b9985f42ed9dbe7
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  web:
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    name: Existing web uploader unchanged, full tests, TypeScript, Cloudflare build
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Verify private-source credential
+        env: { TOKEN_PRESENT: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }} }
+        run: test "$TOKEN_PRESENT" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+          path: private-src
+      - name: Verify exact private source commit
+        run: test "$(git -C private-src rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Verify web behavior without change to upload or publishing endpoint
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/web-install.log" 2>&1
+          node --test tests/creator-large-video-250mb-20261118.test.mjs tests/creator-form-reliability-20261113.test.mjs > "$RUNNER_TEMP/web-focused.log" 2>&1 || {
+            grep -E '^not ok|^# (tests|pass|fail)' "$RUNNER_TEMP/web-focused.log" | tail -20
+            exit 1
+          }
+          npm run typecheck > "$RUNNER_TEMP/web-types.log" 2>&1 || {
+            grep -E 'error TS' "$RUNNER_TEMP/web-types.log" | head -10;exit 1
+          }
+          npm test > "$RUNNER_TEMP/web-all.log" 2>&1 || {
+            grep -E '^not ok|^# (tests|pass|fail)' "$RUNNER_TEMP/web-all.log" | tail -20;exit 1
+          }
+          npm run build > "$RUNNER_TEMP/web-build.log" 2>&1
+          test -f dist/index.html
+  android:
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    name: Android original upload, full regressions, TypeScript, JS export only
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - name: Verify private-source credential
+        env: { TOKEN_PRESENT: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }} }
+        run: test "$TOKEN_PRESENT" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+          path: private-src
+      - name: Verify exact private source commit
+        run: test "$(git -C private-src rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Validate Android original posting route with 250MiB input and 180s gate
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/native-install.log" 2>&1 || {
+            grep -E 'npm error|npm ERR' "$RUNNER_TEMP/native-install.log" | tail -12;exit 1
+          }
+          node --test tests/android-three-minute-video-upload.test.mjs tests/android-creator-publish-upload-20261118.test.mjs > "$RUNNER_TEMP/native-focused.log" 2>&1 || {
+            grep -E '^not ok|^# (tests|pass|fail)' "$RUNNER_TEMP/native-focused.log" | tail -20;exit 1
+          }
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/native-all.log" 2>&1 || {
+            grep -E '^not ok|^# (tests|pass|fail)' "$RUNNER_TEMP/native-all.log" | tail -25;exit 1
+          }
+          npm run typecheck > "$RUNNER_TEMP/native-types.log" 2>&1 || {
+            grep -E 'error TS' "$RUNNER_TEMP/native-types.log" | head -20;exit 1
+          }
+          npm run export:android > "$RUNNER_TEMP/native-js-export.log" 2>&1 || {
+            grep -E 'Error|error|FAIL' "$RUNNER_TEMP/native-js-export.log" | tail -12;exit 1
+          }
+          echo "::notice::Private Android source checks passed. No APK/AAB, production backend or customer media was touched."

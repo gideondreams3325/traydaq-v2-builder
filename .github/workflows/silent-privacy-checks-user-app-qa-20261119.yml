@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-silent-privacy-checks-qa
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: badc2657999b8d62b880afb12452eb2a15faeef4
+  PRIVATE_SOURCE_SHA: 96a3b65d74a222370c78f1d29784a26d8ec3b588
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -57,7 +57,8 @@ jobs:
       - name: All Android tests and typecheck
         run: |
           node --test tests/*.test.mjs > "$RUNNER_TEMP/all-android.log" 2>&1 || {
-            grep -E '^not ok [0-9]+ - |^# (tests|pass|fail)' "$RUNNER_TEMP/all-android.log" | tail -35 || true
+            grep -A 19 -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/all-android.log" | tail -100 || true
+            grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/all-android.log" | tail -4 || true
             exit 1
           }
           npm run typecheck > "$RUNNER_TEMP/ts-android.log" 2>&1 || {

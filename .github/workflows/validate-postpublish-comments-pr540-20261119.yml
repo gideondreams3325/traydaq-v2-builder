@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: validate-comments-pr540
+  group: validate-comments-pr540-final-53496b
   cancel-in-progress: false
 jobs:
   verify:

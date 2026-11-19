@@ -1,0 +1,55 @@
+name: TRAYDAQ Original Creator Upload Dependency Lock QA (No Release)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/creator-original-upload-lock-20261119.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-original-upload-lock-qa
+  cancel-in-progress: false
+env:
+  PRIVATE_SOURCE_SHA: 9089469b3b0a2094609d90577b9a5b68b6a68683
+jobs:
+  dependency:
+    name: Generate deterministic compressor locks for private candidate only
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Validate read-only trusted source token
+        env:
+          TOKEN_CONFIGURED: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$TOKEN_CONFIGURED" = true
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+          fetch-depth: 1
+      - name: Verify pinned source
+        run: test "$(git -C private-src rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Generate web and Android lock updates without running package scripts
+        run: |
+          set -euo pipefail
+          cd private-src
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund > "$RUNNER_TEMP/web-npm.locklog" 2>&1
+          cd mobile
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund > "$RUNNER_TEMP/native-npm.locklog" 2>&1
+          cd ..
+          echo "LOCK_PATCH_WEB_BEGIN"
+          git diff -- package-lock.json | base64 -w0
+          echo
+          echo "LOCK_PATCH_WEB_END"
+          echo "LOCK_PATCH_NATIVE_BEGIN"
+          git diff -- mobile/package-lock.json | base64 -w0
+          echo
+          echo "LOCK_PATCH_NATIVE_END"
+          echo "::notice::Only public dependency lock changes were printed. No app code, secrets, media, APK/AAB, deployments or customer data."

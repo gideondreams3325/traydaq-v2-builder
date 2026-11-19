@@ -21,7 +21,8 @@ jobs:
     timeout-minutes: 40
     steps:
       - name: Verify private-source credential
-        env: { TOKEN_PRESENT: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }} }
+        env:
+          TOKEN_PRESENT: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
         run: test "$TOKEN_PRESENT" = true
       - uses: actions/checkout@v4
         with:
@@ -63,7 +64,8 @@ jobs:
     timeout-minutes: 50
     steps:
       - name: Verify private-source credential
-        env: { TOKEN_PRESENT: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }} }
+        env:
+          TOKEN_PRESENT: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
         run: test "$TOKEN_PRESENT" = true
       - uses: actions/checkout@v4
         with:

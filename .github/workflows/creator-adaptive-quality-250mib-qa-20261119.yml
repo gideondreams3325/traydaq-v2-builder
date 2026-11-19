@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-adaptive-quality-250mib-qa
   cancel-in-progress: false
 env:
-  PRIVATE_SOURCE_SHA: d55b2cee037f82ed4eecfab8e4b637ddee12c05c
+  PRIVATE_SOURCE_SHA: e08236d608837234060dc0ad15e074f30506cc7b
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

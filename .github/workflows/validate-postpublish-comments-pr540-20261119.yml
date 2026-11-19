@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 50
     env:
-      PRIVATE_SOURCE_SHA: '27e72cb2c06f0aa050f7ac02363cdeb85a6f5276'
+      PRIVATE_SOURCE_SHA: '53496b7751f7f22b8a62e29483ee65b7eac010ac'
       CI: '1'
       EXPO_NO_TELEMETRY: '1'
     steps:

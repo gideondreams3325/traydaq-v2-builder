@@ -29,7 +29,7 @@ jobs:
       - name: Validate source SHA and existing read-only connection
         id: validate
         env:
-          REQUESTED_SOURCE_SHA: '4edefbee8fe66077da39ffacaaabedf5d82df7b3'
+          REQUESTED_SOURCE_SHA: 'd6452843ad926170cc102ccdf3f6b655be10a569'
           SOURCE_TOKEN_CONFIGURED: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
         shell: bash
         run: |
@@ -101,6 +101,7 @@ jobs:
             echo 'PASS: Android TypeScript'
           else
             echo '::error::Android TypeScript failed. Diagnostics remain on the temporary runner.'
+            grep -E 'error TS[0-9]+:' "$RUNNER_TEMP/android-feed-typescript.log" | head -25 | sed -E 's#private-src/##g' || true
             exit 1
           fi
       - name: Android JavaScript and assets export only
@@ -169,6 +170,7 @@ jobs:
             awk '/^# (tests|pass|fail|cancelled|skipped|todo) [0-9]+$/ {print}' "$RUNNER_TEMP/android-feed-web-tests.log"
           else
             echo '::error::Web regression suite failed. Private source and diagnostics were not published.'
+            grep -E '^not ok [0-9]+' "$RUNNER_TEMP/android-feed-web-tests.log" | head -12 || true
             awk '/^# (tests|pass|fail|cancelled|skipped|todo) [0-9]+$/ {print}' "$RUNNER_TEMP/android-feed-web-tests.log"
             exit 1
           fi

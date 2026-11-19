@@ -1,0 +1,83 @@
+name: TRAYDAQ Android Large Video Chunk Transport PR528 (No Release)
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/android-video-chunk-transport-pr528-20261119.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-pr528-android-video-chunk-qa
+  cancel-in-progress: false
+env:
+  PRIVATE_SOURCE_SHA: 51ebc76882cf0d8004785451f70786d8fd8d1732
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android:
+    name: Private video transport regressions, all native tests, TypeScript, JS export
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    defaults:
+      run:
+        working-directory: private-src/mobile
+        shell: bash
+    steps:
+      - name: Verify private source token exists
+        working-directory: .
+        env:
+          SOURCE_TOKEN_CONFIGURED: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$SOURCE_TOKEN_CONFIGURED" = true
+      - name: Fetch exact private source candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Verify checked-out source SHA
+        run: test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install pinned Android dependencies
+        run: |
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/pr528-install.log" 2>&1 || {
+            echo '::error::Android installation failed'; exit 1;
+          }
+      - name: Check focused three-minute video, chunk fallback and media source tests
+        run: |
+          node --test tests/android-three-minute-video-upload.test.mjs tests/unified-photo-video-picker.test.mjs > "$RUNNER_TEMP/pr528-focused.log" 2>&1 || {
+            echo '::error::Video focused checks failed'
+            grep -E '^not ok [0-9]+|^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/pr528-focused.log" | tail -14 || true
+            exit 1
+          }
+          grep -E '^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/pr528-focused.log" | tail -3
+      - name: Full native regression suite
+        run: |
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/pr528-all.log" 2>&1 || {
+            echo '::error::Native regression failed'
+            grep -E '^not ok [0-9]+|^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/pr528-all.log" | tail -20 || true
+            exit 1
+          }
+          grep -E '^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/pr528-all.log" | tail -3
+      - name: Android TypeScript check
+        run: |
+          npm run typecheck > "$RUNNER_TEMP/pr528-ts.log" 2>&1 || {
+            echo '::error::Android TypeScript failed'
+            grep -E '^.*(error TS[0-9]+)' "$RUNNER_TEMP/pr528-ts.log" | sed -E 's@/[^ ]+@<private>@g' | head -10 || true
+            exit 1
+          }
+      - name: Android JavaScript export only
+        run: |
+          npm run export:android > "$RUNNER_TEMP/pr528-export.log" 2>&1 || {
+            echo '::error::Android JS export failed'; exit 1;
+          }
+          echo 'PASS: Android TypeScript, test suite and JS export; no APK/AAB'
+# Exact reviewed private source only. No backend credentials, customer media, APK/AAB, Play release or Cloudflare deploy.

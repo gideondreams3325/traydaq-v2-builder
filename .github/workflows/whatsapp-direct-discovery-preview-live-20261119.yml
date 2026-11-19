@@ -1,0 +1,39 @@
+name: TRAYDAQ exact public post discovery WhatsApp link smoke (No Release)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/whatsapp-direct-discovery-preview-live-20261119.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  public-discovery-card:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Check original post discovery page displays the actual public thumbnail
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import urllib.request,re,html
+          id='b7207876-c2c2-4784-bf5e-e02d5acc4a94'
+          path='https://traydaq.com/discover/posts/'+id
+          image='https://qpcsruhwqhniprakpoox.supabase.co/storage/v1/object/public/traydaq-native-creator-public/'+id+'/share-poster.jpg'
+          for agent in ['WhatsApp/2.24.10.78 A','facebookexternalhit/1.1']:
+            req=urllib.request.Request(path,headers={'User-Agent':agent})
+            with urllib.request.urlopen(req,timeout=25) as response:
+              if response.status!=200 or 'text/html' not in response.headers.get('content-type',''):
+                raise ValueError('Unavailable discovery HTML')
+              page=response.read(240000).decode('utf-8','replace')
+            def og(key):
+              m=re.search(r'<meta property="'+re.escape(key)+r'" content="([^"]+)"',page)
+              return html.unescape(m.group(1)) if m else ''
+            if og('og:url')!=path:
+              raise ValueError('Discovery canonical does not match exact link')
+            if og('og:image')!=image:
+              raise ValueError('Video thumbnail is not correct')
+            if '<a ' not in page:
+              raise ValueError('Discovery content link was not rendered')
+            print('PASS '+agent.split('/')[0]+' sees correct public video JPEG at fresh discovery URL')
+          PY
+# Read-only; no deployment or app release.

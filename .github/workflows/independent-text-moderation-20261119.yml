@@ -92,11 +92,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-          cache-dependency-path: private-src/admin-native/package-lock.json
       - name: Install Staff dependencies
         working-directory: private-src/admin-native
-        run: npm ci --no-audit --no-fund
+        run: npm install --no-audit --no-fund
       - name: All native STAFF tests
         working-directory: private-src/admin-native
         run: npm run test:security

@@ -1,0 +1,107 @@
+name: TRAYDAQ Independent Text Moderation V2 Builder QA (NO RELEASE)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/independent-text-moderation-20261119.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-independent-text-moderation-20261119
+  cancel-in-progress: false
+env:
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+  PRIVATE_REF: feature/independent-text-moderation-20261119
+jobs:
+  web:
+    name: Web moderation, regressions, TypeScript and Cloudflare build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout private TRAYDAQ V2 candidate (read-only)
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_REF }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Record candidate commit
+        working-directory: private-src
+        run: git rev-parse HEAD
+      - name: Install pinned dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Independent moderation and safety regressions
+        working-directory: private-src
+        run: node --test tests/independent-text-moderation.test.mjs tests/audio-comments-no-openai-20261114.test.mjs tests/voice-comment-safety-provider-recovery-20261114.test.mjs tests/user-content-edit-review-20261113.test.mjs tests/moderated-publishing-and-review-queue.test.mjs
+      - name: Full web regression tests
+        working-directory: private-src
+        run: npm test
+      - name: TypeScript web
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Cloudflare-targeted web build without deployment
+        working-directory: private-src
+        run: npm run build
+  android:
+    name: Android user source regression checks (NO APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_REF }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install Android dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Full Android source tests
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Android TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+  staff:
+    name: Native STAFF regressions and TypeScript (NO APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_REF }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/admin-native/package-lock.json
+      - name: Install Staff dependencies
+        working-directory: private-src/admin-native
+        run: npm ci --no-audit --no-fund
+      - name: All native STAFF tests
+        working-directory: private-src/admin-native
+        run: npm run test:security
+      - name: Staff TypeScript
+        working-directory: private-src/admin-native
+        run: npm run typecheck
+      - name: No app release
+        run: echo 'No app bundle, Supabase deployment, migration or Cloudflare production change was made.'

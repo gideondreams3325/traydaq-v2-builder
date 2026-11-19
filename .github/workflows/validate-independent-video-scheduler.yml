@@ -1,0 +1,24 @@
+name: Validate independent TRAYDAQ video-worker scheduler (no deploy)
+on:
+  pull_request:
+    paths:
+      - 'ops/video-worker-cloudflare/**'
+      - '.github/workflows/validate-independent-video-scheduler.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'ops/video-worker-cloudflare/**'
+      - '.github/workflows/validate-independent-video-scheduler.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check ops/video-worker-cloudflare/worker.mjs
+      - run: node --test ops/video-worker-cloudflare/watchdog.test.mjs

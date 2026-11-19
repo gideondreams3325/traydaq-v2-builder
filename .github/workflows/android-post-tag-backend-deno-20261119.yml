@@ -29,7 +29,7 @@ jobs:
       - name: Check tagged post notification moderation and submission functions
         working-directory: candidate
         run: |
-          deno check supabase/functions/firebase-native-content/index.ts > "$RUNNER_TEMP/deno-native.log" 2>&1 || { tail -50 "$RUNNER_TEMP/deno-native.log"; exit 1; }
-          deno check supabase/functions/firebase-security-hub/index.ts > "$RUNNER_TEMP/deno-security.log" 2>&1 || { tail -50 "$RUNNER_TEMP/deno-security.log"; exit 1; }
+          deno check --node-modules-dir=auto supabase/functions/firebase-native-content/index.ts > "$RUNNER_TEMP/deno-native.log" 2>&1 || { tail -50 "$RUNNER_TEMP/deno-native.log"; exit 1; }
+          deno check --node-modules-dir=auto supabase/functions/firebase-security-hub/index.ts > "$RUNNER_TEMP/deno-security.log" 2>&1 || { tail -50 "$RUNNER_TEMP/deno-security.log"; exit 1; }
           echo 'PASS: native post tags, security hub and imported shared modules Deno typecheck.'
 # No Supabase deploy, no schema migration, no APK/AAB, and no production write.

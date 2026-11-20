@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 146c26cc2a9c1bd94d22943e9e8eadda31477fb1
+          ref: 436f2e4705810058a32b0b93695041d02179150f
           path: private-src
           token: "${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}"
           persist-credentials: false
@@ -35,8 +35,10 @@ jobs:
               node --input-type=module - "$log" <<'NODE'
           import {readFileSync} from 'node:fs';
           const text=readFileSync(process.argv[2],'utf8').replace(/\x1b\[[0-9;]*m/g,'');
-          const lines=text.split(/\r?\n/).filter(Boolean).slice(0,6);
-          for(let line of lines){
+          const lines=text.split(/\r?\n/).filter(Boolean);
+          const important=lines.filter(x=>/error|TS[0-9]+|failed|not found|module|at .*:/.test(x.toLowerCase()));
+          const selected=important.length?important.slice(-8):lines.slice(-8);
+          for(let line of selected){
             line=line.replace(/https?:\/\/\S+/g,'[url]').replace(/(?:file:\/\/)?\/home\/runner\/\S+/g,'[private-path]');
             line=line.replace(/(?:Bearer\s+\S+|sb_secret_[A-Za-z0-9_]+)/gi,'[redacted]');
             console.log(line.slice(0,155));

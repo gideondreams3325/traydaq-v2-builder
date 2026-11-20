@@ -163,12 +163,10 @@ jobs:
           if npm run typecheck > "$RUNNER_TEMP/traydaq-ops-user-tsc.log" 2>&1 &&
              node --test tests/*.test.mjs > "$RUNNER_TEMP/traydaq-ops-user-tests.log" 2>&1; then
             echo "PASS: Android user TypeScript and tests"
-            grep -E '^# (tests|pass|fail) [0-9]+
- "$RUNNER_TEMP/traydaq-ops-user-tests.log" | tail -3 || true
+             tail -3 "$RUNNER_TEMP/traydaq-ops-user-tests.log" || true
           else
             echo "::error::FAIL: Android user validation"
-            grep -E '^# (tests|pass|fail) [0-9]+
- "$RUNNER_TEMP/traydaq-ops-user-tests.log" | tail -3 || true
+             tail -3 "$RUNNER_TEMP/traydaq-ops-user-tests.log" || true
             exit 1
           fi
       - name: Prepare Deno

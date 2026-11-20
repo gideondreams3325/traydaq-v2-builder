@@ -1,0 +1,40 @@
+name: TRAYDAQ STAFF 1.0.25 (28) Version & Security QA
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/staff-1025-28-version-contract-qa.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 280afb5eedc62a2d08d46a8af9d87cec10f00805
+          token: "${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}"
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Staff dependencies
+        working-directory: private-src/admin-native
+        run: npm install --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+      - name: Run all Staff security tests and TypeScript
+        working-directory: private-src/admin-native
+        run: |
+          npm run test:security > "$RUNNER_TEMP/security.log" 2>&1 || {
+            grep -E '^not ok |^# (tests|pass|fail)' "$RUNNER_TEMP/security.log" | tail -20 || true
+            exit 1
+          }
+          npm run typecheck > "$RUNNER_TEMP/tsc.log" 2>&1 || {
+            echo "::error::Staff TypeScript failed"
+            exit 1
+          }
+          echo "PASS: Staff 1.0.25 full security suite and TypeScript"
+          grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/security.log" | tail -3 || true
+# No signing or Android binary built. 

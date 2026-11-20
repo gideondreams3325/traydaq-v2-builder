@@ -1,0 +1,135 @@
+name: TRAYDAQ Traydrive Model 1 Directory PR556 Source QA
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/traydrive-directory-pr556-20261120.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydrive-directory-pr556-validation
+  cancel-in-progress: false
+env:
+  SOURCE_SHA: 'af5474bfe163395f458bab2d91eb659a7abf06da'
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  web:
+    name: Web source tests, TypeScript and Cloudflare asset build
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Verify immutable private source
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install locked web dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Model 1 focused source tests
+        working-directory: private-src
+        run: node --test tests/traydrive-directory-model1.test.mjs
+      - name: Full web regressions
+        working-directory: private-src
+        run: npm test
+      - name: Strict web TypeScript
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Cloudflare-targeted build (no deploy)
+        working-directory: private-src
+        run: npm run build
+  android:
+    name: Android full regressions, TypeScript and JS export
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Verify immutable private source
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked Android dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Native full regression suite
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Native TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android JS export (no APK/AAB)
+        working-directory: private-src/mobile
+        run: npm run export:android
+  staff:
+    name: Native Staff access tests and TypeScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Verify immutable private source
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/admin-native/package-lock.json
+      - name: Install locked Staff dependencies
+        working-directory: private-src/admin-native
+        run: npm ci --no-audit --no-fund
+      - name: Staff native security regression suite
+        working-directory: private-src/admin-native
+        run: npm run test:security
+      - name: Staff TypeScript
+        working-directory: private-src/admin-native
+        run: npm run typecheck
+  deno:
+    name: Directory-only Edge function typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Verify immutable private source
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Deno import and typecheck
+        working-directory: private-src
+        run: deno check --node-modules-dir=auto supabase/functions/firebase-traydrive/index.ts
+# Private source and user data are never uploaded as builder artifacts.
+# No database migration, Edge deployment, Cloudflare push, APK or AAB release.

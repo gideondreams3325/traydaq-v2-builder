@@ -240,3 +240,45 @@ jobs:
               exit 1
             fi
           done
+
+  main-baseline-root:
+    name: Control - exact pre-Traydrive main base full root tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 89be3c4c616f916a8aad119f29b926970c6f809a
+          path: baseline-src
+          persist-credentials: false
+          fetch-depth: 1
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: baseline-src/package-lock.json
+      - name: Install pre-feature locked dependencies
+        working-directory: baseline-src
+        shell: bash
+        run: |
+          if npm ci --no-audit --no-fund > "$RUNNER_TEMP/traydrive-baseline-install.log" 2>&1; then
+            echo "PASS: pre-Traydrive baseline dependencies installed"
+          else
+            echo "::error::FAIL: baseline dependency install"
+            exit 1
+          fi
+      - name: Compare original root tests without publishing private code
+        working-directory: baseline-src
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "89be3c4c616f916a8aad119f29b926970c6f809a"
+          if npm test > "$RUNNER_TEMP/traydrive-baseline-tests.log" 2>&1; then
+            echo "PASS: pre-Traydrive root regression suite"
+          else
+            echo "::error::FAIL: pre-Traydrive root regression suite"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydrive-baseline-tests.log" | tail -3 || true
+            grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/traydrive-baseline-tests.log" | sed -E 's/[^A-Za-z0-9 _:,.-]/-/g' | cut -c 1-125 | head -15 || true
+            exit 1
+          fi

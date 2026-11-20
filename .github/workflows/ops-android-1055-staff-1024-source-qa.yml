@@ -1,0 +1,91 @@
+name: TRAYDAQ Operations Android User 1.0.55 and Staff 1.0.24 QA
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/ops-android-1055-staff-1024-source-qa.yml
+permissions:
+  contents: read
+jobs:
+  user:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 2b20fc75c01896c9666ba985e56ef7d45b782c96
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Verify TRAYDAQ user package and fresh version
+        working-directory: private-src/mobile
+        run: |
+          node - <<'NODE'
+          const c=require('./app.json').expo;
+          if(c.version!=='1.0.55'||c.android?.versionCode!==57||c.android?.package!=='com.traydaq.app')
+            throw Error('Unexpected TRAYDAQ user app package or version');
+          console.log('PASS: TRAYDAQ user 1.0.55 (57)');
+          NODE
+      - name: Install, typecheck, test Android user without APK
+        working-directory: private-src/mobile
+        run: |
+          if npm ci --no-audit --no-fund > "$RUNNER_TEMP/ops-user-install.log" 2>&1 &&
+            npm run typecheck > "$RUNNER_TEMP/ops-user-ts.log" 2>&1 &&
+            node --test tests/*.test.mjs > "$RUNNER_TEMP/ops-user-tests.log" 2>&1; then
+              echo 'PASS: user dependency, TypeScript and tests'
+              grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/ops-user-tests.log" | tail -3 || true
+          else
+            echo '::error::FAIL: user Android source QA'
+            grep -E 'error TS[0-9]+' "$RUNNER_TEMP/ops-user-ts.log" 2>/dev/null | sed -E 's@.*[/]([^/():]+)\(([0-9]+),[0-9]+\): error (TS[0-9]+).*@\1:\2 \3@' | head -12 || true
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/ops-user-tests.log" 2>/dev/null | tail -3 || true
+            exit 1
+          fi
+  staff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 2b20fc75c01896c9666ba985e56ef7d45b782c96
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify independent staff package and fresh version
+        working-directory: private-src/admin-native
+        run: |
+          node - <<'NODE'
+          const c=require('./app.config.js').expo;
+          if(c.version!=='1.0.24'||c.android?.versionCode!==27||c.android?.package!=='com.traydaq.admin')
+            throw Error('Unexpected Staff package or version');
+          console.log('PASS: TRAYDAQ Staff 1.0.24 (27)');
+          NODE
+      - name: Install, typecheck, test Android Staff without APK
+        working-directory: private-src/admin-native
+        run: |
+          if npm install --no-audit --no-fund > "$RUNNER_TEMP/ops-staff-install.log" 2>&1 &&
+            npm run typecheck > "$RUNNER_TEMP/ops-staff-ts.log" 2>&1 &&
+            npm run test:security > "$RUNNER_TEMP/ops-staff-tests.log" 2>&1; then
+              echo 'PASS: Staff dependency, TypeScript and security tests'
+              grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/ops-staff-tests.log" | tail -3 || true
+          else
+            echo '::error::FAIL: Staff Android source QA'
+            grep -E 'error TS[0-9]+' "$RUNNER_TEMP/ops-staff-ts.log" 2>/dev/null | sed -E 's@.*[/]([^/():]+)\(([0-9]+),[0-9]+\): error (TS[0-9]+).*@\1:\2 \3@' | head -12 || true
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/ops-staff-tests.log" 2>/dev/null | tail -3 || true
+            exit 1
+          fi
+# Source-only quality checks. Do not sign, release or upload apps here.

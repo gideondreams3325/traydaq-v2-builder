@@ -10,7 +10,7 @@ concurrency:
   group: traydrive-directory-pr556-validation
   cancel-in-progress: false
 env:
-  SOURCE_SHA: 'f8626a10515d0d82da88e4ec53eaa76e4f16ca07'
+  SOURCE_SHA: '8bd3b61a8e7a453f6122aa8eb2efbc33543ff61b'
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

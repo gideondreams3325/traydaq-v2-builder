@@ -86,7 +86,7 @@ jobs:
           else
             echo "::error::FAIL: root regression suite (private logs not published)"
             grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydrive-root-tests.log" | tail -3 || true
-            grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/traydrive-root-tests.log" | sed -E 's/[^A-Za-z0-9 _:,.-]/-/g' | cut -c 1-125 | head -10 || true
+            grep -E '^[[:space:]]*not ok [0-9]+ - ' "$RUNNER_TEMP/traydrive-root-tests.log" | sed -E 's/[^A-Za-z0-9 _:,.-]/-/g' | cut -c 1-125 | head -10 || true
             exit 1
           fi
       - name: TypeScript and Cloudflare-targeted build (never deploy)
@@ -152,7 +152,7 @@ jobs:
               grep -oE 'error TS[0-9]+' "$RUNNER_TEMP/traydrive-android-$label.log" | sort | uniq -c | head -15 || true
               node -e 'const fs=require("fs");for(const line of fs.readFileSync(process.argv[1],"utf8").split(/\r?\n/)){const m=line.match(/^([^()]+)\((\d+),(\d+)\): error (TS\d{4}):/);if(m)console.log("SAFE_TS_FILE: "+m[1].split("/").pop()+":"+m[2]+":"+m[3]+" "+m[4]);}' "$RUNNER_TEMP/traydrive-android-$label.log" || true
               grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydrive-android-$label.log" | tail -3 || true
-              grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/traydrive-android-$label.log" | sed -E 's/[^A-Za-z0-9 _:,.-]/-/g' | cut -c 1-125 | head -10 || true
+              grep -E '^[[:space:]]*not ok [0-9]+ - ' "$RUNNER_TEMP/traydrive-android-$label.log" | sed -E 's/[^A-Za-z0-9 _:,.-]/-/g' | cut -c 1-125 | head -10 || true
               failed=1
             fi
           done
@@ -200,7 +200,7 @@ jobs:
               echo "::error::FAIL: $label"
               grep -oE 'error TS[0-9]+' "$RUNNER_TEMP/traydrive-staff-$label.log" | sort | uniq -c | head -15 || true
               grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydrive-staff-$label.log" | tail -3 || true
-              grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/traydrive-staff-$label.log" | sed -E 's/[^A-Za-z0-9 _:,.-]/-/g' | cut -c 1-125 | head -10 || true
+              grep -E '^[[:space:]]*not ok [0-9]+ - ' "$RUNNER_TEMP/traydrive-staff-$label.log" | sed -E 's/[^A-Za-z0-9 _:,.-]/-/g' | cut -c 1-125 | head -10 || true
               failed=1
             fi
           done
@@ -279,6 +279,6 @@ jobs:
           else
             echo "::error::FAIL: pre-Traydrive root regression suite"
             grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydrive-baseline-tests.log" | tail -3 || true
-            grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/traydrive-baseline-tests.log" | sed -E 's/[^A-Za-z0-9 _:,.-]/-/g' | cut -c 1-125 | head -15 || true
+            grep -E '^[[:space:]]*not ok [0-9]+ - ' "$RUNNER_TEMP/traydrive-baseline-tests.log" | sed -E 's/[^A-Za-z0-9 _:,.-]/-/g' | cut -c 1-125 | head -15 || true
             exit 1
           fi

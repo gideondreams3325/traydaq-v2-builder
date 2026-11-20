@@ -66,5 +66,5 @@ jobs:
           deno-version: v2.x
       - name: Validate new service and Firebase access policy imports
         working-directory: private-src
-        run: deno check supabase/functions/firebase-creator-search-insights/index.ts
+        run: deno check --node-modules-dir=auto supabase/functions/firebase-creator-search-insights/index.ts
 # Source validation only. Never signs packages, releases APK or deploys a function.

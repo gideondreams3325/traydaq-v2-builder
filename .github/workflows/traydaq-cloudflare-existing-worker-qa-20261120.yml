@@ -1,0 +1,57 @@
+name: TRAYDAQ Cloudflare Three Existing Workers Release QA (No Deploy)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/traydaq-cloudflare-existing-worker-qa-20261120.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fd04d384db412f171d33b557983d53d63259c189
+          path: private-src
+          token: "${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}"
+          persist-credentials: false
+      - name: Verify approved private source
+        run: test "$(git rev-parse HEAD)" = "fd04d384db412f171d33b557983d53d63259c189"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify existing 3 Workers, exact project names and safe commands
+        run: node --test tests/cloudflare-worker-release-contract-20261120.test.mjs
+      - name: Build all three production packages using the existing app code
+        run: |
+          npm run build
+          npm run build:legal
+          npm run build:staff
+          test -s dist/index.html
+          test -s dist-legal/index.html
+          test -s dist-staff/index.html
+      - name: Independently compile User Worker (no deployment)
+        run: npm_config_yes=true npx --yes wrangler@4.45.0 deploy --dry-run --config wrangler.jsonc --outdir ../wrangler-qa-user
+      - name: Independently compile Legal Worker (no deployment)
+        run: npm_config_yes=true npx --yes wrangler@4.45.0 deploy --dry-run --config wrangler.legal.jsonc --outdir ../wrangler-qa-legal
+      - name: Independently compile Staff Worker (no deployment)
+        run: npm_config_yes=true npx --yes wrangler@4.45.0 deploy --dry-run --config wrangler.staff.jsonc --outdir ../wrangler-qa-staff
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TRAYDAQ-Existing-Cloudflare-3-Worker-Release-Packages
+          path: |
+            private-src/dist
+            private-src/dist-legal
+            private-src/dist-staff
+          retention-days: 14
+          if-no-files-found: error
+# Does not deploy or make Cloudflare API requests. Existing project names only.

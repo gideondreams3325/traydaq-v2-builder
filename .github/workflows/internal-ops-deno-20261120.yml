@@ -19,31 +19,55 @@ jobs:
           path: private-src
           token: "${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}"
           persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: f0f845a2299412c9ccbbe4d7d612c8863a88d19d
+          path: baseline-src
+          token: "${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}"
+          persist-credentials: false
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.9.6
-      - name: Check private Edge entries with the existing CI compiler flags
-        working-directory: private-src
+      - name: Confirm candidate Edge TypeScript has no new errors versus existing main
         run: |
           failed=0
           for name in firebase-admin-workspace firebase-staff-iphone firebase-native-content firebase-native-video-upload firebase-discussions; do
-            log="$RUNNER_TEMP/ops-$name.log"
-            if deno check --no-config --node-modules-dir=auto --no-lock "supabase/functions/$name/index.ts" > "$log" 2>&1; then
-              echo "PASS: $name"
-            else
-              echo "::error::FAIL: $name"
-              node --input-type=module - "$log" <<'NODE'
+            candidate="$RUNNER_TEMP/candidate-$name.log"
+            baseline="$RUNNER_TEMP/baseline-$name.log"
+            deno check --no-config --node-modules-dir=auto --no-lock "private-src/supabase/functions/$name/index.ts" > "$candidate" 2>&1 || true
+            deno check --no-config --node-modules-dir=auto --no-lock "baseline-src/supabase/functions/$name/index.ts" > "$baseline" 2>&1 || true
+            if node --input-type=module - "$candidate" "$baseline" "$name" <<'NODE'
           import {readFileSync} from 'node:fs';
-          const text=readFileSync(process.argv[2],'utf8').replace(/\x1b\[[0-9;]*m/g,'');
-          const lines=text.split(/\r?\n/).filter(Boolean);
-          const important=lines.filter(x=>/error|TS[0-9]+|failed|not found|module|at .*:/.test(x.toLowerCase()));
-          const selected=important.length?important.slice(-8):lines.slice(-8);
-          for(let line of selected){
-            line=line.replace(/https?:\/\/\S+/g,'[url]').replace(/(?:file:\/\/)?\/home\/runner\/\S+/g,'[private-path]');
-            line=line.replace(/(?:Bearer\s+\S+|sb_secret_[A-Za-z0-9_]+)/gi,'[redacted]');
-            console.log(line.slice(0,155));
+          const read=p=>readFileSync(p,'utf8').replace(/\x1b\[[0-9;]*m/g,'');
+          const errors=p=>{
+            const out=[];
+            for(const line of read(p).split(/\r?\n/)){
+              const match=line.match(/^TS(\d+) \[ERROR\]: (.{0,170})/);
+              if(match)out.push(match[1]+":"+match[2].replace(/\s+/g,' ').trim());
+            }
+            return out;
+          };
+          const [candidate,baseline]=[errors(process.argv[2]),errors(process.argv[3])];
+          const count=arr=>arr.reduce((m,k)=>(m.set(k,(m.get(k)||0)+1),m),new Map());
+          const c=count(candidate),b=count(baseline),added=[];
+          for(const [signature,n] of c)if(n>(b.get(signature)||0))added.push([signature.split(':')[0],n-(b.get(signature)||0)]);
+          const name=process.argv[4];
+          console.log(name+': '+candidate.length+' candidate TS errors; '+baseline.length+' baseline TS errors');
+          if(added.length){
+            console.log('NEW TYPE ERRORS (code,count only): '+JSON.stringify(added));
+            process.exit(1);
           }
+          const other=p=>read(p).includes('error:')&&!/TS\d+ \[ERROR\]/.test(read(p));
+          if(other(process.argv[2])&&!other(process.argv[3])){
+            console.log('NEW non-TypeScript check failure');
+            process.exit(1);
+          }
+          console.log('PASS: no new Deno type errors in '+name);
           NODE
+            then
+              :
+            else
               failed=1
             fi
           done

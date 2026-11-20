@@ -130,7 +130,7 @@ jobs:
       - name: Install native Staff dependencies
         working-directory: private-src/admin-native
         run: |
-          if npm ci --no-audit --no-fund > "$RUNNER_TEMP/traydaq-ops-staff-install.log" 2>&1; then
+          if npm install --no-audit --no-fund > "$RUNNER_TEMP/traydaq-ops-staff-install.log" 2>&1; then
             echo "PASS: native Staff dependencies installed"
           else
             echo "::error::FAIL: native Staff install"

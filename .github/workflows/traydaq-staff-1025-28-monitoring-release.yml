@@ -7,7 +7,7 @@ on:
   push:
     branches: [main]
     paths:
-      - ".github/workflows/traydaq-staff-1025-28-ops-release.yml"
+      - ".github/workflows/traydaq-staff-1025-28-monitoring-release.yml"
 
 permissions:
   contents: read

@@ -277,15 +277,13 @@ jobs:
           if npm test > "$RUNNER_TEMP/traydrive-baseline-tests.log" 2>&1; then
             echo "PASS: pre-Traydrive main baseline is clean"
           else
-            # A control is expected to show the four *known* failures already
-            # present before Traydrive. Unexpected/new failures must fail CI.
-            echo "CONTROL: original main baseline has test failures; fingerprinting them"
-            grep -E '^# (tests|pass|fail) [0-9]+
- "$RUNNER_TEMP/traydrive-baseline-tests.log" | tail -3 || true
+            # This pre-feature control has four known failures; new failures
+            # must still fail this control and the feature runs independently.
+            echo "CONTROL: exact pre-Traydrive baseline has known failures"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydrive-baseline-tests.log" | tail -3 || true
             grep -E '^[[:space:]]*not ok [0-9]+ - ' "$RUNNER_TEMP/traydrive-baseline-tests.log" | sed -E 's/[^A-Za-z0-9 _:,.-]/-/g' | cut -c 1-125 | head -15 || true
             [ "$(grep -Ec '^[[:space:]]*not ok [0-9]+ - ' "$RUNNER_TEMP/traydrive-baseline-tests.log")" -eq 4 ] || exit 1
-            grep -Eq '^# fail 4
- "$RUNNER_TEMP/traydrive-baseline-tests.log" || exit 1
+            grep -Eq '^# fail 4$' "$RUNNER_TEMP/traydrive-baseline-tests.log" || exit 1
             for name in \
               "native Android keeps inline discovery text clear of the fixed engagement actions" \
               "iPhone staff legal editor is visible only inside assigned legal-aid department" \
@@ -296,5 +294,5 @@ jobs:
                 exit 1
               }
             done
-            echo "::notice::CONTROL MATCH: exactly four pre-existing main failures reproduced; feature candidate must pass its own full suite"
+            echo "::notice::CONTROL MATCH: exactly four pre-existing main failures reproduced"
           fi

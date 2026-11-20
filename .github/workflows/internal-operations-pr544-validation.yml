@@ -33,7 +33,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: eb1cd5f98252546a76cebd21cf588b26292f1dc7
+          ref: 109725a4e819f09c3f1dd82df3c65c1c58e7151a
           path: private-src
           token: "${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}"
           persist-credentials: false
@@ -64,6 +64,15 @@ jobs:
             grep "^not ok " "$RUNNER_TEMP/traydaq-ops-tests.log" | cut -d " " -f3 || true
             grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-ops-tests.log" || true
             exit 1
+          fi
+      - name: Preflight candidate web TypeScript before long regressions
+        working-directory: private-src
+        run: |
+          if npm run typecheck > "$RUNNER_TEMP/traydaq-ops-preflight-tsc.log" 2>&1; then
+            echo "PASS: candidate web TypeScript preflight"
+          else
+            echo "::warning::Candidate TypeScript preflight errors (basename and TS code only)"
+            grep -E 'error TS[0-9]+' "$RUNNER_TEMP/traydaq-ops-preflight-tsc.log" | sed -E 's@.*[/]([^/():]+)\(([0-9]+),[0-9]+\): error (TS[0-9]+).*@\1:\2 \3@' | head -20 || true
           fi
       - name: Run candidate web regressions with sanitized results
         working-directory: private-src
@@ -125,6 +134,9 @@ jobs:
             echo "PASS: web typecheck and Cloudflare build"
           else
             echo "::error::FAIL: web typecheck or Cloudflare build"
+            if [ -f "$RUNNER_TEMP/traydaq-ops-web-tsc.log" ]; then
+              grep -E 'error TS[0-9]+' "$RUNNER_TEMP/traydaq-ops-web-tsc.log" | sed -E 's@.*[/]([^/():]+)\(([0-9]+),[0-9]+\): error (TS[0-9]+).*@\1:\2 \3@' | head -20 || true
+            fi
             exit 1
           fi
       - name: iPhone Staff TypeScript and bundle

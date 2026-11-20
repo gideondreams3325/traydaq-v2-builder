@@ -1,0 +1,71 @@
+name: TRAYDAQ Android User 1.0.57 (59) Insights pre-release QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/traydaq-user-1057-59-insights-pre-release-qa-20261120.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PRIVATE_SOURCE_SHA: 'eb2c01db89f350155577237e83139510ffab046b'
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android:
+    name: Android full unit and native export validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Verify checked-out exact private commit and changes
+        working-directory: private-src
+        run: |
+          test "$(git rev-parse HEAD)" = "$PRIVATE_SOURCE_SHA"
+          node -e "const a=require('./mobile/app.json').expo;if(a.version!=='1.0.57'||a.android.versionCode!==59||a.android.package!=='com.traydaq.app')process.exit(1)"
+          test -f mobile/src/new-design/CreatorSearchInsightsPanel.tsx
+          test -f supabase/functions/firebase-creator-search-insights/index.ts
+          test -f supabase/migrations/20261120180000_creator_search_insights_privacy.sql
+          node --test mobile/tests/creator-search-insights-android-20261120.test.mjs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked Android dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Complete Android regression suite
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Strict TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Validate native export without building APK
+        working-directory: private-src/mobile
+        run: npm run export:android
+  edge:
+    name: Search Insights Deno service typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.PRIVATE_SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Validate new service and Firebase access policy imports
+        working-directory: private-src
+        run: deno check --node-modules-dir=auto supabase/functions/firebase-creator-search-insights/index.ts
+# Source validation only. Never signs packages, releases APK or deploys a function.

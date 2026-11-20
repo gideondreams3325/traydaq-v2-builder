@@ -219,7 +219,9 @@ jobs:
             if deno check "$entry" > "$RUNNER_TEMP/traydrive-deno.log" 2>&1; then
               echo "PASS: Deno transport typecheck"
             else
-              echo "::error::FAIL: Deno transport typecheck (private diagnostics withheld)"
+              echo "::error::FAIL: Deno source check, entry: $entry"
+              grep -Eo 'TS[0-9]{4}|ERR_[A-Z_]+|NetworkError|Module not found|Cannot find|Could not resolve|Failed to fetch|Import failed' "$RUNNER_TEMP/traydrive-deno.log" | sort -u | head -15 || true
+              echo "SAFE_DENO_BYTES: $(wc -c < "$RUNNER_TEMP/traydrive-deno.log")"
               exit 1
             fi
           done

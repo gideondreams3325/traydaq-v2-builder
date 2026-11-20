@@ -99,11 +99,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-          cache-dependency-path: private-src/admin-native/package-lock.json
-      - name: Install locked Staff dependencies
+          # Staff package intentionally has no committed lockfile yet.
+      - name: Install Staff dependencies for source validation
         working-directory: private-src/admin-native
-        run: npm ci --no-audit --no-fund
+        run: npm install --no-package-lock --no-audit --no-fund
       - name: Staff native security regression suite
         working-directory: private-src/admin-native
         run: npm run test:security

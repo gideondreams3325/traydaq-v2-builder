@@ -33,7 +33,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 109725a4e819f09c3f1dd82df3c65c1c58e7151a
+          ref: 146c26cc2a9c1bd94d22943e9e8eadda31477fb1
           path: private-src
           token: "${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}"
           persist-credentials: false
@@ -56,7 +56,7 @@ jobs:
       - name: Verify operations security and source contracts
         working-directory: private-src
         run: |
-          if node --test tests/internal-operations-foundation-20261120.test.mjs tests/internal-operations-expanded-20261120.test.mjs > "$RUNNER_TEMP/traydaq-ops-tests.log" 2>&1; then
+          if node --test tests/internal-operations-foundation-20261120.test.mjs tests/internal-operations-expanded-20261120.test.mjs tests/internal-operations-support-diagnostics-20261120.test.mjs > "$RUNNER_TEMP/traydaq-ops-tests.log" 2>&1; then
             echo "PASS: operations source tests"
             grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-ops-tests.log" || true
           else
@@ -140,6 +140,7 @@ jobs:
             exit 1
           fi
       - name: iPhone Staff TypeScript and bundle
+        if: always()
         working-directory: private-src
         run: |
           if npm run typecheck:staff > "$RUNNER_TEMP/traydaq-ops-iphone-tsc.log" 2>&1 &&
@@ -150,6 +151,7 @@ jobs:
             exit 1
           fi
       - name: Install native Staff dependencies
+        if: always()
         working-directory: private-src/admin-native
         run: |
           if npm install --no-audit --no-fund > "$RUNNER_TEMP/traydaq-ops-staff-install.log" 2>&1; then
@@ -159,6 +161,7 @@ jobs:
             exit 1
           fi
       - name: Native Staff TypeScript and security tests
+        if: always()
         working-directory: private-src/admin-native
         run: |
           if npm run typecheck > "$RUNNER_TEMP/traydaq-ops-staff-tsc.log" 2>&1 &&
@@ -167,10 +170,12 @@ jobs:
             grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-ops-staff-tests.log" | tail -3 || true
           else
             echo "::error::FAIL: native Staff validation"
+            grep -E 'error TS[0-9]+' "$RUNNER_TEMP/traydaq-ops-staff-tsc.log" | sed -E 's@.*[/]([^/():]+)\(([0-9]+),[0-9]+\): error (TS[0-9]+).*@\1:\2 \3@' | head -15 || true
             grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-ops-staff-tests.log" | tail -3 || true
             exit 1
           fi
       - name: Install Android-user dependencies
+        if: always()
         working-directory: private-src/mobile
         run: |
           if npm ci --no-audit --no-fund > "$RUNNER_TEMP/traydaq-ops-user-install.log" 2>&1; then
@@ -180,6 +185,7 @@ jobs:
             exit 1
           fi
       - name: Android-user TypeScript and source tests
+        if: always()
         working-directory: private-src/mobile
         run: |
           if npm run typecheck > "$RUNNER_TEMP/traydaq-ops-user-tsc.log" 2>&1 &&
@@ -188,20 +194,24 @@ jobs:
              tail -3 "$RUNNER_TEMP/traydaq-ops-user-tests.log" || true
           else
             echo "::error::FAIL: Android user validation"
+            grep -E 'error TS[0-9]+' "$RUNNER_TEMP/traydaq-ops-user-tsc.log" | sed -E 's@.*[/]([^/():]+)\(([0-9]+),[0-9]+\): error (TS[0-9]+).*@\1:\2 \3@' | head -15 || true
              tail -3 "$RUNNER_TEMP/traydaq-ops-user-tests.log" || true
             exit 1
           fi
       - name: Prepare Deno
+        if: always()
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
       - name: Typecheck modified Firebase Edge services
+        if: always()
         working-directory: private-src
         run: |
           if deno check             supabase/functions/firebase-native-video-upload/index.ts             supabase/functions/firebase-native-content/index.ts             supabase/functions/firebase-discussions/index.ts             supabase/functions/firebase-admin-workspace/index.ts             supabase/functions/firebase-staff-iphone/index.ts > "$RUNNER_TEMP/traydaq-ops-deno.log" 2>&1; then
             echo "PASS: changed Supabase Edge Function Deno types"
           else
             echo "::error::FAIL: Supabase Edge Function TypeScript"
+            grep -E 'error: TS[0-9]+|TS[0-9]+' "$RUNNER_TEMP/traydaq-ops-deno.log" | sed -E 's@.*[/]([^/():]+):([0-9]+):([0-9]+).*@(\1:\2)@' | head -15 || true
             exit 1
           fi
       - name: Enforce no new regression failures

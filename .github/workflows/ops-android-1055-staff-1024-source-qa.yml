@@ -45,6 +45,20 @@ jobs:
               grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/ops-user-tests.log" | tail -3 || true
           else
             echo '::error::FAIL: user Android source QA'
+            node --input-type=module - "$RUNNER_TEMP/ops-user-tests.log" <<'NODE'
+          import {readFileSync} from 'node:fs';
+          const path=process.argv[2];
+          let source='';try{source=readFileSync(path,'utf8');}catch{}
+          const chunks=source.split(/\n(?=not ok \d+ - )/);
+          const hits=new Set();
+          for(const chunk of chunks){
+            if(!/^not ok \d+ - /.test(chunk))continue;
+            const matches=[...chunk.matchAll(/(?:\/|\\)tests(?:\/|\\)([a-zA-Z0-9._-]+\.test\.mjs)/g)];
+            for(const m of matches)hits.add(m[1]);
+          }
+          console.log('Failing regression file basenames:',[...hits].sort().join(', ')||'not available');
+          NODE
+
             grep -E 'error TS[0-9]+' "$RUNNER_TEMP/ops-user-ts.log" 2>/dev/null | sed -E 's@.*[/]([^/():]+)\(([0-9]+),[0-9]+\): error (TS[0-9]+).*@\1:\2 \3@' | head -12 || true
             grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/ops-user-tests.log" 2>/dev/null | tail -3 || true
             exit 1
@@ -84,6 +98,20 @@ jobs:
               grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/ops-staff-tests.log" | tail -3 || true
           else
             echo '::error::FAIL: Staff Android source QA'
+            node --input-type=module - "$RUNNER_TEMP/ops-staff-tests.log" <<'NODE'
+          import {readFileSync} from 'node:fs';
+          const path=process.argv[2];
+          let source='';try{source=readFileSync(path,'utf8');}catch{}
+          const chunks=source.split(/\n(?=not ok \d+ - )/);
+          const hits=new Set();
+          for(const chunk of chunks){
+            if(!/^not ok \d+ - /.test(chunk))continue;
+            const matches=[...chunk.matchAll(/(?:\/|\\)tests(?:\/|\\)([a-zA-Z0-9._-]+\.test\.mjs)/g)];
+            for(const m of matches)hits.add(m[1]);
+          }
+          console.log('Failing regression file basenames:',[...hits].sort().join(', ')||'not available');
+          NODE
+
             grep -E 'error TS[0-9]+' "$RUNNER_TEMP/ops-staff-ts.log" 2>/dev/null | sed -E 's@.*[/]([^/():]+)\(([0-9]+),[0-9]+\): error (TS[0-9]+).*@\1:\2 \3@' | head -12 || true
             grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/ops-staff-tests.log" 2>/dev/null | tail -3 || true
             exit 1

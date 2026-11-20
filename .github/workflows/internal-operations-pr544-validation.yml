@@ -1,0 +1,119 @@
+name: TRAYDAQ Internal Operations PR544 source-only validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/internal-operations-pr544-validation.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: traydaq-internal-operations-pr544-qa
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: "1"
+    steps:
+      - name: Verify private source token exists
+        env:
+          SOURCE_TOKEN_CONFIGURED: "${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}"
+        run: |
+          if [ "$SOURCE_TOKEN_CONFIGURED" != "true" ]; then
+            echo "::error::Read-only TRAYDAQ source token missing"
+            exit 1
+          fi
+      - name: Check out private PR 544 source without persisting credentials
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 8c9e40db8baa114cde5d90425abcd1eafa7e8054
+          path: private-src
+          token: "${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}"
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Prepare Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install private dependencies
+        working-directory: private-src
+        run: |
+          if npm ci --no-audit --no-fund > "$RUNNER_TEMP/traydaq-ops-install.log" 2>&1; then
+            echo "PASS: dependencies installed"
+          else
+            echo "::error::FAIL: dependency installation; details remain private"
+            exit 1
+          fi
+      - name: Verify operations security and source contracts
+        working-directory: private-src
+        run: |
+          if node --test tests/internal-operations-foundation-20261120.test.mjs > "$RUNNER_TEMP/traydaq-ops-tests.log" 2>&1; then
+            echo "PASS: operations source tests"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-ops-tests.log" || true
+          else
+            echo "::error::FAIL: operations source tests"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-ops-tests.log" || true
+            exit 1
+          fi
+      - name: Full private web regression test suite
+        working-directory: private-src
+        run: |
+          if npm test > "$RUNNER_TEMP/traydaq-ops-all-tests.log" 2>&1; then
+            echo "PASS: full web test suite"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-ops-all-tests.log" | tail -3 || true
+          else
+            echo "::error::FAIL: web regression suite; source diagnostics withheld"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-ops-all-tests.log" | tail -3 || true
+            exit 1
+          fi
+      - name: Customer web TypeScript and Cloudflare build
+        working-directory: private-src
+        run: |
+          if npm run typecheck > "$RUNNER_TEMP/traydaq-ops-web-tsc.log" 2>&1 &&
+             npm run build > "$RUNNER_TEMP/traydaq-ops-cloudflare-build.log" 2>&1; then
+            echo "PASS: web typecheck and Cloudflare build"
+          else
+            echo "::error::FAIL: web typecheck or Cloudflare build"
+            exit 1
+          fi
+      - name: iPhone Staff TypeScript and bundle
+        working-directory: private-src
+        run: |
+          if npm run typecheck:staff > "$RUNNER_TEMP/traydaq-ops-iphone-tsc.log" 2>&1 &&
+             npm run build:staff > "$RUNNER_TEMP/traydaq-ops-iphone-build.log" 2>&1; then
+            echo "PASS: iPhone Staff typecheck and build"
+          else
+            echo "::error::FAIL: iPhone Staff validation"
+            exit 1
+          fi
+      - name: Install native Staff dependencies
+        working-directory: private-src/admin-native
+        run: |
+          if npm ci --no-audit --no-fund > "$RUNNER_TEMP/traydaq-ops-staff-install.log" 2>&1; then
+            echo "PASS: native Staff dependencies installed"
+          else
+            echo "::error::FAIL: native Staff install"
+            exit 1
+          fi
+      - name: Native Staff TypeScript and security tests
+        working-directory: private-src/admin-native
+        run: |
+          if npm run typecheck > "$RUNNER_TEMP/traydaq-ops-staff-tsc.log" 2>&1 &&
+             npm run test:security > "$RUNNER_TEMP/traydaq-ops-staff-tests.log" 2>&1; then
+            echo "PASS: native Staff typecheck and security regressions"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-ops-staff-tests.log" | tail -3 || true
+          else
+            echo "::error::FAIL: native Staff validation"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-ops-staff-tests.log" | tail -3 || true
+            exit 1
+          fi
+# Source validation only. No APK, AAB, signing, deployment, or database writes.

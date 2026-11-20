@@ -1,0 +1,63 @@
+name: TRAYDAQ Recovery Final V2 Builder Validation (No Deploy)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/traydaq-recovery-production-final-20261120.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 757b64b24a5a941398b2500807fd1a42b6626fa4
+          path: private-src
+          token: "${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}"
+          persist-credentials: false
+      - name: Verify pinned candidate
+        run: test "$(git rev-parse HEAD)" = "757b64b24a5a941398b2500807fd1a42b6626fa4"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install app dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Test delivery, erasure isolation and safe recovery
+        run: |
+          node --test \
+            tests/operational-recovery-final-20261120.test.mjs \
+            tests/following-push-delivery.test.mjs \
+            tests/following-post-smart-notifications-20261113.test.mjs \
+            tests/internal-operations-activation-20261120.test.mjs \
+            tests/operations-automations-20261120.test.mjs \
+            tests/independent-text-moderation.test.mjs
+      - name: Cloudflare web TypeScript and production build
+        run: |
+          npm run typecheck
+          npm run build
+      - name: iPhone Staff TypeScript and production build
+        run: |
+          npm run typecheck:staff
+          npm run build:staff
+      - name: Install Android User dependencies
+        working-directory: private-src/mobile
+        run: npm install --no-audit --no-fund
+      - name: Android User TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Install Staff Android dependencies
+        working-directory: private-src/admin-native
+        run: npm install --no-audit --no-fund
+      - name: Staff Android TypeScript and security tests
+        working-directory: private-src/admin-native
+        run: |
+          npm run typecheck
+          npm run test:security
+# Source QA only: never release a public user app, modify private data, or create a video worker.

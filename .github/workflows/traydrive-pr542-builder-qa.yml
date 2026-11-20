@@ -1,0 +1,225 @@
+name: Traydrive PR 542 — V2 Builder Source QA (no APK/AAB)
+on:
+  push:
+    branches:
+      - validate/traydrive-pr542-20261120
+    paths:
+      - '.github/workflows/traydrive-pr542-builder-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydrive-pr542-exact-source-qa
+  cancel-in-progress: true
+env:
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+  TRAYDRIVE_SOURCE_SHA: 5f3e863f9535487fb3b6d7af2f70b7ede10db306
+jobs:
+  transport-source:
+    name: Focused transport source/security tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 5f3e863f9535487fb3b6d7af2f70b7ede10db306
+          path: private-src
+          persist-credentials: false
+          fetch-depth: 1
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify SHA and run transport regression tests without logging private source
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$TRAYDRIVE_SOURCE_SHA"
+          if node --test tests/traydrive-*.test.mjs > "$RUNNER_TEMP/traydrive-source.log" 2>&1; then
+            echo "PASS: Traydrive focused source contract suite"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydrive-source.log" || true
+          else
+            echo "::error::FAIL: Traydrive source test suite; source and failure excerpts are private"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydrive-source.log" || true
+            exit 1
+          fi
+
+  web-cloudflare:
+    name: Root tests, TypeScript and Cloudflare web asset build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 5f3e863f9535487fb3b6d7af2f70b7ede10db306
+          path: private-src
+          persist-credentials: false
+          fetch-depth: 1
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install pinned private dependencies without source logs
+        working-directory: private-src
+        shell: bash
+        run: |
+          if npm ci --no-audit --no-fund > "$RUNNER_TEMP/traydrive-web-install.log" 2>&1; then
+            echo "PASS: private root dependencies installed"
+          else
+            echo "::error::FAIL: root dependency installation"
+            exit 1
+          fi
+      - name: Run entire root regression suite
+        working-directory: private-src
+        shell: bash
+        run: |
+          if npm test > "$RUNNER_TEMP/traydrive-root-tests.log" 2>&1; then
+            echo "PASS: root regression suite"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydrive-root-tests.log" | tail -3 || true
+          else
+            echo "::error::FAIL: root regression suite (private logs not published)"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydrive-root-tests.log" | tail -3 || true
+            exit 1
+          fi
+      - name: TypeScript and Cloudflare-targeted build (never deploy)
+        working-directory: private-src
+        shell: bash
+        run: |
+          if npm run typecheck > "$RUNNER_TEMP/traydrive-web-ts.log" 2>&1; then
+            echo "PASS: web TypeScript"
+          else
+            echo "::error::FAIL: web TypeScript"
+            grep -oE 'error TS[0-9]+' "$RUNNER_TEMP/traydrive-web-ts.log" | sort | uniq -c | head -15 || true
+            exit 1
+          fi
+          if npm run build > "$RUNNER_TEMP/traydrive-web-build.log" 2>&1 && test -f dist/index.html; then
+            echo "PASS: Cloudflare web assets build (no deployment)"
+          else
+            echo "::error::FAIL: Cloudflare web asset build"
+            exit 1
+          fi
+
+  android-user:
+    name: Android source regressions, TypeScript and JavaScript export
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 5f3e863f9535487fb3b6d7af2f70b7ede10db306
+          path: private-src
+          persist-credentials: false
+          fetch-depth: 1
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Android dependency installation
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          if npm ci --no-audit --no-fund > "$RUNNER_TEMP/traydrive-android-install.log" 2>&1; then
+            echo "PASS: Android dependencies"
+          else
+            echo "::error::FAIL: Android dependencies"
+            exit 1
+          fi
+      - name: Android focused and full tests, TypeScript and JS export
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          for task in 'node --test tests/traydrive-native-source.test.mjs' \
+            'node --test tests/*.test.mjs' 'npm run typecheck' 'npm run export:android'; do
+            label=$(printf '%s' "$task" | tr -cs 'A-Za-z0-9' '-')
+            if bash -lc "$task" > "$RUNNER_TEMP/traydrive-android-$label.log" 2>&1; then
+              echo "PASS: $label"
+            else
+              echo "::error::FAIL: $label"
+              grep -oE 'error TS[0-9]+' "$RUNNER_TEMP/traydrive-android-$label.log" | sort | uniq -c | head -15 || true
+              grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydrive-android-$label.log" | tail -3 || true
+              exit 1
+            fi
+          done
+          echo "No APK or AAB was built"
+
+  staff-android:
+    name: Native Staff role isolation, tests and TypeScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 5f3e863f9535487fb3b6d7af2f70b7ede10db306
+          path: private-src
+          persist-credentials: false
+          fetch-depth: 1
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Native Staff dependency installation
+        working-directory: private-src/admin-native
+        shell: bash
+        run: |
+          if npm install --no-audit --no-fund > "$RUNNER_TEMP/traydrive-staff-install.log" 2>&1; then
+            echo "PASS: Staff dependencies"
+          else
+            echo "::error::FAIL: Staff dependencies"
+            exit 1
+          fi
+      - name: Native Staff security suite and TypeScript
+        working-directory: private-src/admin-native
+        shell: bash
+        run: |
+          set -euo pipefail
+          for task in 'node --test tests/traydrive-department-source.test.mjs' 'npm run test:security' 'npm run typecheck'; do
+            label=$(printf '%s' "$task" | tr -cs 'A-Za-z0-9' '-')
+            if bash -lc "$task" > "$RUNNER_TEMP/traydrive-staff-$label.log" 2>&1; then
+              echo "PASS: $label"
+            else
+              echo "::error::FAIL: $label"
+              grep -oE 'error TS[0-9]+' "$RUNNER_TEMP/traydrive-staff-$label.log" | sort | uniq -c | head -15 || true
+              grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydrive-staff-$label.log" | tail -3 || true
+              exit 1
+            fi
+          done
+
+  deno-edge:
+    name: Firebase transport API and private notification dispatcher Deno checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 5f3e863f9535487fb3b6d7af2f70b7ede10db306
+          path: private-src
+          persist-credentials: false
+          fetch-depth: 1
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Source-only Deno typechecks, no Edge deployment
+        working-directory: private-src
+        shell: bash
+        run: |
+          for entry in supabase/functions/firebase-traydrive/index.ts supabase/functions/firebase-traydrive-notifications/index.ts; do
+            if deno check "$entry" > "$RUNNER_TEMP/traydrive-deno.log" 2>&1; then
+              echo "PASS: Deno transport typecheck"
+            else
+              echo "::error::FAIL: Deno transport typecheck (private diagnostics withheld)"
+              exit 1
+            fi
+          done

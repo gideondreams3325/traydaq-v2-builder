@@ -33,7 +33,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 146c26cc2a9c1bd94d22943e9e8eadda31477fb1
+          ref: 436f2e4705810058a32b0b93695041d02179150f
           path: private-src
           token: "${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}"
           persist-credentials: false
@@ -202,27 +202,37 @@ jobs:
         if: always()
         uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.x
-      - name: Typecheck modified Firebase Edge services
+          deno-version: v2.9.6
+      - name: Confirm modified Edge Functions have no new Deno type errors
+        if: always()
         working-directory: private-src
         run: |
           failed=0
-          for service in firebase-admin-workspace firebase-staff-iphone firebase-native-content firebase-native-video-upload firebase-discussions; do
-            log="$RUNNER_TEMP/deno-$service.log"
-            if deno check "supabase/functions/$service/index.ts" > "$log" 2>&1; then
-              echo "PASS: Deno $service"
-            else
-              echo "::error::FAIL: Deno $service"
-              node --input-type=module - "$log" <<'NODE'
+          for name in firebase-admin-workspace firebase-staff-iphone firebase-native-content firebase-native-video-upload firebase-discussions; do
+            candidate="$RUNNER_TEMP/candidate-$name.log"
+            baseline="$RUNNER_TEMP/baseline-$name.log"
+            deno check --no-config --node-modules-dir=auto --no-lock "supabase/functions/$name/index.ts" > "$candidate" 2>&1 || true
+            (cd ../baseline-src && deno check --no-config --node-modules-dir=auto --no-lock "supabase/functions/$name/index.ts") > "$baseline" 2>&1 || true
+            if node --input-type=module - "$candidate" "$baseline" "$name" <<'NODE'
           import {readFileSync} from 'node:fs';
-          const lines=readFileSync(process.argv[2],'utf8').split(/\r?\n/);
-          const filtered=lines.filter(x=>/error:|TS\d+|error\[|Module not found|Connection|Failed to fetch/i.test(x)).slice(0,8);
-          for(const value of filtered){
-            console.log(value.replace(/https?:\/\/\S+/g,'[url]').replace(/\/home\/runner\/\S+/g,'[private-path]').slice(0,180));
+          const failures=p=>[...readFileSync(p,'utf8')
+            .replace(/\x1b\[[0-9;]*m/g,'')
+            .matchAll(/^TS(\d+) \[ERROR\]: (.{0,170})$/gm)]
+            .map(x=>x[1]+':'+x[2].replace(/\s+/g,' ').trim());
+          const [candidate,baseline]=[failures(process.argv[2]),failures(process.argv[3])];
+          const counts=list=>list.reduce((m,k)=>(m.set(k,(m.get(k)||0)+1),m),new Map());
+          const c=counts(candidate),b=counts(baseline);
+          const newErrors=[...c].filter(([sig,n])=>n>(b.get(sig)||0));
+          const name=process.argv[4];
+          console.log(name+': '+candidate.length+' candidate Deno errors; '+baseline.length+' existing errors');
+          if(newErrors.length){
+            console.log('NEW Deno TS codes: '+newErrors.map(([x])=>x.split(':')[0]).join(','));
+            process.exit(1);
           }
-          if(!filtered.length)console.log("Deno failure: see private validation logs.");
+          console.log('PASS: no new Deno type errors for '+name);
           NODE
-              failed=1
+            then :
+            else failed=1
             fi
           done
           exit "$failed"

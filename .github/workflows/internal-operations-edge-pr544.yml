@@ -1,0 +1,70 @@
+name: TRAYDAQ PR544 Edge Services Validation — No Deployment
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/internal-operations-edge-pr544.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  edge-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 146c26cc2a9c1bd94d22943e9e8eadda31477fb1
+          path: candidate
+          token: "${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}"
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: f0f845a2299412c9ccbbe4d7d612c8863a88d19d
+          path: baseline
+          token: "${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}"
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Semantic Edge checks with Deno pinned to existing working runner version
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/candidate-fn" "$RUNNER_TEMP/baseline-fn"
+          cp -R candidate/supabase/functions/. "$RUNNER_TEMP/candidate-fn/"
+          cp -R baseline/supabase/functions/. "$RUNNER_TEMP/baseline-fn/"
+          npx --yes deno@2.9.6 --version | head -n 1
+          rc=0
+          for service in firebase-admin-workspace firebase-staff-iphone firebase-native-content firebase-native-video-upload firebase-discussions; do
+            npx --yes deno@2.9.6 check --no-config --node-modules-dir=auto --no-lock "$RUNNER_TEMP/candidate-fn/$service/index.ts" > "$RUNNER_TEMP/candidate-$service.log" 2>&1 || rc=1
+            npx --yes deno@2.9.6 check --no-config --node-modules-dir=auto --no-lock "$RUNNER_TEMP/baseline-fn/$service/index.ts" > "$RUNNER_TEMP/baseline-$service.log" 2>&1 || true
+          done
+          python3 - <<'PY'
+          import collections,os,re,sys
+          root=os.environ['RUNNER_TEMP']
+          names=['firebase-admin-workspace','firebase-staff-iphone','firebase-native-content','firebase-native-video-upload','firebase-discussions']
+          regressions=[]
+          for name in names:
+            c=open(f'{root}/candidate-{name}.log',encoding='utf8',errors='replace').read()
+            b=open(f'{root}/baseline-{name}.log',encoding='utf8',errors='replace').read()
+            codes=lambda s:collections.Counter(re.findall(r'\bTS\d{4,5}\b',s))
+            next_err,old_err=codes(c),codes(b)
+            extra=next_err-old_err
+            if extra:
+              regressions.append(name)
+              print('FAIL',name,'new TS error codes',dict(extra))
+            elif next_err:
+              print('BASELINE',name,'same or fewer TS codes',dict(next_err))
+            elif re.search('error:',c,re.I):
+              regressions.append(name)
+              print('FAIL',name,'non-TS Deno error; category',c.splitlines()[-1][:120].replace(root,'[temp]'))
+            else:print('PASS',name,'Deno semantic typecheck')
+          if regressions:
+            print('BLOCKED: edge services with new diagnostics',', '.join(regressions))
+            sys.exit(1)
+          print('PASS: no new Edge TypeScript errors versus main')
+          PY
+# Source-only private comparison; never deploy backend or Android builds.

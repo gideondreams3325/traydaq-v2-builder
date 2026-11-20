@@ -139,6 +139,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          failed=0
           for task in 'node --test tests/traydrive-native-source.test.mjs' \
             'node --test tests/*.test.mjs' 'npm run typecheck' 'npm run export:android'; do
             label=$(printf '%s' "$task" | tr -cs 'A-Za-z0-9' '-')
@@ -148,9 +149,12 @@ jobs:
               echo "::error::FAIL: $label"
               grep -oE 'error TS[0-9]+' "$RUNNER_TEMP/traydrive-android-$label.log" | sort | uniq -c | head -15 || true
               grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydrive-android-$label.log" | tail -3 || true
-              exit 1
+              grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/traydrive-android-$label.log" | sed -E 's/[^A-Za-z0-9 _:,.-]/-/g' | cut -c 1-125 | head -10 || true
+              failed=1
             fi
           done
+          echo "Validation binaries were NOT built."
+          test "$failed" -eq 0
           echo "No APK or AAB was built"
 
   staff-android:
@@ -184,6 +188,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          failed=0
           for task in 'node --test tests/traydrive-department-source.test.mjs' 'npm run test:security' 'npm run typecheck'; do
             label=$(printf '%s' "$task" | tr -cs 'A-Za-z0-9' '-')
             if bash -lc "$task" > "$RUNNER_TEMP/traydrive-staff-$label.log" 2>&1; then
@@ -192,9 +197,12 @@ jobs:
               echo "::error::FAIL: $label"
               grep -oE 'error TS[0-9]+' "$RUNNER_TEMP/traydrive-staff-$label.log" | sort | uniq -c | head -15 || true
               grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydrive-staff-$label.log" | tail -3 || true
-              exit 1
+              grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/traydrive-staff-$label.log" | sed -E 's/[^A-Za-z0-9 _:,.-]/-/g' | cut -c 1-125 | head -10 || true
+              failed=1
             fi
           done
+          echo "Validation binaries were NOT built."
+          test "$failed" -eq 0
 
   deno-edge:
     name: Firebase transport API and private notification dispatcher Deno checks

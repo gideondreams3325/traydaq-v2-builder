@@ -53,7 +53,7 @@ jobs:
           import {readFileSync} from 'node:fs';
           import assert from 'node:assert/strict';
           const data=readFileSync(process.env.TEST_LOG,'utf8');
-          const failed=[...data.matchAll(/^not ok \\d+ - (.*)$/gm)].map(x=>x[1].trim()).sort();
+          const failed=[...data.matchAll(/^not ok \d+ - (.*)$/gm)].map(x=>x[1].trim()).sort();
           const known=[
             'native Android keeps inline discovery text clear of the fixed engagement actions',
             'iPhone staff legal editor is visible only inside assigned legal-aid department',

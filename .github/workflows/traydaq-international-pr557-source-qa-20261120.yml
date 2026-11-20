@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-international-pr557-source-qa
   cancel-in-progress: false
 env:
-  SOURCE_SHA: 'e640d3fe316787511e4832b9ef053601ab884708'
+  SOURCE_SHA: '69ec974c79bd6e474853ab68127b68a2e2415e06'
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -39,6 +39,31 @@ jobs:
       - name: Install pinned web packages
         working-directory: private-src
         run: npm ci --no-audit --no-fund
+      - name: Check syntax of changed Edge TypeScript without backend deployment
+        working-directory: private-src
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import ts from 'typescript';
+          import {readFileSync} from 'node:fs';
+          const files=[
+            'supabase/functions/firebase-native-content/index.ts',
+            'supabase/functions/firebase-admin-workspace/index.ts',
+            'supabase/functions/firebase-security-hub/index.ts'
+          ];
+          for(const file of files){
+            const output=ts.transpileModule(readFileSync(file,'utf8'),{
+              fileName:file,reportDiagnostics:true,
+              compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}
+            });
+            const errors=(output.diagnostics||[]).filter(d=>d.category===ts.DiagnosticCategory.Error);
+            if(errors.length){
+              console.error('::error::Edge syntax errors in '+file+': '+errors.map(e=>e.code).join(','));
+              process.exitCode=1;
+            }
+          }
+          if(!process.exitCode)console.log('PASS: Changed Edge functions parsed by TypeScript.');
+          NODE
       - name: Focused account-first and TrayLinks contracts (no source in public logs)
         working-directory: private-src
         shell: bash
@@ -180,5 +205,46 @@ jobs:
       - name: Typecheck changed Edge functions without deploy
         working-directory: private-src
         run: deno check --node-modules-dir=auto supabase/functions/firebase-native-content/index.ts supabase/functions/firebase-admin-workspace/index.ts supabase/functions/firebase-security-hub/index.ts
+
+  schema:
+    name: Ephemeral Postgres 16 Staff Review Migration, RLS and Decisions
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tray_international_qa
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d tray_international_qa"
+          --health-interval 4s --health-timeout 4s --health-retries 20
+    steps:
+      - name: Check out private pinned source read-only
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Verify immutable source SHA
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - name: Install Postgres client when missing
+        shell: bash
+        run: |
+          if ! command -v psql >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y postgresql-client
+          fi
+      - name: Test migration, direct Staff permissions, atomic removal and creator notice locally
+        working-directory: private-src
+        env:
+          TRAY_TEST_EPHEMERAL_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/tray_international_qa
+        run: bash scripts/tray-international-review-schema-smoke.sh
 # This is QA ONLY: no source artifact upload, release, migration apply,
 # Cloudflare deploy, Android APK or AAB creation.

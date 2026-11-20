@@ -1,0 +1,80 @@
+name: TRAYDAQ Cloudflare Production Diagnostics (Read Only)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/traydaq-cloudflare-no-deploy-diagnostics-20261120.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 88ff66b85581c295ab45ede9f91c51dbcea30031
+          token: "${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}"
+          persist-credentials: false
+          path: private-src
+      - name: Verify exact merged source
+        run: test "$(git rev-parse HEAD)" = "88ff66b85581c295ab45ede9f91c51dbcea30031"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install existing dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Build production user web, legal and Staff iPhone
+        run: |
+          npm run build
+          npm run build:legal
+          npm run build:staff
+          test -s dist/index.html
+          test -s dist-legal/index.html
+          test -s dist-staff/index.html
+      - name: Test user Worker Wrangler deployment package without credentials or network writes
+        run: |
+          npm_config_yes=true npx --yes wrangler@4.45.0 deploy --dry-run --config wrangler.jsonc --outdir ../wrangler-dry-user
+      - name: Test legal Worker Wrangler deployment package without credentials or network writes
+        run: |
+          npm_config_yes=true npx --yes wrangler@4.45.0 deploy --dry-run --config wrangler.legal.jsonc --outdir ../wrangler-dry-legal
+      - name: Test Staff Worker Wrangler package without credentials or network writes
+        run: |
+          cat > wrangler.staff.diagnostic.jsonc <<'JSON'
+          {
+            "name": "traydaq-staff-iphone",
+            "compatibility_date": "2026-11-20",
+            "assets": {"directory": "./dist-staff", "not_found_handling": "single-page-application"}
+          }
+          JSON
+          npm_config_yes=true npx --yes wrangler@4.45.0 deploy --dry-run --config wrangler.staff.diagnostic.jsonc --outdir ../wrangler-dry-staff
+      - name: Check existing Cloudflare Builder secrets without printing their values
+        env:
+          CF_API_TOKEN: "${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}"
+          CF_ACCOUNT_ID: "${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}"
+        run: |
+          if [[ -z "${CF_API_TOKEN:-}" ]]; then echo "::error::No existing Cloudflare API token is connected to V2 Builder."; exit 1; fi
+          if [[ -z "${CF_ACCOUNT_ID:-}" ]]; then echo "::error::No existing Cloudflare account ID is connected to V2 Builder."; exit 1; fi
+          echo "Both existing Cloudflare release values are configured (not exposed)."
+      - name: Read-only check of existing Cloudflare Worker inventory
+        env:
+          CLOUDFLARE_API_TOKEN: "${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}"
+          CLOUDFLARE_ACCOUNT_ID: "${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}"
+        run: |
+          curl --silent --show-error --fail --max-time 20 \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts" > "$RUNNER_TEMP/traydaq-workers.json"
+          jq -e '.success == true' "$RUNNER_TEMP/traydaq-workers.json" >/dev/null
+          for n in traydaq-v2 traydaq-legal traydaq-staff-iphone; do
+            if jq -e --arg name "$n" '.result | any(.id == $name)' "$RUNNER_TEMP/traydaq-workers.json" >/dev/null; then
+              echo "EXISTING: $n"
+            else
+              echo "::warning::Worker $n was not listed; will not create a new Worker."
+            fi
+          done
+# Read-only diagnostic. No deployment, no new Cloudflare projects, no customer data.

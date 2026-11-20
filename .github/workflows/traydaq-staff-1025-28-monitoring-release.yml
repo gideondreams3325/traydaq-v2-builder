@@ -179,7 +179,7 @@ jobs:
           node - <<'NODE'
           const fs=require('node:fs');
           const src=fs.readFileSync('tests/age-appeal-routing.test.mjs','utf8');
-          if(!src.includes('version: \\"1\\.0\\.25\\"')||!src.includes('versionCode: 28'))
+          if(!src.includes('1.0.25'.split('.').join(String.fromCharCode(92)+'.'))||!src.includes('versionCode: 28'))
             throw Error('Security regression expects a different Staff release version');
           console.log('Staff package and security version assertions aligned.');
           NODE

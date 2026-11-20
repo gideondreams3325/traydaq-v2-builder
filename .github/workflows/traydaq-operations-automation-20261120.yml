@@ -1,0 +1,69 @@
+name: TRAYDAQ Operations Automation 12-Area Validation (No Deploy)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/traydaq-operations-automation-20261120.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 56ec1980fb14638ff2c2b64d16c47545b77e7506
+          path: private-src
+          token: "${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}"
+          persist-credentials: false
+      - name: Verify exact private source revision
+        run: test "$(git rev-parse HEAD)" = "56ec1980fb14638ff2c2b64d16c47545b77e7506"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install web app
+        run: npm ci --no-audit --no-fund
+      - name: Operations + push + content moderation regression tests
+        run: |
+          node --test \
+            tests/operations-automations-20261120.test.mjs \
+            tests/following-push-delivery.test.mjs \
+            tests/following-post-smart-notifications-20261113.test.mjs \
+            tests/independent-text-moderation.test.mjs \
+            tests/internal-operations-activation-20261120.test.mjs \
+            tests/internal-operations-expanded-20261120.test.mjs \
+            tests/internal-operations-foundation-20261120.test.mjs \
+            tests/internal-operations-support-diagnostics-20261120.test.mjs
+      - name: User web TypeScript and Cloudflare production build
+        run: |
+          npm run typecheck
+          npm run build
+      - name: iPhone Staff TypeScript and production bundle
+        run: |
+          npm run typecheck:staff
+          npm run build:staff
+      - name: Install native Android User dependencies
+        working-directory: private-src/mobile
+        run: npm install --no-audit --no-fund
+      - name: Android User TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Install native Staff dependencies
+        working-directory: private-src/admin-native
+        run: npm install --no-audit --no-fund
+      - name: Staff Native TypeScript and security suite
+        working-directory: private-src/admin-native
+        run: |
+          npm run typecheck
+          npm run test:security
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Check updated live push Edge function
+        run: deno check supabase/functions/firebase-following-notifications/index.ts

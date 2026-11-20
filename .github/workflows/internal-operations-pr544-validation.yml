@@ -33,7 +33,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 8c9e40db8baa114cde5d90425abcd1eafa7e8054
+          ref: 2926ad1b5709dcbbd42b1933855a62cea22e0173
           path: private-src
           token: "${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}"
           persist-credentials: false
@@ -56,7 +56,7 @@ jobs:
       - name: Verify operations security and source contracts
         working-directory: private-src
         run: |
-          if node --test tests/internal-operations-foundation-20261120.test.mjs > "$RUNNER_TEMP/traydaq-ops-tests.log" 2>&1; then
+          if node --test tests/internal-operations-foundation-20261120.test.mjs tests/internal-operations-expanded-20261120.test.mjs > "$RUNNER_TEMP/traydaq-ops-tests.log" 2>&1; then
             echo "PASS: operations source tests"
             grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-ops-tests.log" || true
           else
@@ -146,6 +146,42 @@ jobs:
           else
             echo "::error::FAIL: native Staff validation"
             grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-ops-staff-tests.log" | tail -3 || true
+            exit 1
+          fi
+      - name: Install Android-user dependencies
+        working-directory: private-src/mobile
+        run: |
+          if npm ci --no-audit --no-fund > "$RUNNER_TEMP/traydaq-ops-user-install.log" 2>&1; then
+            echo "PASS: Android user dependencies installed"
+          else
+            echo "::error::FAIL: Android user dependencies"
+            exit 1
+          fi
+      - name: Android-user TypeScript and source tests
+        working-directory: private-src/mobile
+        run: |
+          if npm run typecheck > "$RUNNER_TEMP/traydaq-ops-user-tsc.log" 2>&1 &&
+             node --test tests/*.test.mjs > "$RUNNER_TEMP/traydaq-ops-user-tests.log" 2>&1; then
+            echo "PASS: Android user TypeScript and tests"
+            grep -E '^# (tests|pass|fail) [0-9]+
+ "$RUNNER_TEMP/traydaq-ops-user-tests.log" | tail -3 || true
+          else
+            echo "::error::FAIL: Android user validation"
+            grep -E '^# (tests|pass|fail) [0-9]+
+ "$RUNNER_TEMP/traydaq-ops-user-tests.log" | tail -3 || true
+            exit 1
+          fi
+      - name: Prepare Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Typecheck modified Firebase Edge services
+        working-directory: private-src
+        run: |
+          if deno check             supabase/functions/firebase-native-video-upload/index.ts             supabase/functions/firebase-native-content/index.ts             supabase/functions/firebase-discussions/index.ts             supabase/functions/firebase-admin-workspace/index.ts             supabase/functions/firebase-staff-iphone/index.ts > "$RUNNER_TEMP/traydaq-ops-deno.log" 2>&1; then
+            echo "PASS: changed Supabase Edge Function Deno types"
+          else
+            echo "::error::FAIL: Supabase Edge Function TypeScript"
             exit 1
           fi
 # Source validation only. No APK, AAB, signing, deployment, or database writes.

@@ -150,6 +150,7 @@ jobs:
             else
               echo "::error::FAIL: $label"
               grep -oE 'error TS[0-9]+' "$RUNNER_TEMP/traydrive-android-$label.log" | sort | uniq -c | head -15 || true
+              node -e 'const fs=require("fs");for(const line of fs.readFileSync(process.argv[1],"utf8").split(/\r?\n/)){const m=line.match(/^([^()]+)\((\d+),(\d+)\): error (TS\d{4}):/);if(m)console.log("SAFE_TS_FILE: "+m[1].split("/").pop()+":"+m[2]+":"+m[3]+" "+m[4]);}' "$RUNNER_TEMP/traydrive-android-$label.log" || true
               grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydrive-android-$label.log" | tail -3 || true
               grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/traydrive-android-$label.log" | sed -E 's/[^A-Za-z0-9 _:,.-]/-/g' | cut -c 1-125 | head -10 || true
               failed=1
@@ -233,6 +234,7 @@ jobs:
               echo "::error::FAIL: Deno source check, entry: $entry"
               grep -Eo 'TS[0-9]{4}|ERR_[A-Z_]+|NetworkError|Module not found|Cannot find|Could not resolve|Failed to fetch|Import failed' "$RUNNER_TEMP/traydrive-deno.log" | sort -u | head -15 || true
               echo "SAFE_DENO_BYTES: $(wc -c < "$RUNNER_TEMP/traydrive-deno.log")"
+              node -e 'const fs=require("fs");const lines=fs.readFileSync(process.argv[1],"utf8").split(/\r?\n/).filter(Boolean).slice(0,3);for(const line of lines)console.log("SAFE_DENO_HEAD: "+line.replace(/https?:\/\/\S+/g,"[URL]").replace(/\/home\/runner\/\S+/g,"[PRIVATE_PATH]").slice(0,160));' "$RUNNER_TEMP/traydrive-deno.log" || true
               exit 1
             fi
           done

@@ -10,7 +10,7 @@ concurrency:
   group: traydrive-directory-pr556-validation
   cancel-in-progress: false
 env:
-  SOURCE_SHA: '8498b36a9023c43b798bf2897b79e96cb85ef9e0'
+  SOURCE_SHA: '2ddd9b80d4c356cff3d823a47af7668a29ac934f'
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -154,3 +154,44 @@ jobs:
         run: deno check --node-modules-dir=auto supabase/functions/firebase-traydrive/index.ts
 # Private source and user data are never uploaded as builder artifacts.
 # No database migration, Edge deployment, Cloudflare push, APK or AAB release.
+
+  schema:
+    name: Private temporary PostgreSQL 16 directory migration/RLS/erasure test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: traydrive_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d traydrive_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Verify exact source revision
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - name: Ensure PostgreSQL client is installed
+        shell: bash
+        run: |
+          if ! command -v psql >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y postgresql-client
+          fi
+      - name: Apply migration ONLY to ephemeral runner DB and validate private RLS and erasure rules
+        working-directory: private-src
+        env:
+          TRAYDRIVE_TEST_DATABASE_URL: 'postgresql://postgres:postgres@127.0.0.1:5432/traydrive_ci'
+        run: bash scripts/traydrive-directory-schema-smoke.sh
+# All jobs are validation only. No production DB, Edge deploy, Cloudflare push or Android build.

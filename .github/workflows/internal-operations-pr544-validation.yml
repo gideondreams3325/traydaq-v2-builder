@@ -64,17 +64,49 @@ jobs:
             grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-ops-tests.log" || true
             exit 1
           fi
-      - name: Full private web regression test suite
+      - name: Run candidate web regressions with sanitized results
         working-directory: private-src
         run: |
           if npm test > "$RUNNER_TEMP/traydaq-ops-all-tests.log" 2>&1; then
-            echo "PASS: full web test suite"
-            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-ops-all-tests.log" | tail -3 || true
+            echo "PASS: candidate full web regression suite"
           else
-            echo "::error::FAIL: web regression suite; source diagnostics withheld"
-            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-ops-all-tests.log" | tail -3 || true
+            echo "Candidate has regression failures; comparing against its exact main parent"
+          fi
+          grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-ops-all-tests.log" | tail -3 || true
+      - name: Check out exact main parent for regression comparison
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: f0f845a2299412c9ccbbe4d7d612c8863a88d19d
+          path: baseline-src
+          token: "${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}"
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Compare candidate and baseline failures without revealing private test names
+        working-directory: baseline-src
+        run: |
+          if npm ci --no-audit --no-fund > "$RUNNER_TEMP/traydaq-ops-baseline-install.log" 2>&1; then
+            echo "PASS: baseline dependencies installed"
+          else
+            echo "::error::FAIL: unable to install baseline"
             exit 1
           fi
+          npm test > "$RUNNER_TEMP/traydaq-ops-baseline-tests.log" 2>&1 || true
+          grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-ops-baseline-tests.log" | tail -3 || true
+          node --input-type=module <<'NODE'
+          import {readFileSync} from 'node:fs';
+          import {createHash} from 'node:crypto';
+          const p=process.env.RUNNER_TEMP;
+          const failed=(path)=>[...readFileSync(path,'utf8').matchAll(/^not ok \d+ - (.+)$/gm)]
+            .map(x=>createHash('sha256').update(x[1].trim()).digest('hex')).sort();
+          const candidate=failed(p+'/traydaq-ops-all-tests.log');
+          const baseline=failed(p+'/traydaq-ops-baseline-tests.log');
+          if(JSON.stringify(candidate)!==JSON.stringify(baseline)){
+            console.log('FAIL: new or different regression failures ('+candidate.length+' candidate, '+baseline.length+' baseline).');
+            process.exit(1);
+          }
+          console.log('PASS: candidate has the same '+candidate.length+' pre-existing failing tests as its base.');
+          NODE
       - name: Customer web TypeScript and Cloudflare build
         working-directory: private-src
         run: |

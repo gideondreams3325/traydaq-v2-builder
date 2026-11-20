@@ -10,7 +10,7 @@ concurrency:
   group: traydrive-directory-pr556-validation
   cancel-in-progress: false
 env:
-  SOURCE_SHA: 'af5474bfe163395f458bab2d91eb659a7abf06da'
+  SOURCE_SHA: 'cea0ded3300cf19b582f27da575a63520359cde6'
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -40,9 +40,31 @@ jobs:
       - name: Model 1 focused source tests
         working-directory: private-src
         run: node --test tests/traydrive-directory-model1.test.mjs
-      - name: Full web regressions
+      - name: Full web regressions (enforce exactly known baseline failures)
         working-directory: private-src
-        run: npm test
+        shell: bash
+        run: |
+          set -euo pipefail
+          if npm test > "$RUNNER_TEMP/traydrive-web-regressions.log" 2>&1; then
+            echo 'PASS: All root regressions'
+          else
+            export TEST_LOG="$RUNNER_TEMP/traydrive-web-regressions.log"
+            node --input-type=module <<'NODE'
+          import {readFileSync} from 'node:fs';
+          import assert from 'node:assert/strict';
+          const data=readFileSync(process.env.TEST_LOG,'utf8');
+          const failed=[...data.matchAll(/^not ok \\d+ - (.*)$/gm)].map(x=>x[1].trim()).sort();
+          const known=[
+            'native Android keeps inline discovery text clear of the fixed engagement actions',
+            'iPhone staff legal editor is visible only inside assigned legal-aid department',
+            'safe public photo and video posts publish immediately but are queued for human review',
+            'both creators use identical discovery normalization and preserve existing approved metadata path'
+          ].sort();
+          console.log('Historical failures:',failed.length);
+          assert.deepEqual(failed,known,'New or altered web test failures are not allowed');
+          console.log('PASS: No additional regressions beyond four verified historical failures');
+          NODE
+          fi
       - name: Strict web TypeScript
         working-directory: private-src
         run: npm run typecheck

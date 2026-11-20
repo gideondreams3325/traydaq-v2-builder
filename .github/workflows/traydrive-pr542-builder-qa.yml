@@ -14,7 +14,7 @@ concurrency:
 env:
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
-  TRAYDRIVE_SOURCE_SHA: 3a19ae7876f7e5f6a69bb913aaf2575a5a8955a1
+  TRAYDRIVE_SOURCE_SHA: 5034ec7ed22ce6c57f585c21495fcd463adcc52f
 jobs:
   transport-source:
     name: Focused transport source/security tests
@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 3a19ae7876f7e5f6a69bb913aaf2575a5a8955a1
+          ref: 5034ec7ed22ce6c57f585c21495fcd463adcc52f
           path: private-src
           persist-credentials: false
           fetch-depth: 1
@@ -55,7 +55,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 3a19ae7876f7e5f6a69bb913aaf2575a5a8955a1
+          ref: 5034ec7ed22ce6c57f585c21495fcd463adcc52f
           path: private-src
           persist-credentials: false
           fetch-depth: 1
@@ -116,7 +116,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 3a19ae7876f7e5f6a69bb913aaf2575a5a8955a1
+          ref: 5034ec7ed22ce6c57f585c21495fcd463adcc52f
           path: private-src
           persist-credentials: false
           fetch-depth: 1
@@ -168,7 +168,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 3a19ae7876f7e5f6a69bb913aaf2575a5a8955a1
+          ref: 5034ec7ed22ce6c57f585c21495fcd463adcc52f
           path: private-src
           persist-credentials: false
           fetch-depth: 1
@@ -215,7 +215,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 3a19ae7876f7e5f6a69bb913aaf2575a5a8955a1
+          ref: 5034ec7ed22ce6c57f585c21495fcd463adcc52f
           path: private-src
           persist-credentials: false
           fetch-depth: 1

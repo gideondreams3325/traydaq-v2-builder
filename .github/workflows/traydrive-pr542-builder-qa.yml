@@ -14,7 +14,7 @@ concurrency:
 env:
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
-  TRAYDRIVE_SOURCE_SHA: aabe30085451403ca318df9cf7731a154d4b4f0d
+  TRAYDRIVE_SOURCE_SHA: 88271549b07aaf613888943df020af575ed2c128
 jobs:
   transport-source:
     name: Focused transport source/security tests
@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: aabe30085451403ca318df9cf7731a154d4b4f0d
+          ref: 88271549b07aaf613888943df020af575ed2c128
           path: private-src
           persist-credentials: false
           fetch-depth: 1
@@ -55,7 +55,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: aabe30085451403ca318df9cf7731a154d4b4f0d
+          ref: 88271549b07aaf613888943df020af575ed2c128
           path: private-src
           persist-credentials: false
           fetch-depth: 1
@@ -116,7 +116,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: aabe30085451403ca318df9cf7731a154d4b4f0d
+          ref: 88271549b07aaf613888943df020af575ed2c128
           path: private-src
           persist-credentials: false
           fetch-depth: 1
@@ -168,7 +168,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: aabe30085451403ca318df9cf7731a154d4b4f0d
+          ref: 88271549b07aaf613888943df020af575ed2c128
           path: private-src
           persist-credentials: false
           fetch-depth: 1
@@ -215,7 +215,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: aabe30085451403ca318df9cf7731a154d4b4f0d
+          ref: 88271549b07aaf613888943df020af575ed2c128
           path: private-src
           persist-credentials: false
           fetch-depth: 1
@@ -234,6 +234,7 @@ jobs:
               echo "::error::FAIL: Deno source check, entry: $entry"
               grep -Eo 'TS[0-9]{4}|ERR_[A-Z_]+|NetworkError|Module not found|Cannot find|Could not resolve|Failed to fetch|Import failed' "$RUNNER_TEMP/traydrive-deno.log" | sort -u | head -15 || true
               echo "SAFE_DENO_BYTES: $(wc -c < "$RUNNER_TEMP/traydrive-deno.log")"
+              node -e 'const fs=require("fs");const raw=fs.readFileSync(process.argv[1],"utf8");const z=raw.replace(/\x1b\[[0-9;]*m/g,"");const codes=[...z.matchAll(/TS\d{4}/g)];let n=0;const seen=new Set();for(const x of codes){const tail=z.slice(x.index,x.index+2500);const m=tail.match(/(?:file:\/\/\/)?([A-Za-z0-9_./-]+\.ts):(\d+):(\d+)/);if(!m)continue;const k=m[1].split("/").slice(-3).join("/") +":"+m[2]+":"+m[3]+" "+x[0];if(seen.has(k))continue;seen.add(k);console.log("SAFE_DENO_TYPE_LOCATION: "+k);if(++n>=60)break;}console.log("SAFE_DENO_TOTAL_CODES: "+codes.length);' "$RUNNER_TEMP/traydrive-deno.log" || true
               node -e 'const fs=require("fs");const lines=fs.readFileSync(process.argv[1],"utf8").replace(/\x1b\[[0-9;]*m/g,"").split(/\r?\n/);let shown=0;for(let i=0;i<lines.length&&shown<30;i++){const err=lines[i].match(/error:\s*(TS\d{4})/);if(!err)continue;for(let j=i+1;j<Math.min(lines.length,i+20);j++){const at=lines[j].match(/at file:\/\/\/?([^\s]+\.ts):(\d+):(\d+)/);if(!at)continue;console.log("SAFE_DENO_LOC: "+at[1].split("/").slice(-3).join("/") +":"+at[2]+":"+at[3]+" "+err[1]);shown++;break;}}' "$RUNNER_TEMP/traydrive-deno.log" || true
               node -e 'const fs=require("fs");const lines=fs.readFileSync(process.argv[1],"utf8").split(/\r?\n/).filter(Boolean).slice(0,3);for(const line of lines)console.log("SAFE_DENO_HEAD: "+line.replace(/https?:\/\/\S+/g,"[URL]").replace(/\/home\/runner\/\S+/g,"[PRIVATE_PATH]").slice(0,160));' "$RUNNER_TEMP/traydrive-deno.log" || true
               exit 1

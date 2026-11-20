@@ -1,0 +1,77 @@
+name: TRAYDAQ All-12 Monitoring Activation QA (No Deploy)
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/internal-monitoring-activation-20261120.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 700169621de2b001b2e7a06eb5b2fab60b967124
+          path: private-src
+          token: "${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}"
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify exact candidate SHA
+        run: test "$(git -C private-src rev-parse HEAD)" = "700169621de2b001b2e7a06eb5b2fab60b967124"
+      - name: Install web and Staff-web dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/npm-web.log" 2>&1
+      - name: Run new privacy and monitoring security contracts
+        working-directory: private-src
+        run: |
+          if node --test tests/internal-operations-activation-20261120.test.mjs > "$RUNNER_TEMP/monitoring-tests.log" 2>&1; then
+            echo "PASS: monitoring activation tests"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/monitoring-tests.log" || true
+          else
+            echo "::error::FAIL: monitoring activation tests"
+            grep -E '^not ok ' "$RUNNER_TEMP/monitoring-tests.log" | cut -d' ' -f3 || true
+            exit 1
+          fi
+      - name: Web TypeScript + Cloudflare production build
+        working-directory: private-src
+        run: |
+          if npm run typecheck > "$RUNNER_TEMP/web-tsc.log" 2>&1 &&
+             npm run build > "$RUNNER_TEMP/web-build.log" 2>&1; then
+            echo "PASS: Web TypeScript and Cloudflare build"
+          else
+            echo "::error::FAIL: Web TypeScript or build"
+            grep -E 'error TS[0-9]+' "$RUNNER_TEMP/web-tsc.log" | sed -E 's@.*[/]([^/():]+)\(([0-9]+),[0-9]+\): error (TS[0-9]+).*@\1:\2 \3@' | head -12 || true
+            exit 1
+          fi
+      - name: iPhone Staff TypeScript + production bundle
+        working-directory: private-src
+        run: |
+          if npm run typecheck:staff > "$RUNNER_TEMP/iphone-tsc.log" 2>&1 &&
+             npm run build:staff > "$RUNNER_TEMP/iphone-build.log" 2>&1; then
+            echo "PASS: iPhone Staff types and production bundle"
+          else
+            echo "::error::FAIL: iPhone Staff"
+            exit 1
+          fi
+      - name: Native Staff dependencies
+        working-directory: private-src/admin-native
+        run: npm install --no-audit --no-fund > "$RUNNER_TEMP/staff-npm.log" 2>&1
+      - name: Native Staff TypeScript and security suite
+        working-directory: private-src/admin-native
+        run: |
+          if npm run typecheck > "$RUNNER_TEMP/staff-tsc.log" 2>&1 &&
+             npm run test:security > "$RUNNER_TEMP/staff-security.log" 2>&1; then
+            echo "PASS: Native Staff TypeScript and security regression suite"
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/staff-security.log" | tail -3 || true
+          else
+            echo "::error::FAIL: Native Staff validation"
+            grep -E 'error TS[0-9]+' "$RUNNER_TEMP/staff-tsc.log" | head -12 || true
+            exit 1
+          fi
+# Source validation only. No APK/AAB build, database changes or deployment.

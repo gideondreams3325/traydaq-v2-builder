@@ -73,7 +73,14 @@ jobs:
           else
             echo "Candidate has regression failures; comparing against its exact main parent"
           fi
-          grep -E '^# (tests|pass|fail) [0-9]+
+          tail -5 "$RUNNER_TEMP/traydaq-ops-all-tests.log" || true
+          node --input-type=module <<'NODE'
+          import {readFileSync} from 'node:fs';
+          const report=readFileSync(process.env.RUNNER_TEMP+'/traydaq-ops-all-tests.log','utf8');
+          const failures=report.split(/\n(?=not ok \d+ - )/).filter(x=>/^not ok \d+ - /.test(x));
+          const files=new Set(failures.map(f=>f.match(/tests\/([a-zA-Z0-9._-]+\.test\.mjs)/)?.[1]).filter(Boolean));
+          console.log('Failing test file basenames:',[...files].sort().join(', ')||'unknown');
+          NODE
       - name: Check out exact main parent for regression comparison
         uses: actions/checkout@v4
         with:
@@ -103,10 +110,12 @@ jobs:
           const candidate=failed(p+'/traydaq-ops-all-tests.log');
           const baseline=failed(p+'/traydaq-ops-baseline-tests.log');
           if(JSON.stringify(candidate)!==JSON.stringify(baseline)){
-            console.log('FAIL: new or different regression failures ('+candidate.length+' candidate, '+baseline.length+' baseline).');
-            process.exit(1);
+            console.log('REGRESSIONS: new or different failures ('+candidate.length+' candidate, '+baseline.length+' baseline).');
+            const {writeFileSync}=await import('node:fs');
+            writeFileSync(p+'/traydaq-new-regressions.flag','yes');
+          }else{
+            console.log('PASS: candidate has the same '+candidate.length+' pre-existing failing tests as its base.');
           }
-          console.log('PASS: candidate has the same '+candidate.length+' pre-existing failing tests as its base.');
           NODE
       - name: Customer web TypeScript and Cloudflare build
         working-directory: private-src
@@ -183,6 +192,14 @@ jobs:
             echo "::error::FAIL: Supabase Edge Function TypeScript"
             exit 1
           fi
+      - name: Enforce no new regression failures
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/traydaq-new-regressions.flag" ]; then
+            echo "::error::Candidate has new regression failures compared with main"
+            exit 1
+          fi
+          echo "PASS: candidate did not add regressions"
 # Source validation only. No APK, AAB, signing, deployment, or database writes.
  "$RUNNER_TEMP/traydaq-ops-all-tests.log" | tail -3 || true
           # Print only failing *test file basenames*; no assertions, source, inputs or secrets.

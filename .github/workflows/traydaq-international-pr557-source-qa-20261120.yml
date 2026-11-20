@@ -1,0 +1,184 @@
+name: TRAYDAQ International TrayHub & TrayLinks PR557 Source QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/traydaq-international-pr557-source-qa-20261120.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-international-pr557-source-qa
+  cancel-in-progress: false
+env:
+  SOURCE_SHA: 'e640d3fe316787511e4832b9ef053601ab884708'
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  web:
+    name: Web TrayHub and TrayLinks focused + TypeScript/build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out private pinned source read-only
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Verify immutable source SHA
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install pinned web packages
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Focused account-first and TrayLinks contracts (no source in public logs)
+        working-directory: private-src
+        shell: bash
+        run: |
+          node --test tests/tray-international-hub-branding.test.mjs tests/traylinks-multi-owner-contract.test.mjs tests/traylinks-services-ownership-routing.test.mjs tests/trayjobs-trayevents-account-first.test.mjs tests/moderated-publishing-and-review-queue.test.mjs tests/creator-publishing-profile-identity.test.mjs > "$RUNNER_TEMP/traydaq-international-focused.log" 2>&1 || {
+            grep '^not ok ' "$RUNNER_TEMP/traydaq-international-focused.log" || true
+            grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/traydaq-international-focused.log" || true
+            echo "::error::Focused web checks failed. Private details suppressed."
+            exit 1
+          }
+          grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/traydaq-international-focused.log" || true
+      - name: Strict web TypeScript
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Cloudflare-targeted web asset build without deploy
+        working-directory: private-src
+        run: npm run build
+      - name: Full web regressions without exposing source snippets
+        working-directory: private-src
+        shell: bash
+        run: |
+          npm test > "$RUNNER_TEMP/traydaq-international-web-regressions.log" 2>&1 || {
+            grep '^not ok ' "$RUNNER_TEMP/traydaq-international-web-regressions.log" || true
+            grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/traydaq-international-web-regressions.log" || true
+            echo "::error::Full web regressions failed; source details withheld."
+            exit 1
+          }
+          grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/traydaq-international-web-regressions.log" || true
+  android:
+    name: User Android focused + full tests, TypeScript and JS export (NO APK)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out private pinned source read-only
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Verify immutable source SHA
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install pinned Android JS packages
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Focused Android TrayHub creator and safety cases
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          node --test tests/studios-v2.test.mjs tests/id-gps-store-review-eligibility.test.mjs tests/for-you-bottom-navigation-entry.test.mjs tests/feed-store-status-and-loading.test.mjs tests/for-you-verification-discussions.test.mjs tests/unified-discussion-and-verification-feed.test.mjs > "$RUNNER_TEMP/traydaq-international-android-focused.log" 2>&1 || {
+            grep '^not ok ' "$RUNNER_TEMP/traydaq-international-android-focused.log" || true
+            grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/traydaq-international-android-focused.log" || true
+            echo "::error::Focused Android regressions failed."
+            exit 1
+          }
+          grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/traydaq-international-android-focused.log" || true
+      - name: Native TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Native JS export (not an Android package)
+        working-directory: private-src/mobile
+        run: npm run export:android
+      - name: Full Android source regressions
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/traydaq-international-android-all.log" 2>&1 || {
+            grep '^not ok ' "$RUNNER_TEMP/traydaq-international-android-all.log" || true
+            grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/traydaq-international-android-all.log" || true
+            echo "::error::Full Android regressions failed."
+            exit 1
+          }
+          grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/traydaq-international-android-all.log" || true
+  staff:
+    name: Staff department QA, independent reviews and TypeScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out private pinned source read-only
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Verify immutable source SHA
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Staff packages (no committed lockfile)
+        working-directory: private-src/admin-native
+        run: npm install --no-package-lock --no-audit --no-fund
+      - name: Targeted Staff moderation and role isolation
+        working-directory: private-src/admin-native
+        shell: bash
+        run: |
+          node --test tests/tray-publication-review-contract.test.mjs tests/post-publish-comment-review.test.mjs tests/department-parity.test.mjs > "$RUNNER_TEMP/traydaq-international-staff-focused.log" 2>&1 || {
+            grep '^not ok ' "$RUNNER_TEMP/traydaq-international-staff-focused.log" || true
+            grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/traydaq-international-staff-focused.log" || true
+            echo "::error::Staff publication review contracts failed."
+            exit 1
+          }
+          grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/traydaq-international-staff-focused.log" || true
+      - name: Full Staff security regressions
+        working-directory: private-src/admin-native
+        run: npm run test:security
+      - name: Staff TypeScript
+        working-directory: private-src/admin-native
+        run: npm run typecheck
+  deno:
+    name: Creator content, Staff workspace and Security Hub Deno typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out private pinned source read-only
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Verify immutable source SHA
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Typecheck changed Edge functions without deploy
+        working-directory: private-src
+        run: deno check --node-modules-dir=auto supabase/functions/firebase-native-content/index.ts supabase/functions/firebase-admin-workspace/index.ts supabase/functions/firebase-security-hub/index.ts
+# This is QA ONLY: no source artifact upload, release, migration apply,
+# Cloudflare deploy, Android APK or AAB creation.

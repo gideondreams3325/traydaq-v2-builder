@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: [".github/workflows/traydaq-user-pr557-device-test-apk-20261116.yml"]
+    paths: [".github/workflows/traydaq-user-pr557-device-test-apk-20261121.yml"]
 
 concurrency:
   group: traydaq-v2-user-pr557-device-apk

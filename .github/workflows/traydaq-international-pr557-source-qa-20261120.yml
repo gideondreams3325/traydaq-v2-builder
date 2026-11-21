@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-international-pr557-source-qa
   cancel-in-progress: false
 env:
-  SOURCE_SHA: '69ec974c79bd6e474853ab68127b68a2e2415e06'
+  SOURCE_SHA: '4de4036f637e45d292674eb4747c8a9753a69e78'
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -49,7 +49,8 @@ jobs:
           const files=[
             'supabase/functions/firebase-native-content/index.ts',
             'supabase/functions/firebase-admin-workspace/index.ts',
-            'supabase/functions/firebase-security-hub/index.ts'
+            'supabase/functions/firebase-security-hub/index.ts',
+            'supabase/functions/firebase-tray-directory/index.ts'
           ];
           for(const file of files){
             const output=ts.transpileModule(readFileSync(file,'utf8'),{
@@ -68,7 +69,7 @@ jobs:
         working-directory: private-src
         shell: bash
         run: |
-          node --test tests/tray-international-hub-branding.test.mjs tests/traylinks-multi-owner-contract.test.mjs tests/traylinks-services-ownership-routing.test.mjs tests/trayjobs-trayevents-account-first.test.mjs tests/moderated-publishing-and-review-queue.test.mjs tests/creator-publishing-profile-identity.test.mjs > "$RUNNER_TEMP/traydaq-international-focused.log" 2>&1 || {
+          node --test tests/tray-international-hub-branding.test.mjs tests/traylinks-multi-owner-contract.test.mjs tests/traylinks-services-ownership-routing.test.mjs tests/trayjobs-trayevents-account-first.test.mjs tests/traytrade-account-owned-cutover.test.mjs tests/tray-directory-international.test.mjs tests/moderated-publishing-and-review-queue.test.mjs tests/creator-publishing-profile-identity.test.mjs > "$RUNNER_TEMP/traydaq-international-focused.log" 2>&1 || {
             grep '^not ok ' "$RUNNER_TEMP/traydaq-international-focused.log" || true
             grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/traydaq-international-focused.log" || true
             echo "::error::Focused web checks failed. Private details suppressed."
@@ -120,7 +121,7 @@ jobs:
         working-directory: private-src/mobile
         shell: bash
         run: |
-          node --test tests/studios-v2.test.mjs tests/id-gps-store-review-eligibility.test.mjs tests/for-you-bottom-navigation-entry.test.mjs tests/feed-store-status-and-loading.test.mjs tests/for-you-verification-discussions.test.mjs tests/unified-discussion-and-verification-feed.test.mjs > "$RUNNER_TEMP/traydaq-international-android-focused.log" 2>&1 || {
+          node --test tests/studios-v2.test.mjs tests/id-gps-store-review-eligibility.test.mjs tests/for-you-bottom-navigation-entry.test.mjs tests/feed-store-status-and-loading.test.mjs tests/for-you-verification-discussions.test.mjs tests/unified-discussion-and-verification-feed.test.mjs tests/tray-directory-account-first.test.mjs > "$RUNNER_TEMP/traydaq-international-android-focused.log" 2>&1 || {
             grep '^not ok ' "$RUNNER_TEMP/traydaq-international-android-focused.log" || true
             grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/traydaq-international-android-focused.log" || true
             echo "::error::Focused Android regressions failed."
@@ -170,7 +171,7 @@ jobs:
         working-directory: private-src/admin-native
         shell: bash
         run: |
-          node --test tests/tray-publication-review-contract.test.mjs tests/post-publish-comment-review.test.mjs tests/department-parity.test.mjs > "$RUNNER_TEMP/traydaq-international-staff-focused.log" 2>&1 || {
+          node --test tests/tray-publication-review-contract.test.mjs tests/tray-directory-review-contract.test.mjs tests/post-publish-comment-review.test.mjs tests/department-parity.test.mjs > "$RUNNER_TEMP/traydaq-international-staff-focused.log" 2>&1 || {
             grep '^not ok ' "$RUNNER_TEMP/traydaq-international-staff-focused.log" || true
             grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/traydaq-international-staff-focused.log" || true
             echo "::error::Staff publication review contracts failed."
@@ -204,7 +205,7 @@ jobs:
           deno-version: v2.x
       - name: Typecheck changed Edge functions without deploy
         working-directory: private-src
-        run: deno check --node-modules-dir=auto supabase/functions/firebase-native-content/index.ts supabase/functions/firebase-admin-workspace/index.ts supabase/functions/firebase-security-hub/index.ts
+        run: deno check --node-modules-dir=auto supabase/functions/firebase-native-content/index.ts supabase/functions/firebase-admin-workspace/index.ts supabase/functions/firebase-security-hub/index.ts supabase/functions/firebase-tray-directory/index.ts
 
   schema:
     name: Ephemeral Postgres 16 Staff Review Migration, RLS and Decisions
@@ -245,6 +246,8 @@ jobs:
         working-directory: private-src
         env:
           TRAY_TEST_EPHEMERAL_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/tray_international_qa
-        run: bash scripts/tray-international-review-schema-smoke.sh
+        run: |
+          bash scripts/tray-international-review-schema-smoke.sh
+          bash scripts/tray-account-directory-schema-smoke.sh
 # This is QA ONLY: no source artifact upload, release, migration apply,
 # Cloudflare deploy, Android APK or AAB creation.

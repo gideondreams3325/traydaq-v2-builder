@@ -1,0 +1,139 @@
+name: TRAYDAQ Full Strict Legacy Contract Cleanup QA (No APK)
+on:
+  push:
+    branches: [qa/retired-contract-strict-20261121]
+    paths: [.github/workflows/retired-account-contract-strict-20261121.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: retired-account-contract-strict-20261121
+  cancel-in-progress: false
+env:
+  SOURCE_SHA: '5e0d0a8d334ef773c2559a5f9eaa18666eababc5'
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  web:
+    name: Web source tests, TypeScript and Cloudflare asset build
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Verify immutable private source
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install locked web dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Optional ID and product fraud notice tests
+        working-directory: private-src
+        run: node --test tests/account-only-id-optional-20261121.test.mjs tests/scam-badge-posting-guidance.test.mjs
+      - name: Full web regressions (strict, zero accepted failures)
+        working-directory: private-src
+        run: npm test
+      - name: Strict web TypeScript
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Cloudflare-targeted build (no deploy)
+        working-directory: private-src
+        run: npm run build
+  android:
+    name: Android full regressions, TypeScript and JS export
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Verify immutable private source
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked Android dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Focused Android account-only contracts
+        working-directory: private-src/mobile
+        run: node --test tests/scam-badge-posting-guidance.test.mjs tests/account-only-orders-music-access-20261121.test.mjs
+      - name: Full Android regressions (strict, zero accepted failures)
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Native TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android JS export (no APK/AAB)
+        working-directory: private-src/mobile
+        run: npm run export:android
+  staff:
+    name: Native Staff access tests and TypeScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Verify immutable private source
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          # Staff package intentionally has no committed lockfile yet.
+      - name: Install Staff dependencies for source validation
+        working-directory: private-src/admin-native
+        run: npm install --no-package-lock --no-audit --no-fund
+      - name: Staff native security regression suite
+        working-directory: private-src/admin-native
+        run: npm run test:security
+      - name: Staff TypeScript
+        working-directory: private-src/admin-native
+        run: npm run typecheck
+
+  deno:
+    name: Changed Firebase Edge Deno TypeScript checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Deno check all changed Edge handlers, no deploy
+        working-directory: private-src
+        run: |
+          for handler in firebase-native-shops firebase-native-content firebase-native-music firebase-native-orders firebase-native-commerce firebase-entrepreneur firebase-native-profile; do
+            deno check --node-modules-dir=auto "supabase/functions/${handler}/index.ts"
+          done
+
+# Source-only. Old ID/Scam Alert assertions tracked explicitly rather than silently ignored.
+# No Android APK/AAB, Supabase deploy, Cloudflare publish, or Play upload.

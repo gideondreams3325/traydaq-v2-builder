@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-user-1061-63-sharp-qa-20261121
   cancel-in-progress: false
 env:
-  SOURCE_SHA: '96e0e2b46811bfc494eb5433ddbd46832b0f2a96'
+  SOURCE_SHA: '48c0ede19220dd2f89f383a2b2c3a897aa3d98f5'
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -28,7 +28,7 @@ jobs:
           persist-credentials: false
           path: private-src
       - run: test "$(git -C private-src rev-parse HEAD)" = "$SOURCE_SHA"
-      - name: Confirm user Android release identity 1.0.61 (62)
+      - name: Confirm user Android release identity 1.0.61 (63)
         working-directory: private-src
         run: |
           node --input-type=module <<'NODE'
@@ -82,7 +82,7 @@ jobs:
           persist-credentials: false
           path: private-src
       - run: test "$(git -C private-src rev-parse HEAD)" = "$SOURCE_SHA"
-      - name: Confirm user Android release identity 1.0.61 (62)
+      - name: Confirm user Android release identity 1.0.61 (63)
         working-directory: private-src
         run: |
           node --input-type=module <<'NODE'
@@ -127,7 +127,7 @@ jobs:
           persist-credentials: false
           path: private-src
       - run: test "$(git -C private-src rev-parse HEAD)" = "$SOURCE_SHA"
-      - name: Confirm user Android release identity 1.0.61 (62)
+      - name: Confirm user Android release identity 1.0.61 (63)
         working-directory: private-src
         run: |
           node --input-type=module <<'NODE'

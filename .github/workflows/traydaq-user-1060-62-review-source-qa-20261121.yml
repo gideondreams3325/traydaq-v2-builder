@@ -1,0 +1,155 @@
+name: TRAYDAQ User 1.0.60 (62) Traydaq Review — Strict V2 Source QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/traydaq-user-1060-62-review-source-qa-20261121.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-user-1060-62-release-qa-20261121
+  cancel-in-progress: false
+env:
+  SOURCE_SHA: '5b09a22c7b4d9556ce07851f8a4ff9cebb28c255'
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  web:
+    name: Web regressions, review copy and Cloudflare source build
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - run: test "$(git -C private-src rev-parse HEAD)" = "$SOURCE_SHA"
+      - name: Confirm user Android release identity 1.0.60 (62)
+        working-directory: private-src
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFileSync} from 'node:fs';
+          import assert from 'node:assert/strict';
+          const {expo}=JSON.parse(readFileSync('mobile/app.json','utf8'));
+          assert.equal(expo.version,'1.0.60');
+          assert.equal(expo.android.versionCode,62);
+          assert.equal(expo.android.package,'com.traydaq.app');
+          assert.ok(expo.android.blockedPermissions.includes('android.permission.SYSTEM_ALERT_WINDOW'));
+          NODE
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install locked web dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Traydaq review branding contracts
+        working-directory: private-src
+        run: node --test tests/traydaq-review-branding-20261121.test.mjs tests/traydrive-directory-model1.test.mjs
+      - name: Full web regressions
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          if npm test > "$RUNNER_TEMP/transport-web.log" 2>&1; then echo 'PASS: full web suite'; else
+            grep '^not ok ' "$RUNNER_TEMP/transport-web.log" || true
+            exit 1
+          fi
+      - name: Web TypeScript
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Cloudflare asset build only
+        working-directory: private-src
+        run: npm run build
+      - name: Staff iPhone TS and build
+        working-directory: private-src
+        run: npm run typecheck:staff && npm run build:staff
+  android:
+    name: Android User regression (no APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - run: test "$(git -C private-src rev-parse HEAD)" = "$SOURCE_SHA"
+      - name: Confirm user Android release identity 1.0.60 (62)
+        working-directory: private-src
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFileSync} from 'node:fs';
+          import assert from 'node:assert/strict';
+          const {expo}=JSON.parse(readFileSync('mobile/app.json','utf8'));
+          assert.equal(expo.version,'1.0.60');
+          assert.equal(expo.android.versionCode,62);
+          assert.equal(expo.android.package,'com.traydaq.app');
+          assert.ok(expo.android.blockedPermissions.includes('android.permission.SYSTEM_ALERT_WINDOW'));
+          NODE
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked user dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Complete user Android regression suite and review copy
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          if node --test tests/*.test.mjs > "$RUNNER_TEMP/review-branding-user.log" 2>&1; then echo 'PASS: full Android User suite'; else
+            grep '^not ok ' "$RUNNER_TEMP/review-branding-user.log" || true
+            exit 1
+          fi
+      - name: User Android TS and JS export
+        working-directory: private-src/mobile
+        run: npm run typecheck && npm run export:android
+  staff:
+    name: Android Staff security and typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - run: test "$(git -C private-src rev-parse HEAD)" = "$SOURCE_SHA"
+      - name: Confirm user Android release identity 1.0.60 (62)
+        working-directory: private-src
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFileSync} from 'node:fs';
+          import assert from 'node:assert/strict';
+          const {expo}=JSON.parse(readFileSync('mobile/app.json','utf8'));
+          assert.equal(expo.version,'1.0.60');
+          assert.equal(expo.android.versionCode,62);
+          assert.equal(expo.android.package,'com.traydaq.app');
+          assert.ok(expo.android.blockedPermissions.includes('android.permission.SYSTEM_ALERT_WINDOW'));
+          NODE
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Staff security regression tests
+        working-directory: private-src/admin-native
+        run: npm run test:security
+      - name: Install Staff dependencies
+        working-directory: private-src/admin-native
+        run: npm install --no-package-lock --no-audit --no-fund
+      - name: Staff TypeScript
+        working-directory: private-src/admin-native
+        run: npm run typecheck
+# Source-only QA: no new Supabase project, no migrations or Edge deployment,
+# no APK/AAB build, no Cloudflare publication, no user or staff release.

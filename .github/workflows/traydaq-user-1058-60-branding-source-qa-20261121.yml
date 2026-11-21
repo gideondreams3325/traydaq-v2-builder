@@ -1,0 +1,169 @@
+name: TRAYDAQ User 1.0.58 (60) Branding Pre-release Source QA
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/traydaq-user-1058-60-branding-source-qa-20261121.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-user-1058-60-source-validation-20261121
+  cancel-in-progress: false
+env:
+  SOURCE_SHA: 'fbad60622193b032fc1840bdbb466751dee622cf'
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  web:
+    name: Web source tests, TypeScript and Cloudflare asset build
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Verify immutable private source
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - name: Validate TRAYDAQ User 1.0.58 (60) release identity
+        working-directory: private-src
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFileSync} from 'node:fs';
+          import assert from 'node:assert/strict';
+          const {expo}=JSON.parse(readFileSync('mobile/app.json','utf8'));
+          assert.equal(expo.version,'1.0.58');
+          assert.equal(expo.android.versionCode,60);
+          assert.equal(expo.android.package,'com.traydaq.app');
+          assert.ok(expo.android.blockedPermissions.includes('android.permission.SYSTEM_ALERT_WINDOW'));
+          NODE
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install locked web dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Five brand names and shared logos source contract tests
+        working-directory: private-src
+        run: node --test tests/tray-section-branding-20261121.test.mjs
+      - name: Full web regressions (zero accepted failures)
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          if npm test > "$RUNNER_TEMP/tray-brand-web.log" 2>&1; then
+            echo 'PASS: every web test'
+          else
+            echo 'FAIL: web regression names (private trace suppressed)'
+            grep '^not ok ' "$RUNNER_TEMP/tray-brand-web.log" || true
+            exit 1
+          fi
+      - name: Strict web TypeScript
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Cloudflare-targeted build (no deploy)
+        working-directory: private-src
+        run: npm run build
+  android:
+    name: Android full regressions, TypeScript and JS export
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Verify immutable private source
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - name: Validate TRAYDAQ User 1.0.58 (60) release identity
+        working-directory: private-src
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFileSync} from 'node:fs';
+          import assert from 'node:assert/strict';
+          const {expo}=JSON.parse(readFileSync('mobile/app.json','utf8'));
+          assert.equal(expo.version,'1.0.58');
+          assert.equal(expo.android.versionCode,60);
+          assert.equal(expo.android.package,'com.traydaq.app');
+          assert.ok(expo.android.blockedPermissions.includes('android.permission.SYSTEM_ALERT_WINDOW'));
+          NODE
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked Android dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Five brand Android source contract tests
+        working-directory: private-src/mobile
+        run: node --test tests/tray-section-branding-20261121.test.mjs
+      - name: Native full regression suite (zero accepted failures)
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          set -euo pipefail
+          if node --test tests/*.test.mjs > "$RUNNER_TEMP/tray-brand-android.log" 2>&1; then
+            echo 'PASS: every Android test'
+          else
+            echo 'FAIL: Android regression names (private trace suppressed)'
+            grep '^not ok ' "$RUNNER_TEMP/tray-brand-android.log" || true
+            exit 1
+          fi
+      - name: Native TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android JS export (no APK/AAB)
+        working-directory: private-src/mobile
+        run: npm run export:android
+  staff:
+    name: Native Staff access tests and TypeScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Verify immutable private source
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - name: Validate TRAYDAQ User 1.0.58 (60) release identity
+        working-directory: private-src
+        run: |
+          node --input-type=module <<'NODE'
+          import {readFileSync} from 'node:fs';
+          import assert from 'node:assert/strict';
+          const {expo}=JSON.parse(readFileSync('mobile/app.json','utf8'));
+          assert.equal(expo.version,'1.0.58');
+          assert.equal(expo.android.versionCode,60);
+          assert.equal(expo.android.package,'com.traydaq.app');
+          assert.ok(expo.android.blockedPermissions.includes('android.permission.SYSTEM_ALERT_WINDOW'));
+          NODE
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          # Staff package intentionally has no committed lockfile yet.
+      - name: Install Staff dependencies for source validation
+        working-directory: private-src/admin-native
+        run: npm install --no-package-lock --no-audit --no-fund
+      - name: Staff native security regression suite
+        working-directory: private-src/admin-native
+        run: npm run test:security
+      - name: Staff TypeScript
+        working-directory: private-src/admin-native
+        run: npm run typecheck
+# Source-only validation of private commit; no APK/AAB, Supabase deploy, Cloudflare publish or Play upload. Do not publish raw private test logs.

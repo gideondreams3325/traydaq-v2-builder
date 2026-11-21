@@ -10,7 +10,7 @@ concurrency:
   group: retired-account-contract-strict-20261121
   cancel-in-progress: false
 env:
-  SOURCE_SHA: '6094807eee9dccdfb5faf5b45613b909feccb515'
+  SOURCE_SHA: '7fac4c71454013598c1450a085b5f7ef96aacf3b'
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

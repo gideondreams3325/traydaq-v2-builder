@@ -1,4 +1,4 @@
-name: TRAYDAQ International TrayHub, Icons & Traydrive PR558 Source QA
+name: TRAYDAQ TrayTrade/TrayServices No-Store PR559 Source QA
 on:
   push:
     branches: [main]
@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-international-pr557-source-qa
   cancel-in-progress: false
 env:
-  SOURCE_SHA: 'a71ce941c0678f39b863ba6d84141ae769c37242'
+  SOURCE_SHA: 'd50bea47637c348debb87131f2e78a1cf585a7e4'
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

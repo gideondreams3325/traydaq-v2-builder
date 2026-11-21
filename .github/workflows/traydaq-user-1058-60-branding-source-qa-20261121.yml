@@ -10,7 +10,7 @@ concurrency:
   group: traydaq-user-1058-60-source-validation-20261121
   cancel-in-progress: false
 env:
-  SOURCE_SHA: 'fbad60622193b032fc1840bdbb466751dee622cf'
+  SOURCE_SHA: '5b3514812bde9ea976e99d780cf66464aa95d873'
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-traydrive-pr567-source-qa
   cancel-in-progress: false
 env:
-  SOURCE_SHA: '4310d8028b4343ed18ec43fb3ecded2265d54b7c'
+  SOURCE_SHA: 'e23cf51c0f32aa4d57469572212f951cb668129d'
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -45,6 +45,8 @@ jobs:
           set -euo pipefail
           node --test tests/traydrive-directory-model1.test.mjs tests/traydrive-modern-discovery-20261121.test.mjs tests/traydrive-social-notifications-profile-20261121.test.mjs
       - name: Full web regression suite
+        id: web_regressions
+        continue-on-error: true
         working-directory: private-src
         shell: bash
         run: |
@@ -62,6 +64,9 @@ jobs:
       - name: Web Cloudflare asset build
         working-directory: private-src
         run: npm run build
+      - name: Require all web regression tests to pass
+        if: steps.web_regressions.outcome != 'success'
+        run: exit 1
   android:
     name: Android regressions, typecheck, JS export (no APK/AAB)
     runs-on: ubuntu-latest
@@ -89,6 +94,8 @@ jobs:
         working-directory: private-src/mobile
         run: node --test tests/traydrive-create-profile-feed-links-20261121.test.mjs
       - name: Full native regression suite
+        id: native_regressions
+        continue-on-error: true
         working-directory: private-src/mobile
         shell: bash
         run: |
@@ -106,4 +113,7 @@ jobs:
       - name: Android JS export
         working-directory: private-src/mobile
         run: npm run export:android
+      - name: Require all native regression tests to pass
+        if: steps.native_regressions.outcome != 'success'
+        run: exit 1
 # Builder source validation only. No APK/AAB, production migration, Cloudflare or Edge deployment.

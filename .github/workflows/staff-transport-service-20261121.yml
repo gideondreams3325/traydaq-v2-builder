@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-staff-transport-service-20261121
   cancel-in-progress: false
 env:
-  SOURCE_SHA: 'ef771a67332a105cc58c31d12df8a83ea91e26cb'
+  SOURCE_SHA: '602911fbd315883caea702060faa81c5d63d8569'
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

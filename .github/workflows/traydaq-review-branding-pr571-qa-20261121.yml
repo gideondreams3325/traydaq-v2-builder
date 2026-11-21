@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-review-branding-pr571-20261121
   cancel-in-progress: false
 env:
-  SOURCE_SHA: '898c0bcbbc41e0a593e82bb52b99f69740e4713a'
+  SOURCE_SHA: '79b884be94d9abdd955aa0e91cf2c82beab0f320'
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

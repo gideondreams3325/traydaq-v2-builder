@@ -10,7 +10,7 @@ concurrency:
   group: account-only-publishing-fraud-safety-20261121
   cancel-in-progress: false
 env:
-  SOURCE_SHA: '146dc02bd30d2781b397d5f9c94b55d8e7352ff3'
+  SOURCE_SHA: 'd7cf70b20cb617d818540997733b93a968944ab8'
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

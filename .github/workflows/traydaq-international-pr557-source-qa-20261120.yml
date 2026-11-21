@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-international-pr557-source-qa
   cancel-in-progress: false
 env:
-  SOURCE_SHA: '2b388fc6f911e4680d1a7def569867fe24e394c4'
+  SOURCE_SHA: 'b37e281133c93f3f9648e0a5ade000c97b577673'
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -70,7 +70,7 @@ jobs:
         working-directory: private-src
         shell: bash
         run: |
-          node --test tests/tray-international-hub-branding.test.mjs tests/traylinks-multi-owner-contract.test.mjs tests/traylinks-services-ownership-routing.test.mjs tests/trayjobs-trayevents-account-first.test.mjs tests/traytrade-account-owned-cutover.test.mjs tests/tray-directory-international.test.mjs tests/traylinks-international-directories.test.mjs tests/tray-directory-erasure-account-deletion.test.mjs tests/traymusic-account-first-staff-queue.test.mjs tests/moderated-publishing-and-review-queue.test.mjs tests/creator-publishing-profile-identity.test.mjs > "$RUNNER_TEMP/traydaq-international-focused.log" 2>&1 || {
+          node --test tests/tray-international-hub-branding.test.mjs tests/traylinks-multi-owner-contract.test.mjs tests/traylinks-services-ownership-routing.test.mjs tests/trayjobs-trayevents-account-first.test.mjs tests/traytrade-account-owned-cutover.test.mjs tests/tray-directory-international.test.mjs tests/traylinks-international-directories.test.mjs tests/tray-directory-erasure-account-deletion.test.mjs tests/traymusic-account-first-staff-queue.test.mjs tests/moderated-publishing-and-review-queue.test.mjs tests/creator-publishing-profile-identity.test.mjs tests/security-notice-media-ownership.test.mjs > "$RUNNER_TEMP/traydaq-international-focused.log" 2>&1 || {
             grep '^not ok ' "$RUNNER_TEMP/traydaq-international-focused.log" || true
             grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/traydaq-international-focused.log" || true
             echo "::error::Focused web checks failed. Private details suppressed."

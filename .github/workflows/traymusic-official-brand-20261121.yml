@@ -10,7 +10,7 @@ concurrency:
   group: traymusic-official-brand-validation
   cancel-in-progress: false
 env:
-  SOURCE_SHA: 'f6c44f95c52774c90527e85d2ea559822ca0c5e2'
+  SOURCE_SHA: '54d7185869c6af039a95826923a831adcc3224f0'
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

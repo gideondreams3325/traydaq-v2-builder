@@ -310,6 +310,8 @@ jobs:
           bash scripts/tray-account-product-cutover-schema-smoke.sh
           bash scripts/tray-account-directory-schema-smoke.sh
           bash scripts/tray-music-staff-review-schema-smoke.sh
-          bash scripts/traydrive-directory-schema-smoke.sh
+          # The original Traydrive smoke test intentionally requires its own isolated DB.
+          psql "$TRAY_TEST_EPHEMERAL_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE DATABASE traydrive_ci'
+          TRAYDRIVE_TEST_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/traydrive_ci bash scripts/traydrive-directory-schema-smoke.sh
 # This is QA ONLY: no source artifact upload, release, migration apply,
 # Cloudflare deploy, Android APK or AAB creation.

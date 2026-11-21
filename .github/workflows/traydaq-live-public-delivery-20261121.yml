@@ -1,0 +1,29 @@
+name: TRAYDAQ Public Web Asset & App Links Read-Only Audit
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/traydaq-live-public-delivery-20261121.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  public-readonly-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Read-only checkout of validated private source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 26017b0a94e564b952eae78d357896342744250f
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify public HTTPS host association and safe static media
+        working-directory: private-src
+        run: node scripts/tray-public-delivery-live-check.mjs
+# No deployment, app build, signed URL probing, member media, or secrets emitted.

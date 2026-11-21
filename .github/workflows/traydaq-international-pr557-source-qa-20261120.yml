@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-international-pr557-source-qa
   cancel-in-progress: false
 env:
-  SOURCE_SHA: 'f9ab20420e43476327dbaf1cf56ae599fcbf3c58'
+  SOURCE_SHA: 'ec18dbb527f908d613fc36450c45416ac0ef8f89'
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -248,6 +248,7 @@ jobs:
         env:
           TRAY_TEST_EPHEMERAL_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/tray_international_qa
         run: |
+          bash -n scripts/tray-international-review-schema-smoke.sh scripts/tray-account-directory-schema-smoke.sh scripts/tray-music-staff-review-schema-smoke.sh
           bash scripts/tray-international-review-schema-smoke.sh
           bash scripts/tray-account-directory-schema-smoke.sh
           bash scripts/tray-music-staff-review-schema-smoke.sh

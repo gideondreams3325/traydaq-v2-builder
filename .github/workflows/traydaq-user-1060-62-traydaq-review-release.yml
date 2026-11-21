@@ -5,7 +5,7 @@ name: TRAYDAQ V2 User Android 1.0.60 (62) Signed AAB + APK
 on:
   push:
     branches: [main]
-    paths: [".github/workflows/traydaq-user-1060-62-traydrive-release.yml"]
+    paths: [".github/workflows/traydaq-user-1060-62-traydaq-review-release.yml"]
   workflow_dispatch:
 
 concurrency:

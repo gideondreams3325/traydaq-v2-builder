@@ -34,7 +34,7 @@ jobs:
           node --test tests/*.test.mjs > regressions.tap 2>&1 || true
           node --input-type=module <<'NODE'
           import {readFileSync} from 'node:fs';
-          const ls=readFileSync('regressions.tap','utf8').split('\\n');
+          const ls=readFileSync('regressions.tap','utf8').split(/\r?\n/);
           const failures=[];
           for(let i=0;i<ls.length;i++){
            if(!/^not ok \d+ - /.test(ls[i]))continue;
@@ -70,7 +70,7 @@ jobs:
           node --test tests/*.test.mjs > regressions.tap 2>&1 || true
           node --input-type=module <<'NODE'
           import {readFileSync} from 'node:fs';
-          const ls=readFileSync('regressions.tap','utf8').split('\\n');
+          const ls=readFileSync('regressions.tap','utf8').split(/\r?\n/);
           const failures=[];
           for(let i=0;i<ls.length;i++){
            if(!/^not ok \d+ - /.test(ls[i]))continue;

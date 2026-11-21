@@ -48,6 +48,7 @@ jobs:
           import {readFileSync} from 'node:fs';
           const files=[
             'supabase/functions/firebase-native-content/index.ts',
+            'supabase/functions/firebase-native-orders/index.ts',
             'supabase/functions/firebase-admin-workspace/index.ts',
             'supabase/functions/firebase-security-hub/index.ts',
             'supabase/functions/firebase-tray-directory/index.ts',
@@ -222,7 +223,7 @@ jobs:
           deno-version: v2.x
       - name: Typecheck changed Edge functions without deploy
         working-directory: private-src
-        run: deno check --node-modules-dir=auto supabase/functions/firebase-native-content/index.ts supabase/functions/firebase-admin-workspace/index.ts supabase/functions/firebase-security-hub/index.ts supabase/functions/firebase-tray-directory/index.ts supabase/functions/firebase-native-music/index.ts
+        run: deno check --node-modules-dir=auto supabase/functions/firebase-native-content/index.ts supabase/functions/firebase-native-orders/index.ts supabase/functions/firebase-admin-workspace/index.ts supabase/functions/firebase-security-hub/index.ts supabase/functions/firebase-tray-directory/index.ts supabase/functions/firebase-native-music/index.ts
 
   schema:
     name: Ephemeral Postgres 16 Staff Review Migration, RLS and Decisions

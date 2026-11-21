@@ -10,7 +10,7 @@ concurrency:
   group: tray-section-branding-validation-20261121
   cancel-in-progress: false
 env:
-  SOURCE_SHA: '04475a39d80f7f7f4a967c19481325b131335e5f'
+  SOURCE_SHA: '71bdf42b804b2a46aaba769bb6828b8e39102867'
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

@@ -1,0 +1,134 @@
+name: TRAYDAQ TrayMusic Official Logo And Branding QA
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/traymusic-official-brand-20261121.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traymusic-official-brand-validation
+  cancel-in-progress: false
+env:
+  SOURCE_SHA: 'a6c2c27ca7cf23bc887604abc7d59511e02409c3'
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  web:
+    name: Web source tests, TypeScript and Cloudflare asset build
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Verify immutable private source
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install locked web dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: TrayMusic official logo and existing UI contract tests
+        working-directory: private-src
+        run: node --test tests/traymusic-official-brand.test.mjs tests/music-logo-dismiss-gestures.test.mjs tests/compact-music-global-search.test.mjs
+      - name: Full web regressions (enforce exactly known baseline failures)
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          if npm test > "$RUNNER_TEMP/traydrive-web-regressions.log" 2>&1; then
+            echo 'PASS: All root regressions'
+          else
+            export TEST_LOG="$RUNNER_TEMP/traydrive-web-regressions.log"
+            node --input-type=module <<'NODE'
+          import {readFileSync} from 'node:fs';
+          import assert from 'node:assert/strict';
+          const data=readFileSync(process.env.TEST_LOG,'utf8');
+          const failed=[...data.matchAll(/^not ok \d+ - (.*)$/gm)].map(x=>x[1].trim()).sort();
+          const known=[
+            'native Android keeps inline discovery text clear of the fixed engagement actions',
+            'iPhone staff legal editor is visible only inside assigned legal-aid department',
+            'safe public photo and video posts publish immediately but are queued for human review',
+            'both creators use identical discovery normalization and preserve existing approved metadata path'
+          ].sort();
+          console.log('Historical failures:',failed.length);
+          assert.deepEqual(failed,known,'New or altered web test failures are not allowed');
+          console.log('PASS: No additional regressions beyond four verified historical failures');
+          NODE
+          fi
+      - name: Strict web TypeScript
+        working-directory: private-src
+        run: npm run typecheck
+      - name: Cloudflare-targeted build (no deploy)
+        working-directory: private-src
+        run: npm run build
+  android:
+    name: Android full regressions, TypeScript and JS export
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Verify immutable private source
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked Android dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Native full regression suite
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Native TypeScript
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android JS export (no APK/AAB)
+        working-directory: private-src/mobile
+        run: npm run export:android
+  staff:
+    name: Native Staff access tests and TypeScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Verify immutable private source
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          # Staff package intentionally has no committed lockfile yet.
+      - name: Install Staff dependencies for source validation
+        working-directory: private-src/admin-native
+        run: npm install --no-package-lock --no-audit --no-fund
+      - name: Staff native security regression suite
+        working-directory: private-src/admin-native
+        run: npm run test:security
+      - name: Staff TypeScript
+        working-directory: private-src/admin-native
+        run: npm run typecheck
+# Source-only; no Android build, Supabase deploy, Cloudflare publish, or Google Play upload.

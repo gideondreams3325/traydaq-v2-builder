@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-traydrive-pr567-source-qa
   cancel-in-progress: false
 env:
-  SOURCE_SHA: 'e23cf51c0f32aa4d57469572212f951cb668129d'
+  SOURCE_SHA: '4f81fa3e58d24f4add38293f048866567758703c'
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

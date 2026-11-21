@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-international-pr557-source-qa
   cancel-in-progress: false
 env:
-  SOURCE_SHA: '37712e74bf16255d331a758a026c4e81f65f0b22'
+  SOURCE_SHA: '4f37ecb01c0c3f5933c5a99d31273acd2735c18f'
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -221,6 +221,9 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
+      - name: Runtime ownership and cycle-protection tests for original TrayLinks (synthetic only)
+        working-directory: private-src
+        run: deno test --node-modules-dir=auto supabase/functions/_shared/trayLinks.test.ts
       - name: Typecheck changed Edge functions without deploy
         working-directory: private-src
         run: deno check --node-modules-dir=auto supabase/functions/firebase-native-content/index.ts supabase/functions/firebase-native-orders/index.ts supabase/functions/firebase-admin-workspace/index.ts supabase/functions/firebase-security-hub/index.ts supabase/functions/firebase-tray-directory/index.ts supabase/functions/firebase-native-music/index.ts

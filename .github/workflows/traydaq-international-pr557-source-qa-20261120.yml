@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-international-pr557-source-qa
   cancel-in-progress: false
 env:
-  SOURCE_SHA: '747fe18b2050edd17bae2dd086d077f039410570'
+  SOURCE_SHA: '995b72dca7aa5329c4954083c36d3220ff03bc83'
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -264,8 +264,9 @@ jobs:
         env:
           TRAY_TEST_EPHEMERAL_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/tray_international_qa
         run: |
-          bash -n scripts/tray-international-review-schema-smoke.sh scripts/tray-account-directory-schema-smoke.sh scripts/tray-music-staff-review-schema-smoke.sh
+          bash -n scripts/tray-international-review-schema-smoke.sh scripts/tray-account-product-cutover-schema-smoke.sh scripts/tray-account-directory-schema-smoke.sh scripts/tray-music-staff-review-schema-smoke.sh
           bash scripts/tray-international-review-schema-smoke.sh
+          bash scripts/tray-account-product-cutover-schema-smoke.sh
           bash scripts/tray-account-directory-schema-smoke.sh
           bash scripts/tray-music-staff-review-schema-smoke.sh
 # This is QA ONLY: no source artifact upload, release, migration apply,

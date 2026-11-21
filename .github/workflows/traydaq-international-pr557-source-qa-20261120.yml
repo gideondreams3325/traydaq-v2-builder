@@ -232,6 +232,9 @@ jobs:
       - name: Staff TypeScript
         working-directory: private-src/admin-native
         run: npm run typecheck
+      - name: Staff Android JavaScript export only (NO APK or AAB)
+        working-directory: private-src/admin-native
+        run: npx expo export --platform android --output-dir /tmp/traydaq-staff-js-qa
   deno:
     name: Creator content, Staff workspace and Security Hub Deno typecheck
     runs-on: ubuntu-latest

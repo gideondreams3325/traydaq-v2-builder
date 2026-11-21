@@ -26,7 +26,7 @@ jobs:
       NODE_OPTIONS: "--max-old-space-size=6144"
       TRAYDAQ_RELEASE_VERSION: "1.0.59"
       TRAYDAQ_RELEASE_CODE: "61"
-      TRAYDAQ_SOURCE_SHA: "REPLACE_WITH_VALIDATED_MERGED_MAIN_SHA"
+      TRAYDAQ_SOURCE_SHA: "f84a9a26790183ece60e74594ca7d842124c8f0f"
       # Public certificate from signed User APK run 40043905049 (v1.0.1/code 3).
       TRAYDAQ_EXPECTED_SIGNING_SHA256: "716a68f5734545bc9d9700f045d2bfb1b1087ffe732021f216b32a575f03f83d"
     defaults:
@@ -37,7 +37,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: "REPLACE_WITH_VALIDATED_MERGED_MAIN_SHA"
+          ref: "f84a9a26790183ece60e74594ca7d842124c8f0f"
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -389,7 +389,7 @@ jobs:
           cat > play-release/GOOGLE-PLAY-TESTING-NOTES.txt <<'NOTES'
           TRAYDAQ User Android 1.0.59 (61) — Internal Testing
           Application ID: com.traydaq.app
-          Source: REPLACE_WITH_VALIDATED_MERGED_MAIN_SHA
+          Source: f84a9a26790183ece60e74594ca7d842124c8f0f
           What's new:
           - Official TrayFeed logo and name in For You/Following feed and navigation.
           - Marketplace is now TrayTrade, including official logo and navigation.

@@ -10,7 +10,7 @@ concurrency:
   group: account-only-id-gates-pr563-20261121
   cancel-in-progress: false
 env:
-  SOURCE_SHA: '3156310c6421a43184b12175e0d03e0062574955'
+  SOURCE_SHA: '7770ba9d8aeb4ca239d46082a0b2fe24342ec39d'
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

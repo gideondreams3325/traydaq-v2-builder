@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-international-pr557-source-qa
   cancel-in-progress: false
 env:
-  SOURCE_SHA: '65030cab6975b701fec6b00bd448639b0b61945a'
+  SOURCE_SHA: 'a1bcb5e1fb0dcf39fe89e684c6f60226f61fea89'
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

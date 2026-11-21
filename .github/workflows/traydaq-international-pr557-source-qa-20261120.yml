@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-international-pr557-source-qa
   cancel-in-progress: false
 env:
-  SOURCE_SHA: '3b3a81be1cfa190541e22d212d3562210452be13'
+  SOURCE_SHA: 'b7ca469a9c84c34b7e1482b9cda9d344577ec72c'
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -226,12 +226,16 @@ jobs:
         run: deno check --node-modules-dir=auto supabase/functions/firebase-native-content/index.ts supabase/functions/firebase-native-orders/index.ts supabase/functions/firebase-admin-workspace/index.ts supabase/functions/firebase-security-hub/index.ts supabase/functions/firebase-tray-directory/index.ts supabase/functions/firebase-native-music/index.ts
 
   schema:
-    name: Ephemeral Postgres 16 Staff Review Migration, RLS and Decisions
+    name: Ephemeral Postgres ${{ matrix.pg_version }} Staff Review Migration, RLS and Decisions
     runs-on: ubuntu-latest
     timeout-minutes: 18
+    strategy:
+      fail-fast: false
+      matrix:
+        pg_version: ['16', '17']
     services:
       postgres:
-        image: postgres:16
+        image: postgres:${{ matrix.pg_version }}
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres

@@ -1,0 +1,112 @@
+name: TRAYDAQ STAFF 1.0.29 (32) Sticker Release Preflight
+
+on:
+  push:
+    branches: [qa/staff-1029-32-stickers-release-20261122]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: traydaq-staff-1029-32-stickers-qa
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    steps:
+      - name: Verify private source read permission
+        env:
+          TOKEN_PRESENT: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$TOKEN_PRESENT" = true
+      - name: Check out the private Staff feature without publishing
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: release/staff-1.0.29-32-stickers-20261122
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install root dependencies
+        working-directory: private-src
+        run: npm ci --ignore-scripts --no-audit --no-fund --loglevel=error > /tmp/td-staff-npm.log 2>&1
+      - name: Verify Staff 1.0.29 version, identity, source and security contract
+        working-directory: private-src
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const cfg=require('./admin-native/app.config.js').expo;
+          const t=fs.readFileSync('./admin-native/tests/age-appeal-routing.test.mjs','utf8');
+          if(cfg.android?.package!=='com.traydaq.admin'||cfg.version!=='1.0.29'||
+             cfg.android.versionCode!==32||!t.includes('versionCode: 32')||
+             !t.includes('1\\.0\\.29'))throw Error('Staff release version/security mismatched');
+          if(!fs.readFileSync('./admin-native/src/PublishedCommentReviews.tsx','utf8').includes('StaffReadOnlyComment'))
+             throw Error('Missing staff animated sticker viewer');
+          console.log('STAFF version 1.0.29 (32), package and animated-sticker viewer verified.');
+          NODE
+      - name: Validate staff renderer and role-gating tests
+        working-directory: private-src
+        shell: bash
+        run: |
+          if node --test --test-reporter=dot tests/staff-view-only-comment-stickers-20261122.test.mjs > /tmp/td-staff-sticker-tests.log 2>&1; then
+            echo "Staff read-only sticker security tests: PASS"
+          else
+            echo "::error::Staff read-only sticker security tests: FAIL"
+            grep -E '^not ok [0-9]+' /tmp/td-staff-sticker-tests.log | head -n 15 || true
+            exit 1
+          fi
+      - name: Run full TRAYDAQ source tests
+        working-directory: private-src
+        shell: bash
+        run: |
+          if npm test > /tmp/td-staff-full-tests.log 2>&1; then
+            echo "Full TRAYDAQ source tests: PASS"
+          else
+            echo "::error::Full TRAYDAQ source tests: FAIL"
+            grep -E '^not ok [0-9]+' /tmp/td-staff-full-tests.log | head -n 25 || true
+            exit 1
+          fi
+      - name: Typecheck user and staff PWA source
+        working-directory: private-src
+        shell: bash
+        run: |
+          if npm run typecheck > /tmp/td-staff-typecheck.log 2>&1 &&
+             npm run typecheck:staff > /tmp/td-iphone-typecheck.log 2>&1; then
+            echo "User and Staff iPhone TypeScript: PASS"
+          else
+            echo "::error::User or Staff iPhone TypeScript: FAIL"
+            grep -E 'error TS[0-9]+' /tmp/td-staff-typecheck.log /tmp/td-iphone-typecheck.log | head -n 28 || true
+            exit 1
+          fi
+      - name: Build Staff iPhone assets without deployment
+        working-directory: private-src
+        shell: bash
+        run: |
+          if npm run build:staff > /tmp/td-staff-web-build.log 2>&1; then
+            echo "Staff iPhone asset build: PASS (not deployed)"
+          else
+            echo "::error::Staff iPhone asset build: FAIL"
+            tail -n 30 /tmp/td-staff-web-build.log
+            exit 1
+          fi
+      - name: Install native Staff Android dependencies without lifecycle scripts
+        working-directory: private-src/admin-native
+        shell: bash
+        run: npm install --ignore-scripts --no-audit --no-fund --loglevel=error > /tmp/td-staff-android-install.log 2>&1
+      - name: Typecheck native Staff Android app without APK
+        working-directory: private-src/admin-native
+        shell: bash
+        run: |
+          if npm run typecheck > /tmp/td-staff-android-typecheck.log 2>&1; then
+            echo "Native Staff Android TypeScript: PASS"
+          else
+            echo "::error::Native Staff Android TypeScript: FAIL"
+            grep -E 'error TS[0-9]+' /tmp/td-staff-android-typecheck.log | head -n 35 || true
+            exit 1
+          fi

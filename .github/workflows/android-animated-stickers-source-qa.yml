@@ -65,3 +65,27 @@ jobs:
             echo "Review locally using node --test tests/android-animated-stickers-web-view-20261122.test.mjs tests/keyboard-stickers-web-public-security.test.mjs"
             exit 1
           fi
+
+      - name: Run full TRAYDAQ source regression suite
+        working-directory: private-src
+        shell: bash
+        run: |
+          if npm test > /tmp/traydaq-qa-full-tests.log 2>&1; then
+            echo "TRAYDAQ full source regression suite: PASS"
+          else
+            echo "::error::TRAYDAQ full source regression suite: FAIL"
+            echo "Failing test names:"
+            grep -E '^not ok [0-9]+' /tmp/traydaq-qa-full-tests.log | sed -E 's/^not ok [0-9]+ - //g' | head -n 25 || true
+            exit 1
+          fi
+      - name: Check production web asset compilation (no deployment)
+        working-directory: private-src
+        shell: bash
+        run: |
+          if npm run build > /tmp/traydaq-qa-build.log 2>&1; then
+            echo "TRAYDAQ source build without publishing: PASS"
+          else
+            echo "::error::TRAYDAQ source build: FAIL"
+            grep -Eo 'error TS[0-9]+' /tmp/traydaq-qa-build.log | sort | uniq -c || true
+            exit 1
+          fi

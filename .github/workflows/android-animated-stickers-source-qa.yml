@@ -78,6 +78,18 @@ jobs:
             grep -E '^not ok [0-9]+' /tmp/traydaq-qa-full-tests.log | sed -E 's/^not ok [0-9]+ - //g' | head -n 25 || true
             exit 1
           fi
+      - name: Typecheck production React Native Android app (no APK)
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund --loglevel=error > /tmp/traydaq-native-install.log 2>&1
+          if npm run typecheck > /tmp/traydaq-native-typecheck.log 2>&1; then
+            echo "TRAYDAQ native Android sticker source: TypeScript PASS"
+          else
+            echo "::error::TRAYDAQ native Android sticker source: TypeScript FAIL"
+            grep -E 'error TS[0-9]+' /tmp/traydaq-native-typecheck.log | head -n 35 || true
+            exit 1
+          fi
       - name: Check production web asset compilation (no deployment)
         working-directory: private-src
         shell: bash

@@ -1,0 +1,87 @@
+name: TRAYDAQ User Android 1.0.62 (64) pre-release QA
+on:
+  push:
+    branches: [qa/user-1062-64-20261122]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-user-1062-64-qa
+  cancel-in-progress: true
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Check private source token
+        env:
+          HAS_TOKEN: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$HAS_TOKEN" = "true"
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: release/user-1062-64-animated-stickers-20261122
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify user app identity and release version
+        working-directory: private-src/mobile
+        run: |
+          node - <<'NODE'
+          const app=require('./app.json').expo;
+          if(app.android.package!=='com.traydaq.app'||app.version!=='1.0.62'||app.android.versionCode!==64)
+            throw Error('Wrong user app package or monotonic version');
+          const fs=require('node:fs');
+          if(!fs.readFileSync('src/new-design/NewInboxScreen.tsx','utf8').includes('LIVE_COMMENT_STICKERS'))
+            throw Error('Animated sticker source is not included.');
+          if(!fs.readFileSync('src/new-design/StoreCustomerReviews.tsx','utf8').includes('encodeLiveCommentSticker'))
+            throw Error('Animated store review stickers are missing.');
+          console.log('TRAYDAQ user 1.0.62 (64) with Android stickers: READY FOR SOURCE QA');
+          NODE
+      - name: Install root and run full regression
+        working-directory: private-src
+        shell: bash
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund --loglevel=error > /tmp/td-user-root-install.log 2>&1
+          if npm run typecheck > /tmp/td-user-root-types.log 2>&1 &&
+             npm test > /tmp/td-user-root-tests.log 2>&1; then
+            echo 'Root TypeScript and full regression: PASS'
+          else
+            grep -E '^not ok [0-9]+|error TS[0-9]+' /tmp/td-user-root-types.log /tmp/td-user-root-tests.log | head -n 30 || true
+            exit 1
+          fi
+      - name: Install user Android dependencies and check TypeScript
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund --loglevel=error > /tmp/td-user-mobile-install.log 2>&1
+          if npm run typecheck > /tmp/td-user-mobile-types.log 2>&1; then
+            echo 'React Native user Android TypeScript: PASS'
+          else
+            grep -E 'error TS[0-9]+' /tmp/td-user-mobile-types.log | head -n 35 || true
+            exit 1
+          fi
+      - name: Run native user Android regression suite
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          if node --test --test-reporter=dot tests/*.test.mjs > /tmp/td-user-native-tests.log 2>&1; then
+            echo 'React Native user regression suite: PASS'
+          else
+            grep -E '^not ok [0-9]+' /tmp/td-user-native-tests.log | head -n 35 || true
+            exit 1
+          fi
+      - name: Validate user and staff independent packaging
+        working-directory: private-src
+        shell: bash
+        run: |
+          if npm run typecheck:staff > /tmp/td-user-staff-typecheck.log 2>&1; then
+            echo 'Staff iPhone remains type-safe and separate: PASS'
+          else
+            grep -E 'error TS[0-9]+' /tmp/td-user-staff-typecheck.log | head -n 20 || true
+            exit 1
+          fi

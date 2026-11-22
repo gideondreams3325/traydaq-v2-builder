@@ -1,0 +1,67 @@
+name: TRAYDAQ Android Animated Sticker Source QA
+
+# Read-only validation of the private feature branch; does not build an APK,
+# deploy Cloudflare, publish Supabase Edge Functions or release anything.
+on:
+  push:
+    branches: [qa/android-animated-stickers-20261122]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: traydaq-animated-stickers-source-qa
+  cancel-in-progress: true
+
+jobs:
+  sticker-source-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Verify read-only source token configured
+        shell: bash
+        env:
+          SOURCE_TOKEN_CONFIGURED: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: |
+          if [ "$SOURCE_TOKEN_CONFIGURED" != "true" ]; then
+            echo "::error::Private source access is not configured in the V2 Builder."
+            exit 1
+          fi
+      - name: Check out only the private sticker feature branch
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: feat/android-animated-stickers-web-view-20261122
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies without lifecycle scripts
+        working-directory: private-src
+        run: npm install --ignore-scripts --no-audit --no-fund --loglevel=error
+      - name: Run typecheck without printing private source
+        working-directory: private-src
+        shell: bash
+        run: |
+          if npm run typecheck > /tmp/traydaq-qa-typecheck.log 2>&1; then
+            echo "TRAYDAQ sticker feature branch TypeScript: PASS"
+          else
+            echo "::error::TRAYDAQ sticker feature branch TypeScript: FAIL"
+            grep -Eo 'error TS[0-9]+' /tmp/traydaq-qa-typecheck.log | sort | uniq -c || true
+            exit 1
+          fi
+      - name: Run sticker and existing security tests without printing source
+        working-directory: private-src
+        shell: bash
+        run: |
+          if node --test --test-reporter=dot             tests/android-animated-stickers-web-view-20261122.test.mjs             tests/keyboard-stickers-web-public-security.test.mjs             > /tmp/traydaq-qa-stickers.log 2>&1; then
+            echo "TRAYDAQ Android stickers and web view-only security: PASS"
+          else
+            echo "::error::TRAYDAQ Android stickers and web view-only security: FAIL"
+            echo "Review locally using node --test tests/android-animated-stickers-web-view-20261122.test.mjs tests/keyboard-stickers-web-public-security.test.mjs"
+            exit 1
+          fi

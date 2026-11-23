@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-traystudio-video-20261123-source-qa
   cancel-in-progress: false
 env:
-  SOURCE_SHA: b0eed5d0aad9589147c1aff2d2f1d3b6fe9ad17f
+  SOURCE_SHA: 5bb63ff7017cdade13656c6f91d21921e666d0bf
   SOURCE_REF: feat/traystudio-video-timeline-20261123
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
@@ -166,6 +166,13 @@ jobs:
             echo "::error::Android JS export failed"; exit 1;
           }
           echo "PASS: Android JS export"
+      - name: FFmpeg synthetic fade/slide and moving-overlay video render (no app build)
+        working-directory: private-src/mobile
+        run: |
+          bash scripts/traystudio-video-filter-smoke.sh > "$RUNNER_TEMP/traystudio-filters.log" 2>&1 || {
+            echo "::error::Synthetic video effects decode/audio smoke failed"; exit 1;
+          }
+          echo "PASS: Moving overlay, crossfade, slide and AAC output"
       - name: Full Android source regressions
         working-directory: private-src/mobile
         run: |

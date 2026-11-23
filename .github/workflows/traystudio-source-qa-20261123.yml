@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-traystudio-20261123-source-qa
   cancel-in-progress: false
 env:
-  SOURCE_SHA: d176ac4ceec728299690c1aa138f25be748ce0f7
+  SOURCE_SHA: 484145e736fec393f1321edd054cecc081c06166
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -45,6 +45,13 @@ jobs:
             echo "::error::TrayStudio web source regression failed"; exit 1;
           }
           echo "PASS: TrayStudio web contract tests"
+      - name: Full web regression suite (no deployment)
+        working-directory: private-src
+        run: |
+          npm test > "$RUNNER_TEMP/traystudio-web-full-tests.log" 2>&1 || {
+            echo "::error::Web regression suite failed"; exit 1;
+          }
+          echo "PASS: Complete web regressions"
       - name: Web typecheck
         working-directory: private-src
         run: |
@@ -96,6 +103,13 @@ jobs:
             echo "::error::Android TypeScript failed"; exit 1;
           }
           echo "PASS: Android TypeScript"
+      - name: Android JavaScript export only (no APK/AAB)
+        working-directory: private-src/mobile
+        run: |
+          npm run export:android > "$RUNNER_TEMP/traystudio-android-js-export.log" 2>&1 || {
+            echo "::error::Android JS export failed"; exit 1;
+          }
+          echo "PASS: Android JS export"
       - name: Full Android source regressions
         working-directory: private-src/mobile
         run: |

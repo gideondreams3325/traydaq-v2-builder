@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: false
 env:
   SOURCE_REF: feat/traystudio-video-timeline-20261123
-  SOURCE_SHA: b0eed5d0aad9589147c1aff2d2f1d3b6fe9ad17f
+  SOURCE_SHA: 5bb63ff7017cdade13656c6f91d21921e666d0bf
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

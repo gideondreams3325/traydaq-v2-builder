@@ -1,0 +1,107 @@
+name: TRAYDAQ TrayStudio Creator Editor — Source QA Only (No Release)
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/traystudio-source-qa-20261123.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-traystudio-20261123-source-qa
+  cancel-in-progress: false
+env:
+  SOURCE_SHA: e81161c5fc9d05ef08062084e8555dbed0a3824b
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  web:
+    name: Web TrayStudio source QA, typecheck and Cloudflare-target build (no deploy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install locked web dependencies without publishing private logs
+        working-directory: private-src
+        run: |
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/traystudio-web-install.log" 2>&1 || {
+            echo "::error::Web dependency installation failed"; exit 1;
+          }
+      - name: TrayStudio web regression tests
+        working-directory: private-src
+        run: |
+          node --test tests/traystudio-web-20261123.test.mjs > "$RUNNER_TEMP/traystudio-web-tests.log" 2>&1 || {
+            echo "::error::TrayStudio web source regression failed"; exit 1;
+          }
+          echo "PASS: TrayStudio web contract tests"
+      - name: Web typecheck
+        working-directory: private-src
+        run: |
+          npm run typecheck > "$RUNNER_TEMP/traystudio-web-typecheck.log" 2>&1 || {
+            echo "::error::Web TypeScript failed"; exit 1;
+          }
+          echo "PASS: Web TypeScript"
+      - name: Cloudflare-target web build (no deployment)
+        working-directory: private-src
+        run: |
+          npm run build > "$RUNNER_TEMP/traystudio-web-build.log" 2>&1 || {
+            echo "::error::Source-only Cloudflare-target web build failed"; exit 1;
+          }
+          echo "PASS: Cloudflare-target web source build"
+  android:
+    name: Android TrayStudio native sources and full tests (no APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked native dependencies without publishing private logs
+        working-directory: private-src/mobile
+        run: |
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/traystudio-android-install.log" 2>&1 || {
+            echo "::error::Android dependency installation failed"; exit 1;
+          }
+      - name: TrayStudio native regression tests
+        working-directory: private-src/mobile
+        run: |
+          node --test tests/traystudio-editor-20261123.test.mjs > "$RUNNER_TEMP/traystudio-android-tests.log" 2>&1 || {
+            echo "::error::TrayStudio native source regression failed"; exit 1;
+          }
+          echo "PASS: TrayStudio native contract tests"
+      - name: Android TypeScript check
+        working-directory: private-src/mobile
+        run: |
+          npm run typecheck > "$RUNNER_TEMP/traystudio-android-types.log" 2>&1 || {
+            echo "::error::Android TypeScript failed"; exit 1;
+          }
+          echo "PASS: Android TypeScript"
+      - name: Full Android source regressions
+        working-directory: private-src/mobile
+        run: |
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/traystudio-android-full.log" 2>&1 || {
+            echo "::error::Android source regressions failed"; exit 1;
+          }
+          echo "PASS: Full Android source regressions"
+# Do not package APK/AAB, run Gradle/EAS, release, merge private main,
+# deploy to Cloudflare or write to Supabase. Private test logs stay on runner.

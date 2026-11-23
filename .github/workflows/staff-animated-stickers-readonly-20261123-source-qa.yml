@@ -1,0 +1,79 @@
+name: TRAYDAQ STAFF Animated Sticker View-Only — Source QA (No Release)
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/staff-animated-stickers-readonly-20261123-source-qa.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-staff-animated-sticker-viewonly-source-20261123
+  cancel-in-progress: false
+env:
+  SOURCE_REF: fix/staff-readonly-animated-comment-stickers-20261123
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  browser:
+    name: Staff iPhone privacy contracts, full web regressions, TS + build only
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_REF }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install locked web dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Inspect staff read-only access, comments and expiry regression contracts
+        working-directory: private-src
+        run: node --test tests/staff-view-only-comment-stickers-20261122.test.mjs tests/staff-animated-sticker-evidence-viewonly-20261123.test.mjs
+      - name: Full web regression suite
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          if npm test > "$RUNNER_TEMP/staff-web-regressions.log" 2>&1; then
+            echo "PASS: full web regression suite"
+          else
+            grep '^not ok ' "$RUNNER_TEMP/staff-web-regressions.log" | head -n 35 || true
+            exit 1
+          fi
+      - name: Staff iPhone TypeScript and production asset build only
+        working-directory: private-src
+        run: npm run typecheck:staff && npm run build:staff
+  native_staff:
+    name: Staff Android source security tests + TypeScript (no APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_REF }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Staff security and sticker evidence source tests
+        working-directory: private-src/admin-native
+        run: npm run test:security
+      - name: Install staff dependencies (no package lock modifications)
+        working-directory: private-src/admin-native
+        run: npm install --no-package-lock --no-audit --no-fund
+      - name: Staff native TypeScript validation
+        working-directory: private-src/admin-native
+        run: npm run typecheck
+# SOURCE QA ONLY: No signing keys, no Gradle, no APK/AAB, no Cloudflare deploy,
+# no Supabase Edge deploy, no Android release or app-store upload.

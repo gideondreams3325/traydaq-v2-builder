@@ -1,0 +1,82 @@
+name: TRAYDAQ Public Animated Keyboard Stickers - Source QA
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/public-animated-keyboard-stickers-20261123-qa.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-public-animated-keyboard-stickers-20261123
+  cancel-in-progress: false
+env:
+  SOURCE_REF: fix/android-public-animated-keyboard-stickers-20261123
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  checks:
+    name: Public sticker tests, web, server source contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_REF }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install exact web dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Animated sticker regressions
+        working-directory: private-src
+        run: node --test tests/animated-stickers-after-send-20261123.test.mjs tests/native-android-animated-stickers-20261122.test.mjs tests/android-animated-stickers-web-view-20261122.test.mjs
+      - name: All web regression tests
+        working-directory: private-src
+        run: npm test
+      - name: Web user and staff source typing
+        working-directory: private-src
+        run: npm run typecheck && npm run typecheck:staff
+      - name: Cloudflare user web production build (no deploy)
+        working-directory: private-src
+        run: npm run build
+  android:
+    name: Android source, native typing, complete native tests (no APK)
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_REF }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Confirm correct app identity
+        working-directory: private-src
+        run: |
+          node - <<'NODE'
+          const e=require('./mobile/app.json').expo;
+          if(e.version!=='1.0.63'||e.android.versionCode!==65||e.android.package!=='com.traydaq.app')
+            throw Error('Unexpected Android source identity');
+          NODE
+      - name: Install Android dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Typecheck Android user app
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Complete Android user tests
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs

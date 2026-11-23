@@ -10,7 +10,7 @@ concurrency:
   group: traydaq-animated-stickers-after-send-20261123
   cancel-in-progress: false
 env:
-  SOURCE_REF: fix/animated-stickers-preserved-after-send-20261123
+  SOURCE_REF: release/user-1063-65-sticker-motion-20261123
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -70,6 +70,15 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Confirm next User release version and package isolation
+        working-directory: private-src
+        run: |
+          node - <<'NODE'
+          const a=require('./mobile/app.json').expo;
+          if(a.version!=='1.0.63'||a.android.versionCode!==65||a.android.package!=='com.traydaq.app')
+            throw Error('Unexpected TRAYDAQ User release identity');
+          console.log('Validated user Android 1.0.63 (65) candidate');
+          NODE
       - name: Install Android dependencies
         working-directory: private-src/mobile
         run: npm ci --no-audit --no-fund

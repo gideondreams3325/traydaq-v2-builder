@@ -166,6 +166,17 @@ jobs:
             echo "::error::Android JS export failed"; exit 1;
           }
           echo "PASS: Android JS export"
+      - name: Ensure synthetic video codec test tools are available
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq > "$RUNNER_TEMP/traystudio-apt-update.log" 2>&1 || {
+              echo "::error::Could not prepare Ubuntu media test tools"; exit 1;
+            }
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ffmpeg > "$RUNNER_TEMP/traystudio-apt-install.log" 2>&1 || {
+              echo "::error::Could not install Ubuntu FFmpeg test tools"; exit 1;
+            }
+          fi
+          command -v ffmpeg >/dev/null && command -v ffprobe >/dev/null
       - name: FFmpeg synthetic fade/slide and moving-overlay video render (no app build)
         working-directory: private-src/mobile
         run: |

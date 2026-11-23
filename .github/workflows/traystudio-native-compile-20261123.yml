@@ -1,0 +1,89 @@
+name: TRAYDAQ TrayStudio Android Kotlin Compile — No APK or Release
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/traystudio-native-compile-20261123.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traystudio-native-compile-20261123
+  cancel-in-progress: false
+env:
+  SOURCE_REF: feat/traystudio-video-timeline-20261123
+  SOURCE_SHA: b0eed5d0aad9589147c1aff2d2f1d3b6fe9ad17f
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android-kotlin-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout exact private candidate read-only
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_REF }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify unchanged private candidate SHA
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Confirm Android SDK platform 36 (no app build)
+        run: |
+          if [[ -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]]; then
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0" > "$RUNNER_TEMP/traystudio-sdk.log" 2>&1 || {
+              echo "::error::Android SDK setup failed"; exit 1;
+            }
+          else
+            echo "::warning::Android sdkmanager is unavailable on this runner"
+          fi
+      - name: Install locked source dependencies
+        working-directory: private-src/mobile
+        run: |
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/traystudio-native-deps.log" 2>&1 || {
+            echo "::error::Locked Android dependency install failed"; exit 1;
+          }
+      - name: Expo Android native prebuild (source generation only)
+        working-directory: private-src/mobile
+        run: |
+          npx expo prebuild --platform android --no-install --non-interactive > "$RUNNER_TEMP/traystudio-prebuild.log" 2>&1 || {
+            echo "::error::Native source generation failed"
+            grep -E '(TrayStudio|Cannot find|Error:|FAILED)' "$RUNNER_TEMP/traystudio-prebuild.log" | head -n 12 | cut -c1-200 || true
+            exit 1
+          }
+      - name: Verify Kotlin bridge and FFmpegKit are registered
+        working-directory: private-src/mobile
+        run: |
+          set -euo pipefail
+          test -f android/app/src/main/java/com/traydaq/traystudio/TrayStudioEffectsModule.kt
+          MAIN_APPLICATION=$(find android/app/src/main -name MainApplication.kt -print -quit)
+          test -n "$MAIN_APPLICATION"
+          grep -Fq 'add(com.traydaq.traystudio.TrayStudioEffectsPackage())' "$MAIN_APPLICATION"
+          grep -Fq 'implementation "io.github.maitrungduc1410:ffmpeg-kit-min:6.0.6"' android/app/build.gradle
+          echo "PASS: Native TrayStudio module, package registration and shared codec dependency"
+      - name: Compile Android app Kotlin classes only — NEVER package APK/AAB
+        working-directory: private-src/mobile/android
+        env:
+          GRADLE_OPTS: '-Dorg.gradle.daemon=false -Xmx2g'
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --max-workers=2 :app:compileDebugKotlin > "$RUNNER_TEMP/traystudio-kotlin.log" 2>&1 || {
+            echo "::error::Kotlin class compile failed; no APK/AAB was built"
+            grep -E '(TrayStudioEffectsModule.kt|TrayStudioEffectsPackage|Could not resolve io.github.maitrungduc1410|^e: file|^FAILURE:|^\* What went wrong:)' "$RUNNER_TEMP/traystudio-kotlin.log" | head -n 22 | cut -c1-230 || true
+            exit 1
+          }
+          echo "PASS: Generated native Kotlin classes compiled; no APK or AAB built"
+# Never run :app:assemble, :app:bundle, EAS build, signing, Play upload,
+# Supabase deployments, Cloudflare deployments or GitHub release actions.

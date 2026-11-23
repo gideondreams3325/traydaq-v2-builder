@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-traystudio-video-20261123-source-qa
   cancel-in-progress: false
 env:
-  SOURCE_SHA: b2582517dde8cb21db2048997e6c53a546db5a46
+  SOURCE_SHA: b0eed5d0aad9589147c1aff2d2f1d3b6fe9ad17f
   SOURCE_REF: feat/traystudio-video-timeline-20261123
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
@@ -45,7 +45,7 @@ jobs:
       - name: TrayStudio web regression tests
         working-directory: private-src
         run: |
-          node --test tests/traystudio-web-20261123.test.mjs > "$RUNNER_TEMP/traystudio-web-tests.log" 2>&1 || {
+          node --test tests/traystudio-web-20261123.test.mjs tests/traystudio-video-20261123.test.mjs > "$RUNNER_TEMP/traystudio-web-tests.log" 2>&1 || {
             echo "::error::TrayStudio web source regression failed"; exit 1;
           }
           echo "PASS: TrayStudio web contract tests"
@@ -147,7 +147,7 @@ jobs:
       - name: TrayStudio native regression tests
         working-directory: private-src/mobile
         run: |
-          node --test tests/traystudio-editor-20261123.test.mjs > "$RUNNER_TEMP/traystudio-android-tests.log" 2>&1 || {
+          node --test tests/traystudio-editor-20261123.test.mjs tests/traystudio-video-native-20261123.test.mjs tests/traystudio-android-effects-20261123.test.mjs > "$RUNNER_TEMP/traystudio-android-tests.log" 2>&1 || {
             echo "::error::TrayStudio native source regression failed"; exit 1;
           }
           echo "PASS: TrayStudio native contract tests"

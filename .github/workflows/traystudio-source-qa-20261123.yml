@@ -94,6 +94,9 @@ jobs:
             process.exit(0);
           }
           console.error('::error::New or unclassified web regressions detected against pinned baseline');
+          for(const [name] of novel.slice(0,5)){
+            console.log('New failing test title:',name.replace(/[^a-zA-Z0-9 .:_()/-]/g,'?').slice(0,160));
+          }
           process.exit(1);
           NODE
       - name: Web typecheck

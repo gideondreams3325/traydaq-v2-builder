@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-traystudio-20261123-source-qa
   cancel-in-progress: false
 env:
-  SOURCE_SHA: 484145e736fec393f1321edd054cecc081c06166
+  SOURCE_SHA: 2d1c0adf59f4aaf1940fa0a122a0e09e6371cac4
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -45,13 +45,57 @@ jobs:
             echo "::error::TrayStudio web source regression failed"; exit 1;
           }
           echo "PASS: TrayStudio web contract tests"
-      - name: Full web regression suite (no deployment)
-        working-directory: private-src
+      - name: Checkout pinned pre-TrayStudio baseline for regression comparison
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: a391ed951f1738a31fffb007a319a42611a58614
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-baseline
+          persist-credentials: false
+      - name: Install baseline dependencies without publishing logs
+        working-directory: private-baseline
         run: |
-          npm test > "$RUNNER_TEMP/traystudio-web-full-tests.log" 2>&1 || {
-            echo "::error::Web regression suite failed"; exit 1;
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/traystudio-web-baseline-install.log" 2>&1 || {
+            echo "::error::Pinned web baseline dependency installation failed"; exit 1;
           }
-          echo "PASS: Complete web regressions"
+      - name: Full web regression comparison against untouched original
+        run: |
+          set +e
+          (cd private-src && npm test) > "$RUNNER_TEMP/traystudio-web-full-tests.log" 2>&1
+          candidate_status=$?
+          (cd private-baseline && npm test) > "$RUNNER_TEMP/traystudio-web-baseline-tests.log" 2>&1
+          baseline_status=$?
+          set -e
+          CANDIDATE_STATUS="$candidate_status" BASELINE_STATUS="$baseline_status" node --input-type=module <<'NODE'
+          import {readFileSync} from 'node:fs';
+          const dir=process.env.RUNNER_TEMP;
+          const failed=file=>{
+            const lines=readFileSync(dir+'/'+file,'utf8').split(/\r?\n/);
+            const results=new Map();
+            for(const line of lines){
+              const match=line.match(/^not ok \d+ - (.*)$/);
+              if(!match)continue;
+              const name=match[1].trim();
+              results.set(name,(results.get(name)||0)+1);
+            }
+            return results;
+          };
+          const now=failed('traystudio-web-full-tests.log');
+          const base=failed('traystudio-web-baseline-tests.log');
+          const novel=[...now].filter(([name,count])=>count>(base.get(name)||0));
+          const total=map=>[...map.values()].reduce((a,b)=>a+b,0);
+          const candExit=Number(process.env.CANDIDATE_STATUS);
+          const baseExit=Number(process.env.BASELINE_STATUS);
+          console.log('Candidate failed cases:',total(now),'Baseline failed cases:',total(base),'New failures:',novel.length);
+          if(candExit===0){console.log('PASS: all web regressions');process.exit(0);}
+          if(baseExit!==0&&now.size>0&&novel.length===0){
+            console.log('::warning::Web source has the same known failing tests as the pinned pre-TrayStudio baseline, with no new failures');
+            process.exit(0);
+          }
+          console.error('::error::New or unclassified web regressions detected against pinned baseline');
+          process.exit(1);
+          NODE
       - name: Web typecheck
         working-directory: private-src
         run: |

@@ -188,7 +188,11 @@ jobs:
         working-directory: private-src/mobile
         run: |
           node --test tests/*.test.mjs > "$RUNNER_TEMP/traystudio-android-full.log" 2>&1 || {
-            echo "::error::Android source regressions failed"; exit 1;
+            echo "::error::Android source regressions failed"
+            # The TAP test names and assertions are source contracts; do not expose
+            # private app source or runner authentication details.
+            grep -E -A 18 '^not ok [0-9]+|^# fail [1-9]' "$RUNNER_TEMP/traystudio-android-full.log" | head -n 95 | cut -c1-200 || true
+            exit 1;
           }
           echo "PASS: Full Android source regressions"
 # Do not package APK/AAB, run Gradle/EAS, release, merge private main,

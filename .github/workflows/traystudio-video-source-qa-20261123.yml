@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-traystudio-video-20261123-source-qa
   cancel-in-progress: false
 env:
-  SOURCE_SHA: 4ecfb303a4a69e64a88b48c8aef177667f0dac1c
+  SOURCE_SHA: b2582517dde8cb21db2048997e6c53a546db5a46
   SOURCE_REF: feat/traystudio-video-timeline-20261123
   CI: '1'
   EXPO_NO_TELEMETRY: '1'

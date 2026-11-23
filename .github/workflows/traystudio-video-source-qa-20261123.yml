@@ -170,7 +170,7 @@ jobs:
         working-directory: private-src/mobile
         run: |
           bash scripts/traystudio-video-filter-smoke.sh > "$RUNNER_TEMP/traystudio-filters.log" 2>&1 || {
-            echo "::error::Synthetic video effects decode/audio smoke failed"; exit 1;
+            echo "::error::Synthetic video effects decode/audio smoke failed"; tail -n 15 "$RUNNER_TEMP/traystudio-filters.log" | cut -c1-200; exit 1;
           }
           echo "PASS: Moving overlay, crossfade, slide and AAC output"
       - name: Full Android source regressions

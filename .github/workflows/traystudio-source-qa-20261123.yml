@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-traystudio-20261123-source-qa
   cancel-in-progress: false
 env:
-  SOURCE_SHA: e81161c5fc9d05ef08062084e8555dbed0a3824b
+  SOURCE_SHA: d176ac4ceec728299690c1aa138f25be748ce0f7
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

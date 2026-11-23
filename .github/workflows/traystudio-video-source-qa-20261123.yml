@@ -107,6 +107,14 @@ jobs:
         working-directory: private-src
         run: |
           npm run typecheck > "$RUNNER_TEMP/traystudio-web-typecheck.log" 2>&1 || {
+            node --input-type=module <<'NODE'
+            import {readFileSync} from 'node:fs';
+            const lines=readFileSync(process.env.RUNNER_TEMP+'/traystudio-web-typecheck.log','utf8').split(/\\r?\\n/);
+            for(const line of lines){
+              if(!/TrayStudio|trayStudio/.test(line)||!line.includes('error TS'))continue;
+              console.log('TypeScript: '+line.slice(0,200));
+            }
+            NODE
             echo "::error::Web TypeScript failed"; exit 1;
           }
           echo "PASS: Web TypeScript"
@@ -154,6 +162,14 @@ jobs:
         working-directory: private-src/mobile
         run: |
           npm run typecheck > "$RUNNER_TEMP/traystudio-android-types.log" 2>&1 || {
+            node --input-type=module <<'NODE'
+            import {readFileSync} from 'node:fs';
+            const lines=readFileSync(process.env.RUNNER_TEMP+'/traystudio-android-types.log','utf8').split(/\\r?\\n/);
+            for(const line of lines){
+              if(!/TrayStudio|trayStudio/.test(line)||!line.includes('error TS'))continue;
+              console.log('TypeScript: '+line.slice(0,200));
+            }
+            NODE
             echo "::error::Android TypeScript failed"; exit 1;
           }
           echo "PASS: Android TypeScript"

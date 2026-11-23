@@ -1,0 +1,68 @@
+name: TRAYDAQ User Android Sticker FormData Fix — Source QA Only (No APK)
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/android-sticker-formdata-20261123-source-qa.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-android-sticker-formdata-20261123-source
+  cancel-in-progress: false
+env:
+  SOURCE_REF: fix/android-sticker-formdata-part-20261123
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android_source:
+    name: Android mobile TypeScript + all native source regressions (no APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_REF }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked React Native dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Typecheck native Android sources
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Regression tests including screenshot FormDataPart failure
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+  shared_source:
+    name: Cross-platform sticker regressions (no deploy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_REF }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install locked web dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund
+      - name: Public/private sticker UI and moderation regressions
+        working-directory: private-src
+        run: node --test tests/animated-stickers-after-send-20261123.test.mjs tests/native-android-animated-stickers-20261122.test.mjs tests/android-animated-stickers-web-view-20261122.test.mjs
+      - name: User and staff web TypeScript checks
+        working-directory: private-src
+        run: npm run typecheck && npm run typecheck:staff

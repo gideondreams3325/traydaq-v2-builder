@@ -12,6 +12,7 @@ concurrency:
   cancel-in-progress: false
 env:
   SOURCE_SHA: 4ecfb303a4a69e64a88b48c8aef177667f0dac1
+  SOURCE_REF: feat/traystudio-video-timeline-20261123
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -23,10 +24,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: ${{ env.SOURCE_SHA }}
+          ref: ${{ env.SOURCE_REF }}
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
+      - name: Verify exact authorized private feature commit
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -121,10 +125,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: ${{ env.SOURCE_SHA }}
+          ref: ${{ env.SOURCE_REF }}
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
+      - name: Verify exact authorized private feature commit
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

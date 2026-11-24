@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-traystudio-unified-composition-20261124
   cancel-in-progress: false
 env:
-  SOURCE_SHA: 1b6660d0492010739e5db52f022d2cb00f4808d9
+  SOURCE_SHA: 2fdb7d647ac6cd0d183051a9485d607a7d5bfda0
   SOURCE_REF: feat/traystudio-unified-composition-20261124
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
@@ -140,7 +140,7 @@ jobs:
             process.exit(0);
           }
           console.error('::error::New or unclassified web regressions detected against pinned baseline');
-          for(const [name] of novel.slice(0,5)){
+          for(const [name] of novel.slice(0,40)){
             console.log('New failing test title:',name.replace(/[^a-zA-Z0-9 .:_()/-]/g,'?').slice(0,160));
           }
           process.exit(1);
@@ -234,7 +234,7 @@ jobs:
             echo "::error::Android source regressions failed"
             # The TAP test names and assertions are source contracts; do not expose
             # private app source or runner authentication details.
-            grep -E -A 9 '^not ok [0-9]+|^# fail [1-9]' "$RUNNER_TEMP/traystudio-android-full.log" | head -n 230 | cut -c1-220 || true
+            grep -E -A 9 '^not ok [0-9]+|^# fail [1-9]' "$RUNNER_TEMP/traystudio-android-full.log" | head -n 450 | cut -c1-220 || true
             exit 1;
           }
           echo "PASS: Full Android source regressions"

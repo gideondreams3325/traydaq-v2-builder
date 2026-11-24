@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-traystudio-four-tools-20261124
   cancel-in-progress: false
 env:
-  SOURCE_SHA: 89375927df66b161f593c5adb4e05b9cc694af30
+  SOURCE_SHA: 4ffc25f1e93469f75bab46945b239c37aad433ae
   SOURCE_REF: feat/traystudio-four-tools-20261124
   CI: '1'
   EXPO_NO_TELEMETRY: '1'

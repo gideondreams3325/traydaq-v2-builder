@@ -14,12 +14,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: fa0a0741cf4d22f8b71b44e2f89481d5d0e3b36a
+          ref: 1a394ccf941ab4430d03f6f9359fe2c69a0761db
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
       - name: Verify exact source
-        run: test "$(git -C private-src rev-parse HEAD)" = "fa0a0741cf4d22f8b71b44e2f89481d5d0e3b36a"
+        run: test "$(git -C private-src rev-parse HEAD)" = "1a394ccf941ab4430d03f6f9359fe2c69a0761db"
       - name: Rust toolchain
         run: |
           rustup update stable > "$RUNNER_TEMP/rust.log" 2>&1
@@ -36,6 +36,19 @@ jobs:
           else
             echo "::error::MLS qualification failed (private source logs not exported)"
             grep -E '^error(\[E[0-9]+\])?:|^test result:' "$RUNNER_TEMP/mls-test.log" | cut -c1-180 | head -20 || true
+            exit 1
+          fi
+      - name: Compile browser WebAssembly bridge
+        working-directory: private-src/security/mls-qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup target add wasm32-unknown-unknown > "$RUNNER_TEMP/wasm-target.log" 2>&1
+          if cargo build --target wasm32-unknown-unknown --release > "$RUNNER_TEMP/wasm-build.log" 2>&1; then
+            echo "PASS: browser WebAssembly bridge compiles"
+          else
+            echo "::error::WebAssembly bridge build failed"
+            grep -E '^error(\[E[0-9]+\])?:|^ *--> ' "$RUNNER_TEMP/wasm-build.log" | cut -c1-180 | tail -25 || true
             exit 1
           fi
 # No user data, deployed changes, binaries or private-source artifacts.

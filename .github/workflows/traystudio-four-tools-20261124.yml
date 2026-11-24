@@ -1,0 +1,270 @@
+name: TRAYDAQ TrayStudio Four Tools — Source QA (No Release)
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/traystudio-four-tools-20261124.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-traystudio-four-tools-20261124
+  cancel-in-progress: false
+env:
+  SOURCE_SHA: 89375927df66b161f593c5adb4e05b9cc694af30
+  SOURCE_REF: feat/traystudio-four-tools-20261124
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  web:
+    name: Web TrayStudio source QA, typecheck and Cloudflare-target build (no deploy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_REF }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify exact authorized private feature commit
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install locked web dependencies without publishing private logs
+        working-directory: private-src
+        run: |
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/traystudio-web-install.log" 2>&1 || {
+            echo "::error::Web dependency installation failed"; exit 1;
+          }
+      - name: TrayStudio web regression tests
+        working-directory: private-src
+        run: |
+          node --test tests/traystudio-web-20261123.test.mjs tests/traystudio-video-20261123.test.mjs > "$RUNNER_TEMP/traystudio-web-tests.log" 2>&1 || {
+            echo "::error::TrayStudio web source regression failed"; exit 1;
+          }
+          echo "PASS: TrayStudio web contract tests"
+      - name: Checkout pinned pre-redesign baseline for regression comparison
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: f5afefc84b502875a20ddc855edecfaf8ca25916
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-baseline
+          persist-credentials: false
+      - name: Install baseline dependencies without publishing logs
+        working-directory: private-baseline
+        run: |
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/traystudio-web-baseline-install.log" 2>&1 || {
+            echo "::error::Pinned web baseline dependency installation failed"; exit 1;
+          }
+      - name: Full web regression comparison against untouched original
+        run: |
+          set +e
+          (cd private-src && npm test) > "$RUNNER_TEMP/traystudio-web-full-tests.log" 2>&1
+          candidate_status=$?
+          (cd private-baseline && npm test) > "$RUNNER_TEMP/traystudio-web-baseline-tests.log" 2>&1
+          baseline_status=$?
+          set -e
+          CANDIDATE_STATUS="$candidate_status" BASELINE_STATUS="$baseline_status" node --input-type=module <<'NODE'
+          import {readFileSync} from 'node:fs';
+          const dir=process.env.RUNNER_TEMP;
+          const failed=file=>{
+            const lines=readFileSync(dir+'/'+file,'utf8').split(/\r?\n/);
+            const results=new Map();
+            for(const line of lines){
+              const match=line.match(/^not ok \d+ - (.*)$/);
+              if(!match)continue;
+              const name=match[1].trim();
+              results.set(name,(results.get(name)||0)+1);
+            }
+            return results;
+          };
+          const now=failed('traystudio-web-full-tests.log');
+          const base=failed('traystudio-web-baseline-tests.log');
+          const novel=[...now].filter(([name,count])=>count>(base.get(name)||0));
+          const total=map=>[...map.values()].reduce((a,b)=>a+b,0);
+          const candExit=Number(process.env.CANDIDATE_STATUS);
+          const baseExit=Number(process.env.BASELINE_STATUS);
+          console.log('Candidate failed cases:',total(now),'Baseline failed cases:',total(base),'New failures:',novel.length);
+          if(candExit===0){console.log('PASS: all web regressions');process.exit(0);}
+          if(baseExit!==0&&now.size>0&&novel.length===0){
+            console.log('::warning::Web source has the same known failing tests as the pinned pre-redesign baseline, with no new failures');
+            process.exit(0);
+          }
+          console.error('::error::New or unclassified web regressions detected against pinned baseline');
+          for(const [name] of novel.slice(0,5)){
+            console.log('New failing test title:',name.replace(/[^a-zA-Z0-9 .:_()/-]/g,'?').slice(0,160));
+          }
+          process.exit(1);
+          NODE
+      - name: Web typecheck
+        working-directory: private-src
+        run: |
+          npm run typecheck > "$RUNNER_TEMP/traystudio-web-typecheck.log" 2>&1 || {
+            grep -E '(TrayStudio|trayStudio).*error TS[0-9]+' "$RUNNER_TEMP/traystudio-web-typecheck.log" | cut -c1-200 | head -n 15 || true
+            echo "::error::Web TypeScript failed"; exit 1;
+          }
+          echo "PASS: Web TypeScript"
+      - name: Cloudflare-target web build (no deployment)
+        working-directory: private-src
+        run: |
+          npm run build > "$RUNNER_TEMP/traystudio-web-build.log" 2>&1 || {
+            echo "::error::Source-only Cloudflare-target web build failed"; exit 1;
+          }
+          echo "PASS: Cloudflare-target web source build"
+  android:
+    name: Android TrayStudio native sources and full tests (no APK/AAB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_REF }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify exact authorized private feature commit
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install locked native dependencies without publishing private logs
+        working-directory: private-src/mobile
+        run: |
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/traystudio-android-install.log" 2>&1 || {
+            echo "::error::Android dependency installation failed"; exit 1;
+          }
+      - name: TrayStudio native regression tests
+        working-directory: private-src/mobile
+        run: |
+          node --test tests/traystudio-editor-20261123.test.mjs tests/traystudio-video-native-20261123.test.mjs tests/traystudio-android-effects-20261123.test.mjs > "$RUNNER_TEMP/traystudio-android-tests.log" 2>&1 || {
+            echo "::error::TrayStudio native source regression failed"; exit 1;
+          }
+          echo "PASS: TrayStudio native contract tests"
+      - name: Android TypeScript check
+        working-directory: private-src/mobile
+        run: |
+          npm run typecheck > "$RUNNER_TEMP/traystudio-android-types.log" 2>&1 || {
+            grep -E '(TrayStudio|trayStudio).*error TS[0-9]+' "$RUNNER_TEMP/traystudio-android-types.log" | cut -c1-200 | head -n 15 || true
+            echo "::error::Android TypeScript failed"; exit 1;
+          }
+          echo "PASS: Android TypeScript"
+      - name: Android JavaScript export only (no APK/AAB)
+        working-directory: private-src/mobile
+        run: |
+          npm run export:android > "$RUNNER_TEMP/traystudio-android-js-export.log" 2>&1 || {
+            echo "::error::Android JS export failed"; exit 1;
+          }
+          echo "PASS: Android JS export"
+      - name: Ensure synthetic video codec test tools are available
+        run: |
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq > "$RUNNER_TEMP/traystudio-apt-update.log" 2>&1 || {
+              echo "::error::Could not prepare Ubuntu media test tools"; exit 1;
+            }
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq ffmpeg > "$RUNNER_TEMP/traystudio-apt-install.log" 2>&1 || {
+              echo "::error::Could not install Ubuntu FFmpeg test tools"; exit 1;
+            }
+          fi
+          command -v ffmpeg >/dev/null && command -v ffprobe >/dev/null
+      - name: FFmpeg synthetic fade/slide and moving-overlay video render (no app build)
+        working-directory: private-src/mobile
+        run: |
+          bash scripts/traystudio-video-filter-smoke.sh > "$RUNNER_TEMP/traystudio-filters.log" 2>&1 || {
+            echo "::error::Synthetic video effects decode/audio smoke failed"; tail -n 15 "$RUNNER_TEMP/traystudio-filters.log" | cut -c1-200; exit 1;
+          }
+          echo "PASS: Moving overlay, crossfade, slide and AAC output"
+      - name: Full Android source regressions
+        working-directory: private-src/mobile
+        run: |
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/traystudio-android-full.log" 2>&1 || {
+            echo "::error::Android source regressions failed"
+            # The TAP test names and assertions are source contracts; do not expose
+            # private app source or runner authentication details.
+            grep -E -A 18 '^not ok [0-9]+|^# fail [1-9]' "$RUNNER_TEMP/traystudio-android-full.log" | head -n 95 | cut -c1-200 || true
+            exit 1;
+          }
+          echo "PASS: Full Android source regressions"
+# Do not package APK/AAB, run Gradle/EAS, release, merge private main,
+# deploy to Cloudflare or write to Supabase. Private test logs stay on runner.
+  android-kotlin-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout exact private candidate read-only
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_REF }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify unchanged private candidate SHA
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Confirm Android SDK platform 36 (no app build)
+        run: |
+          if [[ -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]]; then
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0" > "$RUNNER_TEMP/traystudio-sdk.log" 2>&1 || {
+              echo "::error::Android SDK setup failed"; exit 1;
+            }
+          else
+            echo "::warning::Android sdkmanager is unavailable on this runner"
+          fi
+      - name: Install locked source dependencies
+        working-directory: private-src/mobile
+        run: |
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/traystudio-native-deps.log" 2>&1 || {
+            echo "::error::Locked Android dependency install failed"; exit 1;
+          }
+      - name: Expo Android native prebuild (source generation only)
+        working-directory: private-src/mobile
+        run: |
+          npx expo prebuild --platform android --no-install --non-interactive > "$RUNNER_TEMP/traystudio-prebuild.log" 2>&1 || {
+            echo "::error::Native source generation failed"
+            grep -E '(TrayStudio|Cannot find|Error:|FAILED)' "$RUNNER_TEMP/traystudio-prebuild.log" | head -n 12 | cut -c1-200 || true
+            exit 1
+          }
+      - name: Verify Kotlin bridge and FFmpegKit are registered
+        working-directory: private-src/mobile
+        run: |
+          set -euo pipefail
+          test -f android/app/src/main/java/com/traydaq/traystudio/TrayStudioEffectsModule.kt
+          MAIN_APPLICATION=$(find android/app/src/main -name MainApplication.kt -print -quit)
+          test -n "$MAIN_APPLICATION"
+          grep -Fq 'add(com.traydaq.traystudio.TrayStudioEffectsPackage())' "$MAIN_APPLICATION"
+          grep -Fq 'implementation "io.github.maitrungduc1410:ffmpeg-kit-min:6.0.6"' android/app/build.gradle
+          echo "PASS: Native TrayStudio module, package registration and shared codec dependency"
+      - name: Compile Android app Kotlin classes only — NEVER package APK/AAB
+        working-directory: private-src/mobile/android
+        env:
+          GRADLE_OPTS: '-Dorg.gradle.daemon=false -Xmx2g'
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --max-workers=2 :app:compileDebugKotlin > "$RUNNER_TEMP/traystudio-kotlin.log" 2>&1 || {
+            echo "::error::Kotlin class compile failed; no APK/AAB was built"
+            grep -E '(TrayStudioEffectsModule.kt|TrayStudioEffectsPackage|Could not resolve io.github.maitrungduc1410|^e: file|^FAILURE:|^\* What went wrong:)' "$RUNNER_TEMP/traystudio-kotlin.log" | head -n 22 | cut -c1-230 || true
+            exit 1
+          }
+          echo "PASS: Generated native Kotlin classes compiled; no APK or AAB built"
+
+# Source-only validation; no APK, AAB, or deployment.

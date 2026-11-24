@@ -1,0 +1,57 @@
+name: TRAYDAQ E2EE Pilot Web and Relay Source Checks
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/e2ee-pilot-web-relay-20261124.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 5ebabecc490141e4a7c41a6fa7083db09f1435fa
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - run: test "$(git -C private-src rev-parse HEAD)" = "5ebabecc490141e4a7c41a6fa7083db09f1435fa"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Web pilot source typecheck and normal production build (pilot disabled)
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/web-install.log" 2>&1 || { echo "::error::Web dependencies failed"; exit 1; }
+          npm run typecheck > "$RUNNER_TEMP/web-type.log" 2>&1 || { grep -E 'error TS[0-9]+' "$RUNNER_TEMP/web-type.log" | cut -c1-180 | head -20 || true; exit 1; }
+          VITE_TRAYDAQ_E2EE_PILOT=false npm run build > "$RUNNER_TEMP/web-build.log" 2>&1 || { echo "::error::Production-target web source build failed"; exit 1; }
+          echo "PASS: web pilot types and default production build"
+  relay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 5ebabecc490141e4a7c41a6fa7083db09f1435fa
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - run: test "$(git -C private-src rev-parse HEAD)" = "5ebabecc490141e4a7c41a6fa7083db09f1435fa"
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Relay typecheck and unit tests
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          deno check --node-modules-dir=auto supabase/functions/firebase-member-chat/index.ts > "$RUNNER_TEMP/relay-type.log" 2>&1 || { grep -E 'TS[0-9]{4}|^error:' "$RUNNER_TEMP/relay-type.log" | cut -c1-160 | head -15 || true; exit 1; }
+          deno test supabase/functions/_shared/e2eePilotRelay_test.ts > "$RUNNER_TEMP/relay-test.log" 2>&1 || { grep -E 'FAILED|error:|TS[0-9]{4}|AssertionError' "$RUNNER_TEMP/relay-test.log" | cut -c1-150 | head -12 || true; exit 1; }
+          echo "PASS: restricted encrypted relay types and tests"
+# Source validation only, no deployment or app release.

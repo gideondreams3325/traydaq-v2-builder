@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-traystudio-unified-composition-20261124
   cancel-in-progress: false
 env:
-  SOURCE_SHA: 213a1b5abbe41c9383e72bdf8a3c6359e9f4f02d
+  SOURCE_SHA: 56720ad1a0bc558023c79ae66a20bbb127336522
   SOURCE_REF: feat/traystudio-unified-composition-20261124
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
@@ -192,7 +192,7 @@ jobs:
             echo "::error::Android source regressions failed"
             # The TAP test names and assertions are source contracts; do not expose
             # private app source or runner authentication details.
-            grep -E -A 18 '^not ok [0-9]+|^# fail [1-9]' "$RUNNER_TEMP/traystudio-android-full.log" | head -n 95 | cut -c1-200 || true
+            grep -E -A 9 '^not ok [0-9]+|^# fail [1-9]' "$RUNNER_TEMP/traystudio-android-full.log" | head -n 230 | cut -c1-220 || true
             exit 1;
           }
           echo "PASS: Full Android source regressions"

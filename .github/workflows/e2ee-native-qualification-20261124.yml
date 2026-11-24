@@ -1,0 +1,85 @@
+name: TRAYDAQ native MLS and Android JNI qualification
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/e2ee-native-qualification-20261124.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 7b02d456c3068fd56be8af3a9836b1445586a88b
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - run: test "$(git -C private-src rev-parse HEAD)" = "7b02d456c3068fd56be8af3a9836b1445586a88b"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Test native Rust transactions and desktop JNI exchange
+        working-directory: private-src/security/mls-qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup update stable > "$RUNNER_TEMP/native-rust.log" 2>&1
+          rustup default stable
+          cargo test --features android-jni > "$RUNNER_TEMP/native-tests.log" 2>&1 || { grep -E '^error(\[E[0-9]+\])?:|^test result:' "$RUNNER_TEMP/native-tests.log" | cut -c1-180 | head -25 || true; exit 1; }
+          cargo build --features android-jni > "$RUNNER_TEMP/native-build.log" 2>&1 || { echo "::error::Native bridge build failed"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/jni-classes"
+          javac -d "$RUNNER_TEMP/jni-classes" android/com/traydaq/e2ee/*.java
+          java -Djava.library.path="$PWD/target/debug" -cp "$RUNNER_TEMP/jni-classes" com.traydaq.e2ee.NativeMlsSmoke
+          echo "PASS: native MLS transaction and JNI qualification"
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-linux-android
+            clang: aarch64-linux-android
+          - target: armv7-linux-androideabi
+            clang: armv7a-linux-androideabi
+          - target: x86_64-linux-android
+            clang: x86_64-linux-android
+          - target: i686-linux-android
+            clang: i686-linux-android
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 7b02d456c3068fd56be8af3a9836b1445586a88b
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - run: test "$(git -C private-src rev-parse HEAD)" = "7b02d456c3068fd56be8af3a9836b1445586a88b"
+      - name: Cross-compile native JNI library (no packaging or release)
+        working-directory: private-src/security/mls-qualification
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+          CLANG: ${{ matrix.clang }}
+        run: |
+          set -euo pipefail
+          rustup update stable > "$RUNNER_TEMP/android-rust.log" 2>&1
+          rustup default stable
+          rustup target add "$TARGET" > "$RUNNER_TEMP/android-target.log" 2>&1
+          ndk="${ANDROID_NDK_LATEST_HOME:-${ANDROID_NDK_HOME:-}}"
+          test -d "$ndk"
+          toolchain="$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          linker="$toolchain/${CLANG}24-clang"
+          test -x "$linker"
+          envname=$(echo "$TARGET" | tr '[:lower:]-' '[:upper:]_')
+          export "CARGO_TARGET_${envname}_LINKER=$linker"
+          export "CC_$(echo "$TARGET" | tr '-' '_')=$linker"
+          cargo build --target "$TARGET" --features android-jni > "$RUNNER_TEMP/android-build.log" 2>&1 || { grep -E '^error(\[E[0-9]+\])?:' "$RUNNER_TEMP/android-build.log" | cut -c1-180 | head -15 || true; exit 1; }
+          test -s "target/$TARGET/debug/libtraydaq_mls_qualification.so"
+          echo "PASS: Android JNI cross compilation"
+# Synthetic tests only; no artifacts, APK/AAB or deployment.

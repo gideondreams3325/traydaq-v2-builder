@@ -14,12 +14,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: ac846e5911510522d14a82d4a7171b0f6d867159
+          ref: 5eddaef2e3e5aadfede611c2613fd1890b819a55
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
       - name: Verify exact source
-        run: test "$(git -C private-src rev-parse HEAD)" = "ac846e5911510522d14a82d4a7171b0f6d867159"
+        run: test "$(git -C private-src rev-parse HEAD)" = "5eddaef2e3e5aadfede611c2613fd1890b819a55"
       - name: Rust toolchain
         run: |
           rustup update stable > "$RUNNER_TEMP/rust.log" 2>&1
@@ -87,4 +87,15 @@ jobs:
           deno check --node-modules-dir=auto supabase/functions/firebase-member-chat/index.ts > "$RUNNER_TEMP/e2ee-relay-types.log" 2>&1 || { echo "::error::Ciphertext relay typecheck failed"; grep -E 'TS[0-9]{4}|^error:' "$RUNNER_TEMP/e2ee-relay-types.log" | cut -c1-160 | head -12 || true; exit 1; }
           deno test supabase/functions/_shared/e2eePilotRelay_test.ts > "$RUNNER_TEMP/e2ee-relay-test.log" 2>&1 || { echo "::error::Ciphertext relay contract tests failed"; exit 1; }
           echo "PASS: ciphertext relay contract tests and chat edge typecheck"
+      - name: Compile gated web pilot UI with the generated browser module
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/e2ee-web-install.log" 2>&1 || { echo "::error::Web dependencies failed"; exit 1; }
+          mkdir -p public/e2ee-pilot
+          wasm-bindgen --target web --out-dir public/e2ee-pilot security/mls-qualification/target/wasm32-unknown-unknown/release/traydaq_mls_qualification.wasm
+          npm run typecheck > "$RUNNER_TEMP/e2ee-web-type.log" 2>&1 || { echo "::error::Web pilot typecheck failed"; grep -E 'error TS[0-9]+' "$RUNNER_TEMP/e2ee-web-type.log" | cut -c1-180 | head -20 || true; exit 1; }
+          VITE_TRAYDAQ_E2EE_PILOT=true npm run build > "$RUNNER_TEMP/e2ee-web-build.log" 2>&1 || { echo "::error::Web pilot build failed"; exit 1; }
+          echo "PASS: gated web pilot UI compiles with browser module"
 # No user data, deployed changes, binaries or private-source artifacts.

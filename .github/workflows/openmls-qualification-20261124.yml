@@ -14,12 +14,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: dfebae57a716371a9bddc7c713fccece884df916
+          ref: 16e7701b03286dcf3e2532fabe0f41a48f4ac2f8
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
       - name: Verify exact source
-        run: test "$(git -C private-src rev-parse HEAD)" = "dfebae57a716371a9bddc7c713fccece884df916"
+        run: test "$(git -C private-src rev-parse HEAD)" = "16e7701b03286dcf3e2532fabe0f41a48f4ac2f8"
       - name: Rust toolchain
         run: |
           rustup update stable > "$RUNNER_TEMP/rust.log" 2>&1
@@ -67,4 +67,13 @@ jobs:
           printf '{"type":"commonjs"}\n' > wasm-node/package.json
           node tests/wasm-smoke.mjs > "$RUNNER_TEMP/wasm-smoke.log" 2>&1 || { echo "::error::WebAssembly client integration failed"; grep -E '^(AssertionError|Error|TypeError|ReferenceError|RuntimeError|FAIL|PASS)' "$RUNNER_TEMP/wasm-smoke.log" | cut -c1-180 | head -12 || true; exit 1; }
           echo "PASS: WebAssembly client messaging integration"
+      - name: Browser storage adapter typecheck and synthetic integration
+        working-directory: private-src/security/mls-qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/mls-test-deps" --no-audit --no-fund --save-exact fake-indexeddb@6.2.4 typescript@5.9.3 > "$RUNNER_TEMP/mls-npm.log" 2>&1 || { echo "::error::Synthetic browser-test dependency installation failed"; exit 1; }
+          "$RUNNER_TEMP/mls-test-deps/node_modules/.bin/tsc" --strict --noEmit --target ES2022 --lib ES2022,DOM,DOM.Iterable --module ESNext --moduleResolution Bundler ../../src/native-parity/e2ee/browserDeviceStore.ts > "$RUNNER_TEMP/mls-ts.log" 2>&1 || { echo "::error::Browser MLS store TypeScript failed"; grep -E 'error TS[0-9]+' "$RUNNER_TEMP/mls-ts.log" | cut -c1-180 | head -15 || true; exit 1; }
+          TEST_IDB_MODULE="$RUNNER_TEMP/mls-test-deps/node_modules/fake-indexeddb" node --experimental-strip-types tests/browser-store-smoke.mjs > "$RUNNER_TEMP/mls-store.log" 2>&1 || { echo "::error::Browser MLS store integration failed"; grep -E '^(AssertionError|Error|TypeError|ReferenceError|RuntimeError|DOMException|FAIL|PASS)' "$RUNNER_TEMP/mls-store.log" | cut -c1-180 | head -12 || true; exit 1; }
+          echo "PASS: browser encrypted persistence and durable ciphertext outbox"
 # No user data, deployed changes, binaries or private-source artifacts.

@@ -14,11 +14,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 7b02d456c3068fd56be8af3a9836b1445586a88b
+          ref: 1d8cd52651480f036adc3dde4dee9ed10a85e357
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
-      - run: test "$(git -C private-src rev-parse HEAD)" = "7b02d456c3068fd56be8af3a9836b1445586a88b"
+      - run: test "$(git -C private-src rev-parse HEAD)" = "1d8cd52651480f036adc3dde4dee9ed10a85e357"
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -33,9 +33,20 @@ jobs:
           cargo test --features android-jni > "$RUNNER_TEMP/native-tests.log" 2>&1 || { grep -E '^error(\[E[0-9]+\])?:|^test result:' "$RUNNER_TEMP/native-tests.log" | cut -c1-180 | head -25 || true; exit 1; }
           cargo build --features android-jni > "$RUNNER_TEMP/native-build.log" 2>&1 || { echo "::error::Native bridge build failed"; exit 1; }
           mkdir -p "$RUNNER_TEMP/jni-classes"
-          javac -d "$RUNNER_TEMP/jni-classes" android/com/traydaq/e2ee/*.java
+          javac -d "$RUNNER_TEMP/jni-classes" android/com/traydaq/e2ee/NativeMls.java android/com/traydaq/e2ee/NativeMlsSmoke.java
           java -Djava.library.path="$PWD/target/debug" -cp "$RUNNER_TEMP/jni-classes" com.traydaq.e2ee.NativeMlsSmoke
           echo "PASS: native MLS transaction and JNI qualification"
+      - name: Compile Android Keystore and transactional store source
+        working-directory: private-src/security/mls-qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          jar=$(find "$sdk/platforms" -name android.jar | sort -V | tail -1)
+          test -f "$jar"
+          javac -cp "$jar" -d "$RUNNER_TEMP/jni-classes" android/com/traydaq/e2ee/NativeMls.java android/com/traydaq/e2ee/NativeMlsStore.java
+          node --check withNativeMlsPilot.js
+          echo "PASS: Android Keystore store compiles (not on-device validation)"
   android:
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -55,11 +66,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 7b02d456c3068fd56be8af3a9836b1445586a88b
+          ref: 1d8cd52651480f036adc3dde4dee9ed10a85e357
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
-      - run: test "$(git -C private-src rev-parse HEAD)" = "7b02d456c3068fd56be8af3a9836b1445586a88b"
+      - run: test "$(git -C private-src rev-parse HEAD)" = "1d8cd52651480f036adc3dde4dee9ed10a85e357"
       - name: Cross-compile native JNI library (no packaging or release)
         working-directory: private-src/security/mls-qualification
         shell: bash

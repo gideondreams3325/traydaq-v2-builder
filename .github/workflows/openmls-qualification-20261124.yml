@@ -14,12 +14,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: e81c0021ed86039b85bc702711649dab12d8012b
+          ref: f277d2544a1868c00fc99fb49cf2aab7929ef89d
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
       - name: Verify exact source
-        run: test "$(git -C private-src rev-parse HEAD)" = "e81c0021ed86039b85bc702711649dab12d8012b"
+        run: test "$(git -C private-src rev-parse HEAD)" = "f277d2544a1868c00fc99fb49cf2aab7929ef89d"
       - name: Rust toolchain
         run: |
           rustup update stable > "$RUNNER_TEMP/rust.log" 2>&1

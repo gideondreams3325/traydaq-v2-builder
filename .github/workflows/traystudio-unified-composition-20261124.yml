@@ -11,11 +11,53 @@ concurrency:
   group: traydaq-traystudio-unified-composition-20261124
   cancel-in-progress: false
 env:
-  SOURCE_SHA: 56720ad1a0bc558023c79ae66a20bbb127336522
+  SOURCE_SHA: 1b6660d0492010739e5db52f022d2cb00f4808d9
   SOURCE_REF: feat/traystudio-unified-composition-20261124
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
+  notification-copy:
+    name: User notification copy and isolated PostgreSQL fixture (no deploy)
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: fixture_only
+          POSTGRES_DB: copy_fixture
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d copy_fixture"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_REF }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify exact source revision
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check notification copy and delivery contract
+        working-directory: private-src
+        run: node --test tests/user-notification-copy-20261124.test.mjs > "$RUNNER_TEMP/notification-copy.log" 2>&1 || { echo "::error::Notification source contract failed"; exit 1; }
+      - name: Validate SQL against disposable database only
+        working-directory: private-src
+        env:
+          PGPASSWORD: fixture_only
+        run: |
+          command -v psql >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y postgresql-client; }
+          psql -h 127.0.0.1 -U postgres -d copy_fixture -v ON_ERROR_STOP=1 -f tests/fixtures/notification-copy.sql > "$RUNNER_TEMP/notification-sql.log" 2>&1 || { grep '^psql:.*ERROR:' "$RUNNER_TEMP/notification-sql.log" | cut -c1-200 | head -n 8; exit 1; }
+          echo "PASS: notification template fixture"
   web:
     name: Web TrayStudio source QA, typecheck and Cloudflare-target build (no deploy)
     runs-on: ubuntu-latest

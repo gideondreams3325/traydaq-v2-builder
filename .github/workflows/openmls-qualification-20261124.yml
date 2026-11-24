@@ -14,12 +14,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 1a394ccf941ab4430d03f6f9359fe2c69a0761db
+          ref: dfebae57a716371a9bddc7c713fccece884df916
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
       - name: Verify exact source
-        run: test "$(git -C private-src rev-parse HEAD)" = "1a394ccf941ab4430d03f6f9359fe2c69a0761db"
+        run: test "$(git -C private-src rev-parse HEAD)" = "dfebae57a716371a9bddc7c713fccece884df916"
       - name: Rust toolchain
         run: |
           rustup update stable > "$RUNNER_TEMP/rust.log" 2>&1
@@ -51,4 +51,20 @@ jobs:
             grep -E '^error(\[E[0-9]+\])?:|^ *--> ' "$RUNNER_TEMP/wasm-build.log" | cut -c1-180 | tail -25 || true
             exit 1
           fi
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Execute synthetic WebAssembly client integration
+        working-directory: private-src/security/mls-qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(cargo tree --target wasm32-unknown-unknown --prefix none --format '{p}' | sed -nE 's/^wasm-bindgen v([0-9.]+).*$/\1/p' | sort -u)
+          test "$(echo "$version" | wc -l)" -eq 1
+          test -n "$version"
+          cargo install wasm-bindgen-cli --version "=$version" --locked > "$RUNNER_TEMP/wasm-cli.log" 2>&1 || { echo "::error::Could not install matching WebAssembly bindgen CLI"; exit 1; }
+          wasm-bindgen --target nodejs --out-dir wasm-node target/wasm32-unknown-unknown/release/traydaq_mls_qualification.wasm > "$RUNNER_TEMP/wasm-bindgen.log" 2>&1 || { echo "::error::WebAssembly bindings generation failed"; exit 1; }
+          printf '{"type":"commonjs"}\n' > wasm-node/package.json
+          node tests/wasm-smoke.mjs > "$RUNNER_TEMP/wasm-smoke.log" 2>&1 || { echo "::error::WebAssembly client integration failed"; grep -E '^(AssertionError|Error|TypeError|ReferenceError|RuntimeError|FAIL|PASS)' "$RUNNER_TEMP/wasm-smoke.log" | cut -c1-180 | head -12 || true; exit 1; }
+          echo "PASS: WebAssembly client messaging integration"
 # No user data, deployed changes, binaries or private-source artifacts.

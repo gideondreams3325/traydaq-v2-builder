@@ -11,7 +11,7 @@ concurrency:
   group: traydaq-traystudio-unified-composition-20261124
   cancel-in-progress: false
 env:
-  SOURCE_SHA: c49f483660f5140689e0bb188e84b8f5ece510b1
+  SOURCE_SHA: 213a1b5abbe41c9383e72bdf8a3c6359e9f4f02d
   SOURCE_REF: feat/traystudio-unified-composition-20261124
   CI: '1'
   EXPO_NO_TELEMETRY: '1'

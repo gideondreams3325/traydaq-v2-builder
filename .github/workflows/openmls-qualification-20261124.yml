@@ -1,0 +1,41 @@
+name: TRAYDAQ OpenMLS Protocol Qualification (isolated synthetic test)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/openmls-qualification-20261124.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  protocol:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 70580a5329bf862237c2ffc0cbabb9d04531d494
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify exact source
+        run: test "$(git -C private-src rev-parse HEAD)" = "70580a5329bf862237c2ffc0cbabb9d04531d494"
+      - name: Rust toolchain
+        run: |
+          rustup update stable > "$RUNNER_TEMP/rust.log" 2>&1
+          rustup default stable
+          rustc --version
+      - name: Synthetic direct and group protocol qualification
+        working-directory: private-src/security/mls-qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          if cargo test > "$RUNNER_TEMP/mls-test.log" 2>&1; then
+            echo "PASS: isolated MLS protocol qualification"
+            grep -E '^test result: ' "$RUNNER_TEMP/mls-test.log" || true
+          else
+            echo "::error::MLS qualification failed (private source logs not exported)"
+            grep -E '^error(\[E[0-9]+\])?:|^test result:' "$RUNNER_TEMP/mls-test.log" | cut -c1-180 | head -20 || true
+            exit 1
+          fi
+# No user data, deployed changes, binaries or private-source artifacts.

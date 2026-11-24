@@ -1,0 +1,81 @@
+name: TRAYDAQ Android MLS app integration source qualification
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/e2ee-native-app-pilot-20261124.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  native-app:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: afdc267d16065543dd75ce81c0f4a798ae6a4d6f
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - run: test "$(git -C private-src rev-parse HEAD)" = "afdc267d16065543dd75ce81c0f4a798ae6a4d6f"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Typecheck native chat client
+        working-directory: private-src/mobile
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/native-app-deps.log" 2>&1 || { echo "::error::Dependencies failed"; exit 1; }
+          npm run typecheck > "$RUNNER_TEMP/native-app-ts.log" 2>&1 || { grep -E 'error TS[0-9]+' "$RUNNER_TEMP/native-app-ts.log" | cut -c1-180 | head -25 || true; exit 1; }
+      - name: Build native MLS libraries for gated source compilation
+        working-directory: private-src/security/mls-qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup update stable > "$RUNNER_TEMP/rust.log" 2>&1
+          rustup default stable
+          ndk="${ANDROID_NDK_LATEST_HOME:-${ANDROID_NDK_HOME:-}}"
+          test -d "$ndk"
+          toolchain="$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          for spec in 'aarch64-linux-android:aarch64-linux-android:arm64-v8a' 'armv7-linux-androideabi:armv7a-linux-androideabi:armeabi-v7a' 'x86_64-linux-android:x86_64-linux-android:x86_64' 'i686-linux-android:i686-linux-android:x86'; do
+            IFS=: read -r target clang abi <<< "$spec"
+            rustup target add "$target" >/dev/null 2>&1
+            linker="$toolchain/${clang}24-clang"
+            envname=$(echo "$target" | tr '[:lower:]-' '[:upper:]_')
+            export "CARGO_TARGET_${envname}_LINKER=$linker"
+            export "CC_$(echo "$target" | tr '-' '_')=$linker"
+            cargo build --target "$target" --features android-jni > "$RUNNER_TEMP/native-app-rust.log" 2>&1 || { grep -E '^error' "$RUNNER_TEMP/native-app-rust.log" | cut -c1-180 | head -15 || true; exit 1; }
+            mkdir -p "$RUNNER_TEMP/mls-libs/$abi"
+            cp "target/$target/debug/libtraydaq_mls_qualification.so" "$RUNNER_TEMP/mls-libs/$abi/"
+          done
+      - name: Generate gated Android sources (no app package)
+        working-directory: private-src/mobile
+        env:
+          TRAYDAQ_NATIVE_E2EE_PILOT: 'true'
+          EXPO_PUBLIC_TRAYDAQ_NATIVE_E2EE_PILOT: 'true'
+        run: |
+          set -euo pipefail
+          export TRAYDAQ_MLS_JNI_LIBRARIES="$RUNNER_TEMP/mls-libs"
+          npx expo prebuild --platform android --no-install --non-interactive > "$RUNNER_TEMP/native-app-prebuild.log" 2>&1 || { grep -E '(Error:|Cannot find|Native MLS)' "$RUNNER_TEMP/native-app-prebuild.log" | cut -c1-180 | head -15 || true; exit 1; }
+          grep -Fq 'add(com.traydaq.e2ee.NativeMlsPackage())' "$(find android/app/src/main -name MainApplication.kt -print -quit)"
+          test -s android/app/src/main/java/com/traydaq/e2ee/NativeMlsModule.kt
+      - name: Compile Android Java and Kotlin only
+        working-directory: private-src/mobile/android
+        env:
+          GRADLE_OPTS: '-Dorg.gradle.daemon=false -Xmx2g'
+        run: |
+          set -euo pipefail
+          chmod +x gradlew
+          ./gradlew --no-daemon --max-workers=2 :app:compileDebugKotlin :app:compileDebugJavaWithJavac > "$RUNNER_TEMP/native-app-gradle.log" 2>&1 || { grep -E '(^e: file|error:|^FAILURE:|^\* What went wrong:)' "$RUNNER_TEMP/native-app-gradle.log" | cut -c1-180 | head -25 || true; exit 1; }
+          echo "PASS: Android native messaging source compilation"
+# No APK/AAB, signing, artifact upload, deployment or release.

@@ -16,7 +16,7 @@ permissions:
   statuses: write
 
 concurrency:
-  group: traydaq-v2-pr66-source-validation
+  group: traydaq-v2-e2ee-candidate-source-validation
   cancel-in-progress: true
 
 jobs:
@@ -41,7 +41,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: feat/restore-owner-deletion-without-recovery-20261027
+          ref: d91390f43cc5a6a08e3d2cde5d49f1c37ba6b6c2
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -65,7 +65,7 @@ jobs:
             if(c.name!=='traydaq-v2'||c.assets?.directory!=='./dist')
               throw Error('Unexpected Cloudflare Workers assets configuration');
           "
-          echo "Private source ref: feat/restore-owner-deletion-without-recovery-20261027"
+          echo "Private source ref: d91390f43cc5a6a08e3d2cde5d49f1c37ba6b6c2"
           echo "Private source SHA: $(git rev-parse HEAD)"
           echo "Hosting validation target: Cloudflare Workers, not Vercel"
       - name: Install private web dependencies with protected logs
@@ -269,7 +269,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: feat/restore-owner-deletion-without-recovery-20261027
+          ref: d91390f43cc5a6a08e3d2cde5d49f1c37ba6b6c2
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false

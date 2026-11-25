@@ -1,0 +1,37 @@
+name: Android original animated sticker source QA
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/android-original-sticker-import-20261125-qa.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 7dadac5c41d4a7a24c5a7cfda346484301e82ffd
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Install Android dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Typecheck Android
+        working-directory: private-src/mobile
+        run: npm run typecheck
+      - name: Android regressions
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Cross-platform sticker regressions
+        working-directory: private-src
+        run: node --test tests/animated-stickers-after-send-20261123.test.mjs tests/native-android-animated-stickers-20261122.test.mjs tests/android-animated-stickers-web-view-20261122.test.mjs

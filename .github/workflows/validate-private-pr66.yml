@@ -41,7 +41,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: d91390f43cc5a6a08e3d2cde5d49f1c37ba6b6c2
+          ref: 207f61a6c902362484a3214ca4e2fef015d31af2
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -65,7 +65,7 @@ jobs:
             if(c.name!=='traydaq-v2'||c.assets?.directory!=='./dist')
               throw Error('Unexpected Cloudflare Workers assets configuration');
           "
-          echo "Private source ref: d91390f43cc5a6a08e3d2cde5d49f1c37ba6b6c2"
+          echo "Private source ref: 207f61a6c902362484a3214ca4e2fef015d31af2"
           echo "Private source SHA: $(git rev-parse HEAD)"
           echo "Hosting validation target: Cloudflare Workers, not Vercel"
       - name: Install private web dependencies with protected logs
@@ -271,7 +271,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: d91390f43cc5a6a08e3d2cde5d49f1c37ba6b6c2
+          ref: 207f61a6c902362484a3214ca4e2fef015d31af2
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false

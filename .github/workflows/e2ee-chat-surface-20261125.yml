@@ -14,11 +14,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 5918b9d3bb5cd35f917f30d50b8d4d156e6c8843
+          ref: d91390f43cc5a6a08e3d2cde5d49f1c37ba6b6c2
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
-      - run: test "$(git -C private-src rev-parse HEAD)" = "5918b9d3bb5cd35f917f30d50b8d4d156e6c8843"
+      - run: test "$(git -C private-src rev-parse HEAD)" = "d91390f43cc5a6a08e3d2cde5d49f1c37ba6b6c2"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -29,9 +29,9 @@ jobs:
         run: |
           set -euo pipefail
           npm ci --no-audit --no-fund > "$RUNNER_TEMP/native-deps.log" 2>&1 || { echo "::error::Dependencies failed"; exit 1; }
-          node --experimental-strip-types ../security/mls-qualification/tests/receipt-smoke.mjs
-          node --experimental-strip-types ../security/mls-qualification/tests/reference-smoke.mjs
-          node --experimental-strip-types ../security/mls-qualification/tests/png-smoke.mjs
-          node --test ../tests/private-chat-e2ee-foundation.test.mjs
+          node --experimental-strip-types ../security/mls-qualification/tests/receipt-smoke.mjs > "$RUNNER_TEMP/receipt-smoke.log" 2>&1 || { echo "::error::Receipt smoke failed"; exit 1; }
+          node --experimental-strip-types ../security/mls-qualification/tests/reference-smoke.mjs > "$RUNNER_TEMP/reference-smoke.log" 2>&1 || { echo "::error::Reference smoke failed"; exit 1; }
+          node --experimental-strip-types ../security/mls-qualification/tests/png-smoke.mjs > "$RUNNER_TEMP/png-smoke.log" 2>&1 || { echo "::error::PNG smoke failed"; exit 1; }
+          node --test ../tests/private-chat-e2ee-foundation.test.mjs > "$RUNNER_TEMP/native-foundation.log" 2>&1 || { grep -E '^(not ok|# (tests|pass|fail))' "$RUNNER_TEMP/native-foundation.log" | cut -c1-180 | head -30 || true; exit 1; }
           npm run typecheck > "$RUNNER_TEMP/native-ts.log" 2>&1 || { grep -E 'error TS[0-9]+' "$RUNNER_TEMP/native-ts.log" | cut -c1-180 | head -25 || true; exit 1; }
 # Native bridge unchanged since fully validated #616. No package or deployment.

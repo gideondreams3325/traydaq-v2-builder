@@ -1,0 +1,31 @@
+name: TRAYDAQ all user chat encryption migration preflight
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/all-user-chat-encryption-preflight-20261125.yml']
+permissions:
+  contents: read
+jobs:
+  server:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 7b2b2b3dc95b1ed2333b5a341c15ee75f0e78271
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Validate exact candidate and migration preflight
+        working-directory: private-src
+        run: |
+          test "$(git rev-parse HEAD)" = "7b2b2b3dc95b1ed2333b5a341c15ee75f0e78271"
+          deno test supabase/functions/_shared/encryptedOnlyThread_test.ts > "$RUNNER_TEMP/preflight.log" 2>&1 || { echo "::error::Migration routing tests failed"; exit 1; }
+          echo "PASS: legacy successor and existing encryption policy tests"
+          deno check --node-modules-dir=auto supabase/functions/firebase-member-chat/index.ts > "$RUNNER_TEMP/server.log" 2>&1 || { echo "::error::Chat backend typecheck failed"; exit 1; }
+          echo "PASS: backend typecheck"

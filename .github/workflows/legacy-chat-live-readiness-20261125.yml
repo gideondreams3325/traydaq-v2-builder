@@ -68,15 +68,26 @@ jobs:
             if(ids.length>500)throw Error('Inventory exceeds bounded audit size');
             const legacy=ids.filter(id=>/^(dm_|bs_)[0-9a-f]{64}$|^gs_[0-9a-f]{32}$/.test(id));
             const encrypted=ids.filter(id=>/^(edm_|ebs_)[0-9a-f]{64}$|^egs_[0-9a-f]{32}$/.test(id));
+            const counts={direct:{},business:{},gossips:{}};
             let bad=0,collision=0,unversioned=0;
             for(const id of legacy){
               const row=await read('messageThreads/'+encodeURIComponent(id)+'.json');
-              const group=id.startsWith('gs_');
+              const kind=id.startsWith('gs_')?'gossips':id.startsWith('bs_')?'business':'direct';
+              const c=counts[kind];const bump=k=>c[k]=(c[k]||0)+1;
+              bump('total');
+              const group=kind==='gossips';
               const members=Object.entries(row?.members||{}).filter(([,v])=>v===true);
-              if(!Number.isSafeInteger(row?.createdAt)||row.createdAt<=0||row.encryptedOnly===true||members.some(([uid])=>!/^[A-Za-z0-9:_-]{6,128}$/.test(uid))||members.length>(group?12:2)||members.length<(group?1:2))bad++;
-              if(group&&!/^[A-Za-z0-9_-]{1,128}$/.test(row?.membershipRevision||''))unversioned++;
-              if(Object.hasOwn(keys,'e'+id))collision++;
+              const issues=[];
+              if(!Number.isSafeInteger(row?.createdAt)||row.createdAt<=0)issues.push('missingOrInvalidCreatedAt');
+              if(row?.encryptedOnly===true)issues.push('unexpectedEncryptedOnly');
+              if(members.some(([uid])=>!/^[A-Za-z0-9:_-]{6,128}$/.test(uid)))issues.push('invalidMemberId');
+              if(members.length>(group?12:2)||members.length<(group?1:2))issues.push('invalidRosterSize');
+              if(row?.kind!==undefined&&row.kind!==(kind==='direct'?'member':kind))issues.push('kindMismatch');
+              if(issues.length){bad++;for(const issue of issues)bump(issue);}
+              if(group&&!/^[A-Za-z0-9_-]{1,128}$/.test(row?.membershipRevision||'')){unversioned++;bump('unversioned');}
+              if(Object.hasOwn(keys,'e'+id)){collision++;bump('collision');}
             }
+            console.log('Readiness breakdown (counts only): '+JSON.stringify(counts));
             console.log('Readiness counts: '+JSON.stringify({legacy:legacy.length,encrypted:encrypted.length,unknown:ids.length-legacy.length-encrypted.length,invalidLegacy:bad,unversionedGroups:unversioned,aliasCollisions:collision}));
             if(bad||collision||unversioned||ids.length!==legacy.length+encrypted.length)throw Error('Legacy readiness requires remediation');
             console.log('PASS: bounded live conversation metadata readiness inventory.');

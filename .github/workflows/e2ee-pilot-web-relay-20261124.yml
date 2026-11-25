@@ -14,11 +14,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 79f17772afe5564554d1340d3f823e0d25cf203c
+          ref: e6f15f2ed04b62c28edac9e671f4f4ad7543ef17
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
-      - run: test "$(git -C private-src rev-parse HEAD)" = "79f17772afe5564554d1340d3f823e0d25cf203c"
+      - run: test "$(git -C private-src rev-parse HEAD)" = "e6f15f2ed04b62c28edac9e671f4f4ad7543ef17"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -42,11 +42,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 79f17772afe5564554d1340d3f823e0d25cf203c
+          ref: e6f15f2ed04b62c28edac9e671f4f4ad7543ef17
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
-      - run: test "$(git -C private-src rev-parse HEAD)" = "79f17772afe5564554d1340d3f823e0d25cf203c"
+      - run: test "$(git -C private-src rev-parse HEAD)" = "e6f15f2ed04b62c28edac9e671f4f4ad7543ef17"
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
@@ -56,6 +56,6 @@ jobs:
         run: |
           set -euo pipefail
           deno check --node-modules-dir=auto supabase/functions/firebase-member-chat/index.ts > "$RUNNER_TEMP/relay-type.log" 2>&1 || { grep -E 'TS[0-9]{4}|^error:' "$RUNNER_TEMP/relay-type.log" | cut -c1-160 | head -15 || true; exit 1; }
-          deno test supabase/functions/_shared/e2eePilotRelay_test.ts > "$RUNNER_TEMP/relay-test.log" 2>&1 || { grep -E 'FAILED|error:|TS[0-9]{4}|AssertionError' "$RUNNER_TEMP/relay-test.log" | cut -c1-150 | head -12 || true; exit 1; }
+          deno test supabase/functions/_shared/e2eePilotRelay_test.ts supabase/functions/_shared/encryptedOnlyThread_test.ts > "$RUNNER_TEMP/relay-test.log" 2>&1 || { grep -E 'FAILED|error:|TS[0-9]{4}|AssertionError' "$RUNNER_TEMP/relay-test.log" | cut -c1-150 | head -12 || true; exit 1; }
           echo "PASS: restricted encrypted relay types and tests"
 # Source validation only, no deployment or app release.

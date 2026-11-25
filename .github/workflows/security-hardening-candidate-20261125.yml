@@ -96,7 +96,7 @@ jobs:
             }
           }
           console.log('Remaining public advisory IDs: '+[...ids].sort().join(', '));
-          if([...ids].some(x=>['GHSA-rvm3-566m-v7fv','GHSA-m9gg-hp2v-232j','GHSA-f596-whhp-79r4'].includes(x.toLowerCase()))) process.exit(1);
+          if([...ids].some(x=>['ghsa-rvm3-566m-v7fv','ghsa-m9gg-hp2v-232j','ghsa-f596-whhp-79r4'].includes(x.toLowerCase()))) process.exit(1);
           JS
           case "$COMPONENT" in
             web|user-android|staff-android)

@@ -92,8 +92,8 @@ jobs:
         working-directory: private-src/mobile/android
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon --max-workers=2 :react-native-webview:compileDebugKotlin :react-native-webview:compileDebugJavaWithJavac > "$RUNNER_TEMP/compile.log" 2>&1 || {
-            grep -E '(TraydaqBrowserPolicy|RNCWebViewManagerImpl|RNCWebViewClient|RNCWebChromeClient|^e: file|^FAILURE:)' "$RUNNER_TEMP/compile.log" | head -n 25 | cut -c1-200 || true
+          ./gradlew --no-daemon --max-workers=2 :app:compileDebugKotlin > "$RUNNER_TEMP/compile.log" 2>&1 || {
+            grep -E '(TraydaqBrowserPolicy|RNCWebViewManagerImpl|RNCWebViewClient|RNCWebChromeClient|^e: file|^FAILURE:|^\* What went wrong:|^> |^Could not |^Task |^Project |^Execution failed|^A problem occurred|^Caused by:|^SDK location)' "$RUNNER_TEMP/compile.log" | head -n 40 | cut -c1-200 || true
             echo "::error::Native WebView class compile failed"; exit 1;
           }
           echo "PASS: native WebView Java and Kotlin compiled"

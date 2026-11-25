@@ -1,0 +1,100 @@
+name: TRAYDAQ Android original keyboard media — source and native compile only
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/android-keyboard-original-media-20261125.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: android-keyboard-original-media-20261125
+  cancel-in-progress: false
+env:
+  SOURCE_SHA: e99564fdedc5ca6d6ac07c95b0a5a62670a7f5d9
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  android-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Verify exact candidate and install locked dependencies
+        working-directory: private-src/mobile
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { echo "::error::Dependency install failed"; exit 1; }
+      - name: Focused keyboard media tests
+        working-directory: private-src/mobile
+        run: |
+          node --test tests/android-keyboard-original-media-20261125.test.mjs tests/keyboard-stickers-native.test.mjs tests/android-original-animated-sticker-import-20261125.test.mjs > "$RUNNER_TEMP/browser.log" 2>&1 || {
+            grep -E '^not ok |^# fail ' "$RUNNER_TEMP/browser.log" | cut -c1-180 || true
+            echo "::error::Keyboard media regression failed"; exit 1;
+          }
+          grep -E '^# (tests|pass|fail) ' "$RUNNER_TEMP/browser.log"
+      - name: Android typecheck
+        working-directory: private-src/mobile
+        run: |
+          npm run typecheck > "$RUNNER_TEMP/typecheck.log" 2>&1 || {
+            grep -E '(TraydaqInAppBrowser|inAppBrowser|CurrencyPrice|App.tsx|JobApplicationsPanel|ContactUsScreen).*error TS' "$RUNNER_TEMP/typecheck.log" | cut -c1-230 | head -n 25 || true
+            echo "::error::Android typecheck failed"; exit 1;
+          }
+      - name: Full native source tests
+        working-directory: private-src/mobile
+        run: |
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/full.log" 2>&1 || {
+            grep -E '^not ok |^# fail ' "$RUNNER_TEMP/full.log" | cut -c1-180 | head -n 40 || true
+            echo "::error::Native regression failed"; exit 1;
+          }
+          grep -E '^# (tests|pass|fail) ' "$RUNNER_TEMP/full.log"
+  android-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install Android SDK
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0" > "$RUNNER_TEMP/sdk.log" 2>&1
+      - name: Install locked dependencies and prebuild
+        working-directory: private-src/mobile
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { echo "::error::Dependency install failed"; exit 1; }
+          npx expo prebuild --platform android --no-install --non-interactive > "$RUNNER_TEMP/prebuild.log" 2>&1 || { echo "::error::Native prebuild failed"; exit 1; }
+          grep -q TRAYDAQ_ORIGINAL_KEYBOARD_MEDIA_V1 node_modules/expo-paste-input/android/src/main/java/expo/modules/pasteinput/ExpoPasteInputView.kt
+      - name: Compile patched native keyboard classes, never package app
+        working-directory: private-src/mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon --max-workers=2 :app:compileDebugKotlin > "$RUNNER_TEMP/compile.log" 2>&1 || {
+            grep -E '(TraydaqBrowserPolicy|RNCWebViewManagerImpl|RNCWebViewClient|RNCWebChromeClient|^e: file|^FAILURE:|^\* What went wrong:|^> |^Could not |^Task |^Project |^Execution failed|^A problem occurred|^Caused by:|^SDK location)' "$RUNNER_TEMP/compile.log" | head -n 40 | cut -c1-200 || true
+            echo "::error::Native keyboard compile failed"; exit 1;
+          }
+          echo "PASS: native Android keyboard classes compiled"
+# No APK/AAB, release, deployment, backend changes, or private source artifacts.

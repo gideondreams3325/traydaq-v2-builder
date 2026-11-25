@@ -1,0 +1,63 @@
+name: TRAYDAQ E2EE live Firebase rules readback (no writes)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/e2ee-live-firebase-rules-readback-20261125.yml']
+permissions:
+  contents: read
+jobs:
+  live-rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    if: github.repository == 'gideondreams3325/traydaq-v2-builder' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 5918b9d3bb5cd35f917f30d50b8d4d156e6c8843
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Compare live database rules to exact reviewed source without exporting rules or credentials
+        working-directory: private-src
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON || secrets.FIREBASE_SERVICE_ACCOUNT || secrets.FIREBASE_ADMIN_SDK_JSON || secrets.FIREBASE_ADMIN_JSON || secrets.GOOGLE_SERVICE_ACCOUNT_JSON || secrets.GOOGLE_CLOUD_SERVICE_ACCOUNT_JSON || secrets.TRAYDAQ_FIREBASE_SERVICE_ACCOUNT_JSON }}
+          FIREBASE_RTD_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_RTD_SERVICE_ACCOUNT_JSON }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "5918b9d3bb5cd35f917f30d50b8d4d156e6c8843"
+          node --input-type=module <<'NODE'
+          import {sign} from 'node:crypto';
+          import {readFileSync} from 'node:fs';
+          try {
+            const raw=process.env.FIREBASE_RTD_SERVICE_ACCOUNT_JSON||process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+            if(!raw)throw Error('Firebase readback credential unavailable');
+            const a=JSON.parse(raw);
+            if(a.project_id!=='traydaq'||typeof a.client_email!=='string'||typeof a.private_key!=='string')throw Error('Wrong Firebase project or invalid credential');
+            const b64=x=>Buffer.from(JSON.stringify(x)).toString('base64url');
+            const now=Math.floor(Date.now()/1000);
+            const unsigned=b64({alg:'RS256',typ:'JWT'})+'.'+b64({iss:a.client_email,scope:'https://www.googleapis.com/auth/firebase.database https://www.googleapis.com/auth/userinfo.email',aud:'https://oauth2.googleapis.com/token',iat:now,exp:now+300});
+            const jwt=unsigned+'.'+sign('RSA-SHA256',Buffer.from(unsigned),a.private_key).toString('base64url');
+            const auth=await fetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'urn:ietf:params:oauth:grant-type:jwt-bearer',assertion:jwt}),signal:AbortSignal.timeout(15000)});
+            if(!auth.ok)throw Error('Firebase credential authentication failed');
+            const {access_token}=await auth.json();
+            if(typeof access_token!=='string')throw Error('No authenticated Firebase token');
+            const res=await fetch('https://traydaq-default-rtdb.firebaseio.com/.settings/rules.json',{headers:{Authorization:'Bearer '+access_token},signal:AbortSignal.timeout(15000)});
+            if(!res.ok)throw Error('Live Firebase rules readback denied: HTTP '+res.status);
+            const live=await res.json(),expected=JSON.parse(readFileSync('firebase/database.rules.json','utf8'));
+            const canonical=x=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.keys(x).sort().map(k=>[k,canonical(x[k])])):Array.isArray(x)?x.map(canonical):x;
+            if(JSON.stringify(canonical(live))!==JSON.stringify(canonical(expected)))throw Error('Live Firebase rules differ from the validated source; no rules were changed');
+            console.log('PASS: live Firebase RTDB rules match the reviewed source exactly.');
+          }catch(e){
+            // Never print provider response bodies, keys or rule contents.
+            const m=e instanceof Error?e.message:'';
+            const safe=/^(Firebase readback credential unavailable|Wrong Firebase project or invalid credential|Firebase credential authentication failed|No authenticated Firebase token|Live Firebase rules readback denied: HTTP \d{3}|Live Firebase rules differ from the validated source; no rules were changed)$/.test(m)?m:'Firebase rules readback failed';
+            console.error(safe);process.exitCode=1;
+          }
+          NODE
+# No user data reads, rule changes, deployment or artifact upload.

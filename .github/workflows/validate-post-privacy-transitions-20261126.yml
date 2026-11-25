@@ -40,7 +40,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: cf47c347af1e22ce0704bce5eda9bcbe3086b9e8
+          ref: 6270efe2505ab0030de2aec148e8d9e7e5cc0290
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -64,7 +64,7 @@ jobs:
             if(c.name!=='traydaq-v2'||c.assets?.directory!=='./dist')
               throw Error('Unexpected Cloudflare Workers assets configuration');
           "
-          echo "Private source ref: cf47c347af1e22ce0704bce5eda9bcbe3086b9e8"
+          echo "Private source ref: 6270efe2505ab0030de2aec148e8d9e7e5cc0290"
           echo "Private source SHA: $(git rev-parse HEAD)"
           echo "Hosting validation target: Cloudflare Workers, not Vercel"
       - name: Install private web dependencies with protected logs
@@ -259,7 +259,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: cf47c347af1e22ce0704bce5eda9bcbe3086b9e8
+          ref: 6270efe2505ab0030de2aec148e8d9e7e5cc0290
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -432,7 +432,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: cf47c347af1e22ce0704bce5eda9bcbe3086b9e8
+          ref: 6270efe2505ab0030de2aec148e8d9e7e5cc0290
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
@@ -443,10 +443,19 @@ jobs:
       - name: Check exact Edge Function source
         working-directory: private-src
         run: |
-          if deno check supabase/functions/firebase-content-edits/index.ts > "$RUNNER_TEMP/privacy-edge.log" 2>&1; then
+          if deno check supabase/functions/firebase-content-edits/index.ts supabase/functions/firebase-public-post-preview/index.ts supabase/functions/firebase-public-share-preview/index.ts > "$RUNNER_TEMP/privacy-edge.log" 2>&1; then
             echo "PASS: Edge typecheck"
           else
             echo "::error::Edge typecheck failed; private diagnostics remain private"
             grep -E "^TS[0-9]{4}" "$RUNNER_TEMP/privacy-edge.log" | cut -c1-150 | head -10 || true
             exit 1
           fi
+
+      - name: Record sanitized Edge validation result
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JOB_RESULT: ${{ job.status }}
+        run: |
+          if [ "$JOB_RESULT" = "success" ]; then STATE=success; else STATE=failure; fi
+          gh api --method POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" -f state="$STATE" -f context="traydaq-v2/privacy-edge-typecheck" -f description="Privacy Edge source validation" >/dev/null

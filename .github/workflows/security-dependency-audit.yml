@@ -2,8 +2,6 @@ name: TRAYDAQ V2 Weekly Security Audit (No APK)
 on:
   workflow_dispatch:
   pull_request:
-    paths:
-      - '**'
   schedule:
     - cron: '22 6 * * 1'
   push:
@@ -39,43 +37,9 @@ jobs:
           for raw in filter(None, paths):
               path = pathlib.Path(raw.decode('utf-8', errors='surrogateescape'))
               name = path.name.lower()
-              if name.startswith('.env') and (name == '.env' or name.startswith('.env.')) and name not in {'.env.example', '.env.sample', '.env.template'}:
+              if (name == '.env' or name.startswith('.env.')) and name not in {'.env.example', '.env.sample', '.env.template'}:
                   bad.append(str(path)); continue
-              if name.endswith(('.jks', '.keystore', '.p12', '.p8', '.pem', '.key')) or re.search(r'service[._-]?account.*\.json
-    name: Audit private V2 packages without APK build
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    defaults:
-      run:
-        working-directory: private-src/mobile
-    steps:
-      - name: Check out private native source with read-only credentials
-        uses: actions/checkout@v4
-        with:
-          repository: gideondreams3325/traydaq-v2
-          ref: main
-          path: private-src
-          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Install dependency metadata without lifecycle scripts
-        run: npm install --ignore-scripts --no-audit --no-fund
-      - name: Find high and critical vulnerabilities in production packages
-        run: npm audit --omit=dev --audit-level=high
-      - name: Reject tracked private credential files
-        working-directory: private-src
-        shell: bash
-        run: |
-          set -euo pipefail
-          if git ls-files | grep -Ev '(^|/)\.env\.(example|sample|template)
-            echo '::error::A potential private key or environment file is tracked in the source repository.'
-            exit 1
-          fi
-      - name: Report security scan completed
-        run: echo 'TRAYDAQ dependency audit completed without generating an APK.'
-, name):
+              if name.endswith(('.jks', '.keystore', '.p12', '.p8', '.pem', '.key')) or re.search(r'service[._-]?account.*\.json$', name):
                   bad.append(str(path)); continue
               if not path.is_file() or path.is_symlink():
                   continue
@@ -116,142 +80,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install dependency metadata without lifecycle scripts
-        run: npm install --ignore-scripts --no-audit --no-fund
-      - name: Find high and critical vulnerabilities in production packages
-        run: npm audit --omit=dev --audit-level=high
       - name: Reject tracked private credential files
         working-directory: private-src
         shell: bash
         run: |
           set -euo pipefail
-          if git ls-files | grep -Eq '(^|/)(\.env(\..*)?|[^/]+\.(jks|keystore|p12|p8|pem)|[^/]*service.account[^/]*\.json|firebase.admin[^/]*\.json)$'; then
+          if git ls-files | grep -Ev '(^|/)\.env\.(example|sample|template)$' | grep -E '(^|/)(\.env(\..*)?|[^/]+\.(jks|keystore|p12|p8|pem)|[^/]*service.account[^/]*\.json|firebase.admin[^/]*\.json)$' >/dev/null; then
             echo '::error::A potential private key or environment file is tracked in the source repository.'
             exit 1
           fi
-      - name: Report security scan completed
-        run: echo 'TRAYDAQ dependency audit completed without generating an APK.'
- | grep -E '(^|/)(\.env(\..*)?|[^/]+\.(jks|keystore|p12|p8|pem)|[^/]*service.account[^/]*\.json|firebase.admin[^/]*\.json)
-            echo '::error::A potential private key or environment file is tracked in the source repository.'
-            exit 1
-          fi
-      - name: Report security scan completed
-        run: echo 'TRAYDAQ dependency audit completed without generating an APK.'
-, name):
-                  bad.append(str(path)); continue
-              if not path.is_file() or path.is_symlink():
-                  continue
-              data = path.read_bytes()
-              if any(pattern.search(data) for pattern in patterns):
-                  bad.append(str(path)); continue
-              for match in jwt.finditer(data):
-                  payload = match.group(1)
-                  try:
-                      decoded = json.loads(base64.urlsafe_b64decode(payload + b'=' * (-len(payload) % 4)))
-                      if isinstance(decoded, dict) and decoded.get('role') == 'service_role':
-                          bad.append(str(path)); break
-                  except (ValueError, UnicodeError):
-                      pass
-          if bad:
-              for path in sorted(set(bad)):
-                  print('Potential credential in tracked file: ' + repr(path))
-              sys.exit(1)
-          print('Public tracked-file scan passed; no matched privileged credential patterns.')
-          PY
-  audit:
-    if: github.event_name != 'pull_request'
-    name: Audit private V2 packages without APK build
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    defaults:
-      run:
-        working-directory: private-src/mobile
-    steps:
-      - name: Check out private native source with read-only credentials
-        uses: actions/checkout@v4
-        with:
-          repository: gideondreams3325/traydaq-v2
-          ref: main
-          path: private-src
-          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
       - name: Install dependency metadata without lifecycle scripts
         run: npm install --ignore-scripts --no-audit --no-fund
       - name: Find high and critical vulnerabilities in production packages
         run: npm audit --omit=dev --audit-level=high
-      - name: Reject tracked private credential files
-        working-directory: private-src
-        shell: bash
-        run: |
-          set -euo pipefail
-          if git ls-files | grep -Eq '(^|/)(\.env(\..*)?|[^/]+\.(jks|keystore|p12|p8|pem)|[^/]*service.account[^/]*\.json|firebase.admin[^/]*\.json)$'; then
-            echo '::error::A potential private key or environment file is tracked in the source repository.'
-            exit 1
-          fi
-      - name: Report security scan completed
-        run: echo 'TRAYDAQ dependency audit completed without generating an APK.'
- >/dev/null; then
-            echo '::error::A potential private key or environment file is tracked in the source repository.'
-            exit 1
-          fi
-      - name: Report security scan completed
-        run: echo 'TRAYDAQ dependency audit completed without generating an APK.'
-, name):
-                  bad.append(str(path)); continue
-              if not path.is_file() or path.is_symlink():
-                  continue
-              data = path.read_bytes()
-              if any(pattern.search(data) for pattern in patterns):
-                  bad.append(str(path)); continue
-              for match in jwt.finditer(data):
-                  payload = match.group(1)
-                  try:
-                      decoded = json.loads(base64.urlsafe_b64decode(payload + b'=' * (-len(payload) % 4)))
-                      if isinstance(decoded, dict) and decoded.get('role') == 'service_role':
-                          bad.append(str(path)); break
-                  except (ValueError, UnicodeError):
-                      pass
-          if bad:
-              for path in sorted(set(bad)):
-                  print('Potential credential in tracked file: ' + repr(path))
-              sys.exit(1)
-          print('Public tracked-file scan passed; no matched privileged credential patterns.')
-          PY
-  audit:
-    if: github.event_name != 'pull_request'
-    name: Audit private V2 packages without APK build
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    defaults:
-      run:
-        working-directory: private-src/mobile
-    steps:
-      - name: Check out private native source with read-only credentials
-        uses: actions/checkout@v4
-        with:
-          repository: gideondreams3325/traydaq-v2
-          ref: main
-          path: private-src
-          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
-          persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Install dependency metadata without lifecycle scripts
-        run: npm install --ignore-scripts --no-audit --no-fund
-      - name: Find high and critical vulnerabilities in production packages
-        run: npm audit --omit=dev --audit-level=high
-      - name: Reject tracked private credential files
-        working-directory: private-src
-        shell: bash
-        run: |
-          set -euo pipefail
-          if git ls-files | grep -Eq '(^|/)(\.env(\..*)?|[^/]+\.(jks|keystore|p12|p8|pem)|[^/]*service.account[^/]*\.json|firebase.admin[^/]*\.json)$'; then
-            echo '::error::A potential private key or environment file is tracked in the source repository.'
-            exit 1
-          fi
       - name: Report security scan completed
         run: echo 'TRAYDAQ dependency audit completed without generating an APK.'

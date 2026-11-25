@@ -1,0 +1,77 @@
+name: TRAYDAQ existing Staff Worker recovery and verification
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/staff-parity-cloudflare-recovery-20261125.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-staff-iphone-existing-worker
+  cancel-in-progress: false
+jobs:
+  staff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: c0df1bdef984292d878532557ec46fb7db848502
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate and build exact merged staff source
+        working-directory: source
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "c0df1bdef984292d878532557ec46fb7db848502"
+          npm install --no-audit --no-fund
+          npm run typecheck:staff
+          node --test tests/staff-*.test.mjs
+          npm run build:staff
+          test -s dist-staff/index.html
+      - name: Validate Staff Worker package
+        working-directory: source
+        run: npx --yes wrangler@4.45.0 deploy --dry-run --config wrangler.staff.jsonc --outdir ../staff-dry
+      - name: Confirm existing Staff Worker and release access
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${CF_API_TOKEN:-}" || -z "${CF_ACCOUNT_ID:-}" ]]; then
+            echo "::error::Existing Cloudflare release credentials unavailable in V2 Builder."
+            exit 1
+          fi
+          curl --silent --show-error --fail --max-time 25 -H "Authorization: Bearer ${CF_API_TOKEN}" "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/workers/scripts/traydaq-staff-iphone/settings" > "$RUNNER_TEMP/staff-worker-settings.json"
+          jq -e '.success == true' "$RUNNER_TEMP/staff-worker-settings.json" >/dev/null
+      - name: Deploy only the existing Staff Worker
+        working-directory: source
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.45.0 deploy --config wrangler.staff.jsonc
+      - name: Verify published staff asset matches validated build
+        working-directory: source
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'JS'
+          import {readFileSync} from 'node:fs';
+          const html=readFileSync('dist-staff/index.html','utf8');
+          const asset=html.match(/src="(\/assets\/[^"]+\.js)"/)?.[1];
+          if(!asset)throw Error('No entry asset in local build');
+          const remote=await fetch('https://staff.traydaq.com/?verify=c0df1bdef984292d878532557ec46fb7db848502',{cache:'no-store'});
+          if(!remote.ok)throw Error('Staff hostname unavailable: '+remote.status);
+          const body=await remote.text();
+          if(!body.includes(asset))throw Error('Production entry asset does not yet match validated build');
+          const deployed=await fetch(new URL(asset,'https://staff.traydaq.com'));
+          if(!deployed.ok)throw Error('Deployed asset unavailable');
+          if(!Buffer.from(await deployed.arrayBuffer()).equals(readFileSync('dist-staff'+asset)))throw Error('Deployed asset differs');
+          console.log('Production staff entry asset matches exact merged build.');
+          JS

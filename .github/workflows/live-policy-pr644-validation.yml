@@ -1,0 +1,159 @@
+name: TRAYDAQ PR 644 live policy and background sync validation
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/live-policy-pr644-validation.yml'
+permissions:
+  contents: read
+env:
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: f69334bf927a28267be97460ed8360b0c52005a1
+          path: private-src
+          persist-credentials: false
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+      - name: Verify private revision
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "f69334bf927a28267be97460ed8360b0c52005a1"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+      - name: Web tests, typecheck and build
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -- 'node --test tests/live-policy-background-sync.test.mjs' 'npm test' 'npm run typecheck' 'npm run build'
+          failed=0
+          for task in "$@"; do
+            label=$(printf '%s' "$task" | tr -cs 'A-Za-z0-9' '-')
+            if bash -c "$task" > "$RUNNER_TEMP/$label.log" 2>&1; then
+              echo "PASS $label"
+            else
+              echo "::error::FAIL $label (private log withheld)"
+              grep -E '^[[:space:]]*not ok [0-9]+ - ' "$RUNNER_TEMP/$label.log" | sed -E 's/[^A-Za-z0-9 _:,.-]/-/g' | cut -c 1-150 | head -15 || true
+              failed=1
+            fi
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/$label.log" | tail -3 || true
+            grep -oE 'error TS[0-9]+' "$RUNNER_TEMP/$label.log" | sort | uniq -c | head -15 || true
+            grep -Eo '[A-Za-z0-9_./-]+\.tsx?\([0-9]+,[0-9]+\): error TS[0-9]+' "$RUNNER_TEMP/$label.log" | head -30 || true
+          done
+          test "$failed" -eq 0
+
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: f69334bf927a28267be97460ed8360b0c52005a1
+          path: private-src
+          persist-credentials: false
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+      - name: Verify private revision
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "f69334bf927a28267be97460ed8360b0c52005a1"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+      - name: Native tests, typecheck and export
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          set -- 'node --test tests/*.test.mjs' 'npm run typecheck' 'npm run export:android'
+          failed=0
+          for task in "$@"; do
+            label=$(printf '%s' "$task" | tr -cs 'A-Za-z0-9' '-')
+            if bash -c "$task" > "$RUNNER_TEMP/$label.log" 2>&1; then
+              echo "PASS $label"
+            else
+              echo "::error::FAIL $label (private log withheld)"
+              grep -E '^[[:space:]]*not ok [0-9]+ - ' "$RUNNER_TEMP/$label.log" | sed -E 's/[^A-Za-z0-9 _:,.-]/-/g' | cut -c 1-150 | head -15 || true
+              failed=1
+            fi
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/$label.log" | tail -3 || true
+            grep -oE 'error TS[0-9]+' "$RUNNER_TEMP/$label.log" | sort | uniq -c | head -15 || true
+            grep -Eo '[A-Za-z0-9_./-]+\.tsx?\([0-9]+,[0-9]+\): error TS[0-9]+' "$RUNNER_TEMP/$label.log" | head -30 || true
+          done
+          test "$failed" -eq 0
+
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: testonly
+          POSTGRES_DB: traydaq_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGPASSWORD: testonly
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: f69334bf927a28267be97460ed8360b0c52005a1
+          path: private-src
+          persist-credentials: false
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+      - name: Test isolated revision triggers with private fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          db=(psql -h localhost -U postgres -d traydaq_test -v ON_ERROR_STOP=1 -q)
+          "${db[@]}" > "$RUNNER_TEMP/db.log" 2>&1 <<'SQL'
+          CREATE ROLE anon;
+          CREATE ROLE authenticated;
+          CREATE TABLE public.v2_public_catalog_revisions(kind text PRIMARY KEY,revision bigint NOT NULL DEFAULT 0,updated_at timestamptz DEFAULT now(),CONSTRAINT v2_public_catalog_revisions_kind_check CHECK(kind IN ('feed','marketplace','vacancies','events','music','profiles')));
+          ALTER TABLE public.v2_public_catalog_revisions ENABLE ROW LEVEL SECURITY;
+          GRANT SELECT ON public.v2_public_catalog_revisions TO anon,authenticated;
+          CREATE POLICY public_marker ON public.v2_public_catalog_revisions FOR SELECT TO anon,authenticated USING(true);
+          INSERT INTO public.v2_public_catalog_revisions(kind) VALUES('feed'),('marketplace'),('vacancies'),('events'),('music'),('profiles');
+          CREATE TABLE public.v2_admin_policy_revisions(id int primary key,status text,sections jsonb);
+          CREATE TABLE public.traydrive_directory_listings(id int primary key,status text,private_note text);
+          ALTER TABLE public.v2_admin_policy_revisions ENABLE ROW LEVEL SECURITY;
+          ALTER TABLE public.traydrive_directory_listings ENABLE ROW LEVEL SECURITY;
+          SQL
+          "${db[@]}" -f private-src/supabase/verification/live_policy_traydrive_signal_candidate.sql >> "$RUNNER_TEMP/db.log" 2>&1
+          "${db[@]}" >> "$RUNNER_TEMP/db.log" 2>&1 <<'SQL'
+          INSERT INTO public.v2_admin_policy_revisions VALUES(1,'proposed','[]');
+          INSERT INTO public.traydrive_directory_listings VALUES(1,'pending','private');
+          DO $$ BEGIN
+           IF EXISTS(SELECT 1 FROM public.v2_public_catalog_revisions WHERE revision<>0) THEN RAISE EXCEPTION 'private write emitted public signal'; END IF;
+          END $$;
+          UPDATE public.v2_admin_policy_revisions SET status='approved' WHERE id=1;
+          UPDATE public.traydrive_directory_listings SET status='approved' WHERE id=1;
+          UPDATE public.traydrive_directory_listings SET private_note='updated' WHERE id=1;
+          UPDATE public.traydrive_directory_listings SET private_note='updated' WHERE id=1;
+          UPDATE public.traydrive_directory_listings SET status='rejected' WHERE id=1;
+          DO $$ BEGIN
+           IF (SELECT revision FROM public.v2_public_catalog_revisions WHERE kind='policies')<>1 THEN RAISE EXCEPTION 'policy marker failed'; END IF;
+           IF (SELECT revision FROM public.v2_public_catalog_revisions WHERE kind='traydrive')<>3 THEN RAISE EXCEPTION 'directory marker failed'; END IF;
+           IF (SELECT count(*) FROM public.v2_public_catalog_revisions)<>8 THEN RAISE EXCEPTION 'legacy markers lost'; END IF;
+           IF has_schema_privilege('anon','traydaq_sync_internal','USAGE') OR has_schema_privilege('authenticated','traydaq_sync_internal','USAGE') OR has_table_privilege('anon','public.v2_admin_policy_revisions','SELECT') OR has_table_privilege('anon','public.traydrive_directory_listings','SELECT') OR has_table_privilege('anon','public.v2_public_catalog_revisions','UPDATE') THEN RAISE EXCEPTION 'private boundary failed'; END IF;
+          END $$;
+          SQL
+          echo "PASS isolated approved-only revision triggers and public privacy boundary"

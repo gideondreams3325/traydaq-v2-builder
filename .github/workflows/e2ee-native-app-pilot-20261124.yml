@@ -17,11 +17,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 0a0c68a65cb0ed3895b567263a88169c79fcdb6e
+          ref: fe6eb173c0ffc3ab1ffabdfb8afa6b2a08d81c56
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
-      - run: test "$(git -C private-src rev-parse HEAD)" = "0a0c68a65cb0ed3895b567263a88169c79fcdb6e"
+      - run: test "$(git -C private-src rev-parse HEAD)" = "fe6eb173c0ffc3ab1ffabdfb8afa6b2a08d81c56"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -37,6 +37,7 @@ jobs:
           set -euo pipefail
           npm ci --no-audit --no-fund > "$RUNNER_TEMP/native-app-deps.log" 2>&1 || { echo "::error::Dependencies failed"; exit 1; }
           node --experimental-strip-types ../security/mls-qualification/tests/receipt-smoke.mjs
+          node --experimental-strip-types ../security/mls-qualification/tests/reference-smoke.mjs
           node --experimental-strip-types ../security/mls-qualification/tests/png-smoke.mjs
           npm run typecheck > "$RUNNER_TEMP/native-app-ts.log" 2>&1 || { grep -E 'error TS[0-9]+' "$RUNNER_TEMP/native-app-ts.log" | cut -c1-180 | head -25 || true; exit 1; }
       - name: Build native MLS libraries for gated source compilation

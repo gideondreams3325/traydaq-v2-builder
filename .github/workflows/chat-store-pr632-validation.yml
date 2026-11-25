@@ -1,0 +1,194 @@
+name: TRAYDAQ PR 632 source and database validation
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/chat-store-pr632-validation.yml'
+permissions:
+  contents: read
+env:
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 848c9991591bf8abdf298b9cc60ef8a51e6c861e
+          path: private-src
+          persist-credentials: false
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+      - name: Verify private revision
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "848c9991591bf8abdf298b9cc60ef8a51e6c861e"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+      - name: Web tests, typecheck and build
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -- 'node --test tests/chat-store-country-handle-regression.test.mjs' 'npm test' 'npm run typecheck' 'npm run build'
+          failed=0
+          for task in "$@"; do
+            label=$(printf '%s' "$task" | tr -cs 'A-Za-z0-9' '-')
+            if bash -c "$task" > "$RUNNER_TEMP/$label.log" 2>&1; then
+              echo "PASS $label"
+            else
+              echo "::error::FAIL $label (private log withheld)"
+              failed=1
+            fi
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/$label.log" | tail -3 || true
+            grep -oE 'error TS[0-9]+' "$RUNNER_TEMP/$label.log" | sort | uniq -c | head -15 || true
+          done
+          test "$failed" -eq 0
+
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 848c9991591bf8abdf298b9cc60ef8a51e6c861e
+          path: private-src
+          persist-credentials: false
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+      - name: Verify private revision
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "848c9991591bf8abdf298b9cc60ef8a51e6c861e"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+      - name: Native tests, typecheck and export
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          set -- 'node --test tests/*.test.mjs' 'npm run typecheck' 'npm run export:android'
+          failed=0
+          for task in "$@"; do
+            label=$(printf '%s' "$task" | tr -cs 'A-Za-z0-9' '-')
+            if bash -c "$task" > "$RUNNER_TEMP/$label.log" 2>&1; then
+              echo "PASS $label"
+            else
+              echo "::error::FAIL $label (private log withheld)"
+              failed=1
+            fi
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/$label.log" | tail -3 || true
+            grep -oE 'error TS[0-9]+' "$RUNNER_TEMP/$label.log" | sort | uniq -c | head -15 || true
+          done
+          test "$failed" -eq 0
+
+  edge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 848c9991591bf8abdf298b9cc60ef8a51e6c861e
+          path: private-src
+          persist-credentials: false
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+      - name: Verify private revision
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "848c9991591bf8abdf298b9cc60ef8a51e6c861e"
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Deno checks
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -- 'deno check --node-modules-dir=auto supabase/functions/firebase-native-shops/index.ts' 'deno check --node-modules-dir=auto supabase/functions/firebase-native-profile/index.ts'
+          failed=0
+          for task in "$@"; do
+            label=$(printf '%s' "$task" | tr -cs 'A-Za-z0-9' '-')
+            if bash -c "$task" > "$RUNNER_TEMP/$label.log" 2>&1; then
+              echo "PASS $label"
+            else
+              echo "::error::FAIL $label (private log withheld)"
+              failed=1
+            fi
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/$label.log" | tail -3 || true
+            grep -oE 'error TS[0-9]+' "$RUNNER_TEMP/$label.log" | sort | uniq -c | head -15 || true
+          done
+          test "$failed" -eq 0
+
+  database:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: isolated_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGPASSWORD: isolated_test
+      PGHOST: localhost
+      PGUSER: postgres
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 848c9991591bf8abdf298b9cc60ef8a51e6c861e
+          path: private-src
+          persist-credentials: false
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+      - name: Verify private revision
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "848c9991591bf8abdf298b9cc60ef8a51e6c861e"
+      - name: Run isolated PostgreSQL namespace tests
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -v ON_ERROR_STOP=1 > "$RUNNER_TEMP/db-fixture.log" 2>&1 <<'SQL'
+          create role anon;
+          create role authenticated;
+          create table public.v2_native_member_profiles(firebase_uid text primary key, username text);
+          create table public.native_seller_stores(id uuid primary key, store_username text);
+          insert into public.v2_native_member_profiles values ('member_a','existing_member');
+          insert into public.native_seller_stores values ('00000000-0000-0000-0000-000000000001','existing_store');
+          SQL
+          psql -v ON_ERROR_STOP=1 -f supabase/verification/shared_username_namespace_candidate.sql > "$RUNNER_TEMP/db-migration.log" 2>&1
+          psql -v ON_ERROR_STOP=1 > "$RUNNER_TEMP/db-test.log" 2>&1 <<'SQL'
+          do $$
+          begin
+            begin
+              insert into public.native_seller_stores values ('00000000-0000-0000-0000-000000000002','EXISTING_MEMBER');
+              raise exception 'store collision allowed';
+            exception when unique_violation then null; end;
+            begin
+              insert into public.v2_native_member_profiles values ('member_b','EXISTING_STORE');
+              raise exception 'member collision allowed';
+            exception when unique_violation then null; end;
+            insert into public.v2_native_member_profiles values ('member_b','available_handle');
+            begin
+              update public.native_seller_stores set store_username='available_handle';
+              raise exception 'update collision allowed';
+            exception when unique_violation then null; end;
+            update public.v2_native_member_profiles set username='new_handle' where firebase_uid='member_b';
+            insert into public.native_seller_stores values ('00000000-0000-0000-0000-000000000002','available_handle');
+            delete from public.v2_native_member_profiles where firebase_uid='member_b';
+            update public.native_seller_stores set store_username='new_handle' where id='00000000-0000-0000-0000-000000000002';
+            if (select count(*) from traydaq_handle_internal.claims) <> 3 then raise exception 'claim inventory mismatch'; end if;
+            if has_schema_privilege('anon','traydaq_handle_internal','USAGE') or has_schema_privilege('authenticated','traydaq_handle_internal','USAGE') then raise exception 'claim namespace exposed'; end if;
+          end $$;
+          SQL
+          echo "PASS: isolated SQL migration, case-insensitive cross-namespace collision, update rollback, release and role isolation"

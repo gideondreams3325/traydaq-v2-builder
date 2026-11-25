@@ -113,13 +113,14 @@ jobs:
             }
             echo "No committed lockfile; scan covers currently resolved dependencies only."
           fi
-      - name: Audit production dependencies without publishing private source details
+      - name: Audit runtime and build dependencies without publishing private source details
         shell: bash
         run: |
           set -euo pipefail
           report="$(mktemp)"
           trap 'rm -f "$report"' EXIT
-          npm audit --package-lock-only --omit=dev --audit-level=high --json >"$report" 2>/dev/null || true
+          # Build tools can compromise a release even when not shipped in the app.
+          npm audit --package-lock-only --audit-level=high --json >"$report" 2>/dev/null || true
           node - "$report" <<'JS'
           const fs = require('node:fs');
           let report;
@@ -129,10 +130,22 @@ jobs:
           if (report.error || !counts || !Number.isInteger(counts.high) || !Number.isInteger(counts.critical)) {
             console.error('::error::Dependency audit returned no valid vulnerability summary.'); process.exit(1);
           }
-          console.log('Production vulnerability counts: ' + JSON.stringify({
+          console.log('Runtime and build vulnerability counts: ' + JSON.stringify({
             info: counts.info, low: counts.low, moderate: counts.moderate,
             high: counts.high, critical: counts.critical
           }));
+          // Publish only independently public advisory identifiers, never private
+          // dependency graph details, manifest contents, paths or credentials.
+          const advisories = new Set();
+          for (const vulnerability of Object.values(report.vulnerabilities || {})) {
+            for (const via of vulnerability.via || []) {
+              if (!via || typeof via !== 'object') continue;
+              const url = typeof via.url === 'string' ? via.url : '';
+              const id = /^https:\/\/github\.com\/advisories\/(GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4})$/i.exec(url)?.[1];
+              if (id) advisories.add(id);
+            }
+          }
+          console.log('Public advisory IDs: ' + [...advisories].sort().join(', '));
           if (counts.high || counts.critical) process.exit(1);
           JS
       - name: Report security scan completed

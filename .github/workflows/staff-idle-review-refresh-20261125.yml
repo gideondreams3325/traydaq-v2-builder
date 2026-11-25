@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 418430f3c3b4c219cef2d3f85519613784e718d5
+          ref: 7462bb5f69f4ead6913ce37d6e20ff099755ccda
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: source
           persist-credentials: false
@@ -23,7 +23,7 @@ jobs:
           node-version: '22'
       - name: Verify exact candidate
         working-directory: source
-        run: test "$(git rev-parse HEAD)" = "418430f3c3b4c219cef2d3f85519613784e718d5"
+        run: test "$(git rev-parse HEAD)" = "7462bb5f69f4ead6913ce37d6e20ff099755ccda"
       - name: Native staff security regressions
         working-directory: source/admin-native
         run: npm run test:security && node --test tests/staff-idle-review-refresh.test.mjs tests/staff-current-currency-collaboration.test.mjs tests/staff-platform-policy-package.test.mjs tests/staff-handle-lookup.test.mjs
@@ -43,7 +43,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 418430f3c3b4c219cef2d3f85519613784e718d5
+          ref: 7462bb5f69f4ead6913ce37d6e20ff099755ccda
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: source
           persist-credentials: false

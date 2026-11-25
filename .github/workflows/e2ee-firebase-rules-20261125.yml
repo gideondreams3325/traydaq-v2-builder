@@ -1,0 +1,38 @@
+name: TRAYDAQ encrypted relay Firebase rule isolation
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/e2ee-firebase-rules-20261125.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  rules:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: eb57e606e5203488634ef56aeefc5c4d4860f53a
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - run: test "$(git -C private-src rev-parse HEAD)" = "eb57e606e5203488634ef56aeefc5c4d4860f53a"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Isolated Firebase database rules emulator
+        working-directory: private-src/firebase
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --ignore-scripts --no-audit --no-fund > "$RUNNER_TEMP/rules-install.log" 2>&1 || { echo "::error::Rule-test dependency installation failed"; exit 1; }
+          npm run test:rules > "$RUNNER_TEMP/rules-test.log" 2>&1 || { grep -E '^not ok|^# (fail|pass)|Error:|AssertionError' "$RUNNER_TEMP/rules-test.log" | cut -c1-180 | head -20 || true; exit 1; }
+          grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/rules-test.log"
+          echo "PASS: isolated database rule tests"
+# Local demo emulator only, no production credentials or deployment.

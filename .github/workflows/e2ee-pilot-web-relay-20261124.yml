@@ -14,11 +14,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: dd0ca36364d2eafefe3ceed1d829ec3c5cf99e27
+          ref: 91e04de45760b9a8d410bb0ae70865192f1f95b3
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
-      - run: test "$(git -C private-src rev-parse HEAD)" = "dd0ca36364d2eafefe3ceed1d829ec3c5cf99e27"
+      - run: test "$(git -C private-src rev-parse HEAD)" = "91e04de45760b9a8d410bb0ae70865192f1f95b3"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -44,11 +44,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: dd0ca36364d2eafefe3ceed1d829ec3c5cf99e27
+          ref: 91e04de45760b9a8d410bb0ae70865192f1f95b3
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
-      - run: test "$(git -C private-src rev-parse HEAD)" = "dd0ca36364d2eafefe3ceed1d829ec3c5cf99e27"
+      - run: test "$(git -C private-src rev-parse HEAD)" = "91e04de45760b9a8d410bb0ae70865192f1f95b3"
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x

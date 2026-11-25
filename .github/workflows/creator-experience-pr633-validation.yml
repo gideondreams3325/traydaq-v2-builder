@@ -1,4 +1,4 @@
-name: TRAYDAQ PR 633 creator experience validation
+name: TRAYDAQ PR 637 collection sync validation
 on:
   pull_request:
     branches: [main]
@@ -17,13 +17,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 267e874913c459745d724e9fe8c81f486976799a
+          ref: 1acfc4423c79ab79a0651732e9e84f0c675120a6
           path: private-src
           persist-credentials: false
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
       - name: Verify private revision
         working-directory: private-src
-        run: test "$(git rev-parse HEAD)" = "267e874913c459745d724e9fe8c81f486976799a"
+        run: test "$(git rev-parse HEAD)" = "1acfc4423c79ab79a0651732e9e84f0c675120a6"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -57,13 +57,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 267e874913c459745d724e9fe8c81f486976799a
+          ref: 1acfc4423c79ab79a0651732e9e84f0c675120a6
           path: private-src
           persist-credentials: false
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
       - name: Verify private revision
         working-directory: private-src
-        run: test "$(git rev-parse HEAD)" = "267e874913c459745d724e9fe8c81f486976799a"
+        run: test "$(git rev-parse HEAD)" = "1acfc4423c79ab79a0651732e9e84f0c675120a6"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -97,13 +97,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 267e874913c459745d724e9fe8c81f486976799a
+          ref: 1acfc4423c79ab79a0651732e9e84f0c675120a6
           path: private-src
           persist-credentials: false
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
       - name: Verify private revision
         working-directory: private-src
-        run: test "$(git rev-parse HEAD)" = "267e874913c459745d724e9fe8c81f486976799a"
+        run: test "$(git rev-parse HEAD)" = "1acfc4423c79ab79a0651732e9e84f0c675120a6"
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x

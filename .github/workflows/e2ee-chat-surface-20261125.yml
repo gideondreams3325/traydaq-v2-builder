@@ -14,11 +14,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 91e04de45760b9a8d410bb0ae70865192f1f95b3
+          ref: 5357494d46a0089b1e8336e8b92a9de4effb3721
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
-      - run: test "$(git -C private-src rev-parse HEAD)" = "91e04de45760b9a8d410bb0ae70865192f1f95b3"
+      - run: test "$(git -C private-src rev-parse HEAD)" = "5357494d46a0089b1e8336e8b92a9de4effb3721"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

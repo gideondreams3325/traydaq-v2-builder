@@ -29,10 +29,10 @@ jobs:
         run: npm run test:security && node --test tests/staff-idle-review-refresh.test.mjs
       - name: Native staff typecheck
         working-directory: source/admin-native
-        run: npm ci --no-audit --no-fund && npm run typecheck
+        run: npm install --no-audit --no-fund && npm run typecheck
       - name: iPhone staff typecheck and build
         working-directory: source
-        run: npm ci --no-audit --no-fund && npm run typecheck:staff && npm run build:staff
+        run: npm install --no-audit --no-fund && npm run typecheck:staff && npm run build:staff
       - name: Staff web security regressions
         working-directory: source
         run: node --test tests/staff-*.test.mjs

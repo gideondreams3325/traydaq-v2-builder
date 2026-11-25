@@ -17,13 +17,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 848c9991591bf8abdf298b9cc60ef8a51e6c861e
+          ref: 3e4816effdb38d0cb5eba25ee3f7d126e6246d0b
           path: private-src
           persist-credentials: false
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
       - name: Verify private revision
         working-directory: private-src
-        run: test "$(git rev-parse HEAD)" = "848c9991591bf8abdf298b9cc60ef8a51e6c861e"
+        run: test "$(git rev-parse HEAD)" = "3e4816effdb38d0cb5eba25ee3f7d126e6246d0b"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -57,13 +57,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 848c9991591bf8abdf298b9cc60ef8a51e6c861e
+          ref: 3e4816effdb38d0cb5eba25ee3f7d126e6246d0b
           path: private-src
           persist-credentials: false
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
       - name: Verify private revision
         working-directory: private-src
-        run: test "$(git rev-parse HEAD)" = "848c9991591bf8abdf298b9cc60ef8a51e6c861e"
+        run: test "$(git rev-parse HEAD)" = "3e4816effdb38d0cb5eba25ee3f7d126e6246d0b"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -97,13 +97,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 848c9991591bf8abdf298b9cc60ef8a51e6c861e
+          ref: 3e4816effdb38d0cb5eba25ee3f7d126e6246d0b
           path: private-src
           persist-credentials: false
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
       - name: Verify private revision
         working-directory: private-src
-        run: test "$(git rev-parse HEAD)" = "848c9991591bf8abdf298b9cc60ef8a51e6c861e"
+        run: test "$(git rev-parse HEAD)" = "3e4816effdb38d0cb5eba25ee3f7d126e6246d0b"
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
@@ -149,13 +149,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 848c9991591bf8abdf298b9cc60ef8a51e6c861e
+          ref: 3e4816effdb38d0cb5eba25ee3f7d126e6246d0b
           path: private-src
           persist-credentials: false
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
       - name: Verify private revision
         working-directory: private-src
-        run: test "$(git rev-parse HEAD)" = "848c9991591bf8abdf298b9cc60ef8a51e6c861e"
+        run: test "$(git rev-parse HEAD)" = "3e4816effdb38d0cb5eba25ee3f7d126e6246d0b"
       - name: Run isolated PostgreSQL namespace tests
         working-directory: private-src
         shell: bash

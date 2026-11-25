@@ -1,0 +1,37 @@
+name: TRAYDAQ encrypted chat surface Android source qualification
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/e2ee-chat-surface-20261125.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 79f17772afe5564554d1340d3f823e0d25cf203c
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - run: test "$(git -C private-src rev-parse HEAD)" = "79f17772afe5564554d1340d3f823e0d25cf203c"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/mobile/package-lock.json
+      - name: Android TypeScript and encrypted messaging tests
+        working-directory: private-src/mobile
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/native-deps.log" 2>&1 || { echo "::error::Dependencies failed"; exit 1; }
+          node --experimental-strip-types ../security/mls-qualification/tests/receipt-smoke.mjs
+          node --experimental-strip-types ../security/mls-qualification/tests/reference-smoke.mjs
+          node --experimental-strip-types ../security/mls-qualification/tests/png-smoke.mjs
+          node --test ../tests/private-chat-e2ee-foundation.test.mjs
+          npm run typecheck > "$RUNNER_TEMP/native-ts.log" 2>&1 || { grep -E 'error TS[0-9]+' "$RUNNER_TEMP/native-ts.log" | cut -c1-180 | head -25 || true; exit 1; }
+# Native bridge unchanged since fully validated #616. No package or deployment.

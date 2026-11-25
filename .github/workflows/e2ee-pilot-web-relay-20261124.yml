@@ -14,11 +14,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 1e06f3129c5cb095968346155e7b8a89b72e0988
+          ref: b70a6fcdb247ed4448814e042f35b24a9af29ea7
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
-      - run: test "$(git -C private-src rev-parse HEAD)" = "1e06f3129c5cb095968346155e7b8a89b72e0988"
+      - run: test "$(git -C private-src rev-parse HEAD)" = "b70a6fcdb247ed4448814e042f35b24a9af29ea7"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -28,7 +28,7 @@ jobs:
         run: |
           set -euo pipefail
           npm ci --no-audit --no-fund > "$RUNNER_TEMP/web-install.log" 2>&1 || { echo "::error::Web dependencies failed"; exit 1; }
-          node --experimental-strip-types --test tests/e2ee-row-history.test.mjs tests/e2ee-row-relay-postgres.test.mjs tests/e2ee-group-row-relay-postgres.test.mjs tests/e2ee-erasure-fence-postgres.test.mjs tests/e2ee-multi-device-postgres.test.mjs tests/e2ee-backup-export.test.mjs tests/e2ee-device-generation-postgres.test.mjs tests/e2ee-account-device-revocation-postgres.test.mjs tests/e2ee-row-media-postgres.test.mjs > "$RUNNER_TEMP/e2ee-row-tests.log" 2>&1 || { grep -E '^not ok|^# (fail|pass)|error:|Error:|AssertionError' "$RUNNER_TEMP/e2ee-row-tests.log" | cut -c1-180 | head -30; exit 1; }
+          node --experimental-strip-types --test tests/e2ee-row-history.test.mjs tests/e2ee-row-relay-postgres.test.mjs tests/e2ee-group-row-relay-postgres.test.mjs tests/e2ee-erasure-fence-postgres.test.mjs tests/e2ee-multi-device-postgres.test.mjs tests/e2ee-backup-export.test.mjs tests/e2ee-device-generation-postgres.test.mjs tests/e2ee-account-device-revocation-postgres.test.mjs tests/e2ee-row-media-postgres.test.mjs tests/e2ee-verified-codes.test.mjs > "$RUNNER_TEMP/e2ee-row-tests.log" 2>&1 || { grep -E '^not ok|^# (fail|pass)|error:|Error:|AssertionError' "$RUNNER_TEMP/e2ee-row-tests.log" | cut -c1-180 | head -30; exit 1; }
           grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/e2ee-row-tests.log"
           node --experimental-strip-types security/mls-qualification/tests/receipt-smoke.mjs
           node --experimental-strip-types security/mls-qualification/tests/reference-smoke.mjs
@@ -44,11 +44,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 1e06f3129c5cb095968346155e7b8a89b72e0988
+          ref: b70a6fcdb247ed4448814e042f35b24a9af29ea7
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
-      - run: test "$(git -C private-src rev-parse HEAD)" = "1e06f3129c5cb095968346155e7b8a89b72e0988"
+      - run: test "$(git -C private-src rev-parse HEAD)" = "b70a6fcdb247ed4448814e042f35b24a9af29ea7"
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x

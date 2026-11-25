@@ -62,12 +62,25 @@ jobs:
           PY
   audit:
     if: github.event_name != 'pull_request'
-    name: Audit private V2 packages without APK build
+    name: Audit ${{ matrix.component }} dependencies without APK build
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [web, user-android, staff-android, firebase-tools]
+        include:
+          - component: web
+            directory: .
+          - component: user-android
+            directory: mobile
+          - component: staff-android
+            directory: admin-native
+          - component: firebase-tools
+            directory: firebase
     defaults:
       run:
-        working-directory: private-src/mobile
+        working-directory: private-src/${{ matrix.directory }}
     steps:
       - name: Check out private native source with read-only credentials
         uses: actions/checkout@v4
@@ -89,9 +102,38 @@ jobs:
             echo '::error::A potential private key or environment file is tracked in the source repository.'
             exit 1
           fi
-      - name: Install dependency metadata without lifecycle scripts
-        run: npm install --ignore-scripts --no-audit --no-fund
-      - name: Find high and critical vulnerabilities in production packages
-        run: npm audit --omit=dev --audit-level=high
+      - name: Prepare dependency metadata without running lifecycle scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f package-lock.json ]; then
+            npm install --package-lock-only --ignore-scripts --no-audit --no-fund >"$RUNNER_TEMP/traydaq-install.log" 2>&1 || {
+              echo "::error::Unable to resolve dependency metadata."
+              exit 1
+            }
+            echo "No committed lockfile; scan covers currently resolved dependencies only."
+          fi
+      - name: Audit production dependencies without publishing private source details
+        shell: bash
+        run: |
+          set -euo pipefail
+          report="$(mktemp)"
+          trap 'rm -f "$report"' EXIT
+          npm audit --package-lock-only --omit=dev --audit-level=high --json >"$report" 2>/dev/null || true
+          node - "$report" <<'JS'
+          const fs = require('node:fs');
+          let report;
+          try { report = JSON.parse(fs.readFileSync(process.argv[2], 'utf8')); }
+          catch { console.error('::error::Dependency audit unavailable.'); process.exit(1); }
+          const counts = report.metadata?.vulnerabilities;
+          if (report.error || !counts || !Number.isInteger(counts.high) || !Number.isInteger(counts.critical)) {
+            console.error('::error::Dependency audit returned no valid vulnerability summary.'); process.exit(1);
+          }
+          console.log('Production vulnerability counts: ' + JSON.stringify({
+            info: counts.info, low: counts.low, moderate: counts.moderate,
+            high: counts.high, critical: counts.critical
+          }));
+          if (counts.high || counts.critical) process.exit(1);
+          JS
       - name: Report security scan completed
         run: echo 'TRAYDAQ dependency audit completed without generating an APK.'

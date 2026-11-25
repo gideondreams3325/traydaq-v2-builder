@@ -10,7 +10,7 @@ concurrency:
   group: traydaq-browser-hardening-20261125
   cancel-in-progress: false
 env:
-  SOURCE_SHA: dc1780fc8cfe5a4430fa6b3050f8a9268693b20e
+  SOURCE_SHA: 8f90fd3af14dd5da7a5323ab41e6b6d5ea10a627
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:

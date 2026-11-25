@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 env:
-  SOURCE_REF: c89c57112668551a82a9155c24c5e4728df7ebf4
+  SOURCE_REF: 397e8874fb185ae4591a11780d6e6de752da271d
 jobs:
   deno:
     runs-on: ubuntu-latest

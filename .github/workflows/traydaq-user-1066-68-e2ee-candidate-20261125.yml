@@ -1,0 +1,446 @@
+name: TRAYDAQ V2 User Android 1.0.66 (68) E2EE candidate AAB + APK
+
+# User-authorized signed candidate only, pinned to production E2EE PR #631; do not distribute until live activation is verified.
+# The Google Play Console upload remains a separate action; this workflow never auto-rolls out.
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/traydaq-user-1066-68-e2ee-candidate-20261125.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: traydaq-v2-user-google-play-aab
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  signed-aab:
+    name: Existing-key signed AAB (Android API 36)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+      NODE_OPTIONS: "--max-old-space-size=6144"
+      TRAYDAQ_RELEASE_VERSION: "1.0.66"
+      TRAYDAQ_RELEASE_CODE: "68"
+      TRAYDAQ_NATIVE_E2EE_PILOT: 'true'
+      EXPO_PUBLIC_TRAYDAQ_NATIVE_E2EE_PILOT: 'true'
+      EXPO_PUBLIC_TRAYDAQ_E2EE_ONLY_PILOT: 'true'
+      TRAYDAQ_SOURCE_SHA: "5918b9d3bb5cd35f917f30d50b8d4d156e6c8843"
+      # Public certificate from signed User APK run 40043905049 (v1.0.1/code 3).
+      TRAYDAQ_EXPECTED_SIGNING_SHA256: "716a68f5734545bc9d9700f045d2bfb1b1087ffe732021f216b32a575f03f83d"
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - name: Checkout latest private TRAYDAQ V2 user code
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: "5918b9d3bb5cd35f917f30d50b8d4d156e6c8843"
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Confirm user package and release version
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const a=require('./app.json').expo;
+          if(a.android?.package!=='com.traydaq.app')throw Error('Only com.traydaq.app may be published.');
+          if(!Number.isInteger(a.android.versionCode)||a.android.versionCode!==66||a.version!=='1.0.64'||
+             Number(process.env.TRAYDAQ_RELEASE_CODE)!==68||process.env.TRAYDAQ_RELEASE_VERSION!=='1.0.66')
+            throw Error('Expected reviewed base source 1.0.64 (66) and candidate release 1.0.66 (68).');
+          console.log('Package:',a.android.package,'version:',a.version,'code:',a.android.versionCode);
+          NODE
+          test "$(git -C .. rev-parse HEAD)" = "$TRAYDAQ_SOURCE_SHA"
+          echo "Source commit: $TRAYDAQ_SOURCE_SHA"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Install Android 16 build SDK
+        run: |
+          set -euo pipefail
+          test -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Validate existing TRAYDAQ V2 release signing key
+        env:
+          KEY_B64: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEYSTORE_B64 }}
+          STORE_PASS: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEYSTORE_PASSWORD }}
+          KEY_PASS: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          for field in KEY_B64 STORE_PASS KEY_PASS; do
+            if [[ -z "${!field:-}" ]]; then echo "::error::Existing signing secret $field is missing"; exit 1; fi
+          done
+          if [[ -n "$KEY_ALIAS" && "$KEY_ALIAS" != "traydaq-v2-upload" ]]; then
+            echo "::warning::Alias secret differs from the verified JKS alias; using the original alias."
+          fi
+          KEY_ALIAS=traydaq-v2-upload
+          umask 077
+          export TRAYDAQ_UPLOAD_KEYSTORE="$RUNNER_TEMP/traydaq-existing-upload.jks"
+          printf '%s' "$KEY_B64" | base64 --decode > "$TRAYDAQ_UPLOAD_KEYSTORE"
+          keytool -list -keystore "$TRAYDAQ_UPLOAD_KEYSTORE" -storepass:env STORE_PASS -alias "$KEY_ALIAS" >/dev/null
+          keytool -list -v -keystore "$TRAYDAQ_UPLOAD_KEYSTORE" -storepass:env STORE_PASS -alias "$KEY_ALIAS" > "$RUNNER_TEMP/original-cert.txt"
+          ACTUAL_SHA256=$(sed -n 's/^[[:space:]]*SHA256: //p' "$RUNNER_TEMP/original-cert.txt" | head -1 | tr -d ':' | tr '[:upper:]' '[:lower:]')
+          [[ "$ACTUAL_SHA256" == "$TRAYDAQ_EXPECTED_SIGNING_SHA256" ]] || {
+            echo "::error::Keystore differs from installed User APK certificate; refusing incompatible release."
+            exit 1
+          }
+          keytool -certreq -keystore "$TRAYDAQ_UPLOAD_KEYSTORE" -storepass:env STORE_PASS \
+            -keypass:env KEY_PASS -alias "$KEY_ALIAS" -file "$RUNNER_TEMP/key-check.csr" >/dev/null 2>&1
+          rm -f "$RUNNER_TEMP/key-check.csr"
+          echo "TRAYDAQ_UPLOAD_KEYSTORE=$TRAYDAQ_UPLOAD_KEYSTORE" >> "$GITHUB_ENV"
+          echo "TRAYDAQ_UPLOAD_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "Permanent release key verified; no replacement key generated."
+
+      - name: Verify Google OAuth client recognizes the existing certificate
+        env:
+          STORE_PASS: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -f google-services.json || { echo "::error::Missing existing mobile/google-services.json"; exit 1; }
+          node - <<'NODE'
+          const c=require('node:child_process');
+          const j=require('./google-services.json');
+          const pkg='com.traydaq.app';
+          if(j.project_info?.project_id!=='traydaq')throw Error('Wrong Firebase project');
+          const app=(j.client||[]).find(x=>x.client_info?.android_client_info?.package_name===pkg);
+          if(!app)throw Error('Android Firebase registration missing');
+          const output=c.execFileSync('keytool',['-list','-v','-keystore',process.env.TRAYDAQ_UPLOAD_KEYSTORE,
+            '-storepass:env','STORE_PASS','-alias',process.env.TRAYDAQ_UPLOAD_ALIAS],{encoding:'utf8'});
+          const cert=output.match(/^\s*SHA1:\s*([0-9A-F:]+)/im)?.[1]?.replace(/:/g,'').toLowerCase();
+          const registered=(app.oauth_client||[]).filter(x=>x.client_type===1&&x.android_info?.package_name===pkg)
+            .some(x=>String(x.android_info.certificate_hash||'').replace(/:/g,'').toLowerCase()===cert);
+          if(!cert||!registered)throw Error('Signing certificate does not match registered Google sign-in client');
+          console.log('Verified existing upload certificate against Firebase Android OAuth client.');
+          NODE
+
+      - name: Install and align installed Expo SDK 57 patch packages
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          cp package.json "$RUNNER_TEMP/traydaq-original-packages.json"
+          # Pin only Expo Doctor's eight SDK 57-compatible patch versions.
+          # Do not use expo install --fix: it tries to rewrite TRAYDAQ's dynamic
+          # app.config.js, which deliberately preserves Firebase safety checks.
+          npm install --no-audit --no-fund --save \
+            expo@~57.0.33 expo-asset@~57.0.21 \
+            expo-image-manipulator@~57.0.22 expo-image-picker@~57.0.21 \
+            expo-location@~57.0.23 expo-notifications@~57.0.25 \
+            expo-sharing@~57.0.26 expo-splash-screen@~57.0.11
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const before=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/traydaq-original-packages.json','utf8'));
+          const after=require('./package.json');
+          const allowed=new Set(['expo','expo-asset','expo-image-manipulator','expo-image-picker',
+            'expo-location','expo-notifications','expo-sharing','expo-splash-screen']);
+          for(const section of ['dependencies','devDependencies']){
+            const a=before[section]||{},b=after[section]||{};
+            if(Object.keys(a).some(name=>!(name in b))||Object.keys(b).some(name=>!(name in a)))throw Error('Patch alignment changed dependency membership');
+            for(const name of Object.keys(a)){
+              if(a[name]!==b[name]&&!allowed.has(name))
+                throw Error('Unexpected dependency change: '+name);
+            }
+          }
+          for(const name of allowed){
+            const resolved=require('./node_modules/'+name+'/package.json').version;
+            if(!resolved.startsWith('57.0.'))throw Error('Expo 57 dependency escaped intended SDK: '+name);
+          }
+          console.log('PASS: only approved Expo SDK 57 patch packages updated; no new packages');
+          NODE
+          # The security contract checks the two old SDK patch numbers.
+          # Update only those assertions to the compatible resolved versions;
+          # all content-security, Firebase identity and receipt checks remain.
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const path='tests/security.test.mjs';
+          let source=fs.readFileSync(path,'utf8');
+          const pairs=[
+            ["assert.equal(pkg.dependencies['expo-sharing'],'~57.0.19');",
+             "assert.equal(pkg.dependencies['expo-sharing'],'~57.0.26');"],
+            ["assert.equal(packageInfo.dependencies['expo-notifications'],'~57.0.21');",
+             "assert.equal(packageInfo.dependencies['expo-notifications'],'~57.0.25');"]
+          ];
+          for(const [oldValue,newValue] of pairs){
+            if(source.split(oldValue).length!==2)throw Error('Unexpected native security test layout');
+            source=source.replace(oldValue,newValue);
+          }
+          fs.writeFileSync(path,source);
+          console.log('PASS: exactly two historical Expo patch-version assertions aligned.');
+          NODE
+          npx expo-doctor
+          node --test tests/*.test.mjs
+          npm run typecheck
+
+      - name: Configure newer user release and remove development overlay permission
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const p='app.json';const c=JSON.parse(fs.readFileSync(p,'utf8'));
+          c.expo.version=process.env.TRAYDAQ_RELEASE_VERSION;
+          c.expo.android.versionCode=Number(process.env.TRAYDAQ_RELEASE_CODE);
+          c.expo.android.blockedPermissions=[...new Set([...(c.expo.android.blockedPermissions||[]),'android.permission.SYSTEM_ALERT_WINDOW'])];
+          if(c.expo.android.package!=='com.traydaq.app'||c.expo.android.versionCode<=4)throw Error('Invalid user release identity');
+          fs.writeFileSync(p,JSON.stringify(c,null,2)+'\n');
+          console.log('Play candidate version set to',c.expo.version,'code',c.expo.android.versionCode);
+          NODE
+
+      - name: Build MLS JNI libraries from the exact candidate for all four Android ABIs
+        working-directory: private-src/security/mls-qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup update stable
+          rustup default stable
+          ndk="${ANDROID_NDK_LATEST_HOME:-${ANDROID_NDK_HOME:-}}"
+          test -d "$ndk"
+          toolchain="$ndk/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          for spec in 'aarch64-linux-android:aarch64-linux-android:arm64-v8a' 'armv7-linux-androideabi:armv7a-linux-androideabi:armeabi-v7a' 'x86_64-linux-android:x86_64-linux-android:x86_64' 'i686-linux-android:i686-linux-android:x86'; do
+            IFS=: read -r target clang abi <<< "$spec"
+            rustup target add "$target"
+            linker="$toolchain/${clang}24-clang"
+            envname=$(echo "$target" | tr '[:lower:]-' '[:upper:]_')
+            export "CARGO_TARGET_${envname}_LINKER=$linker"
+            export "CC_$(echo "$target" | tr '-' '_')=$linker"
+            RUSTFLAGS="-C link-arg=-Wl,-z,max-page-size=16384" cargo build --release --locked --target "$target" --features android-jni > "$RUNNER_TEMP/mls-release-rust.log" 2>&1 || { grep -E '^error' "$RUNNER_TEMP/mls-release-rust.log" | cut -c1-180 | head -15 || true; exit 1; }
+            mkdir -p "$RUNNER_TEMP/mls-release-libs/$abi"
+            cp "target/$target/release/libtraydaq_mls_qualification.so" "$RUNNER_TEMP/mls-release-libs/$abi/"
+          done
+          echo "TRAYDAQ_MLS_JNI_LIBRARIES=$RUNNER_TEMP/mls-release-libs" >> "$GITHUB_ENV"
+
+      - name: Generate native Android release project
+        run: |
+          set -euo pipefail
+          npx expo export --platform android
+          npx expo prebuild --platform android --non-interactive
+
+      - name: Use original signing keystore for Gradle release bundle
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const p='android/app/build.gradle';
+          let s=fs.readFileSync(p,'utf8');
+          if(!/signingConfigs\s*\{/.test(s))throw Error('Missing Gradle signingConfigs');
+          const signing=[
+            '    traydaqExistingUpload {',
+            '        storeFile file(System.getenv("TRAYDAQ_UPLOAD_KEYSTORE"))',
+            '        storePassword System.getenv("TRAYDAQ_UPLOAD_STOREPASS")',
+            '        keyAlias System.getenv("TRAYDAQ_UPLOAD_ALIAS")',
+            '        keyPassword System.getenv("TRAYDAQ_UPLOAD_KEYPASS")',
+            '    }'
+          ].join('\n');
+          s=s.replace(/signingConfigs\s*\{/,match=>match+'\n'+signing+'\n');
+          const match='signingConfig signingConfigs.debug';
+          const idx=s.lastIndexOf(match);
+          if(idx<0||idx<s.indexOf('buildTypes {')||idx<s.lastIndexOf('release {'))
+            throw Error('Could not locate safe release signingConfig substitution.');
+          s=s.slice(0,idx)+s.slice(idx).replace(match,'signingConfig signingConfigs.traydaqExistingUpload');
+          fs.writeFileSync(p,s);
+          console.log('Release AAB configured to use original permanent keystore.');
+          NODE
+
+      - name: Build signed Google Play AAB (resilient Maven Central downloads)
+        env:
+          TRAYDAQ_UPLOAD_STOREPASS: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEYSTORE_PASSWORD }}
+          TRAYDAQ_UPLOAD_KEYPASS: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          cd android
+          chmod +x gradlew
+          # React Native 0.86.3 AAR downloads timed out on the first run.
+          # Allow longer official Maven Central HTTP reads and reduce concurrent requests.
+          # The same generated Android project and permanent signing key are reused.
+          for attempt in 1 2; do
+            LOG="$RUNNER_TEMP/traydaq-aab-gradle-attempt-${attempt}.log"
+            echo "Building signed AAB/APK (attempt ${attempt}/2, Maven timeouts increased)."
+            if ./gradlew --no-daemon --max-workers=2 \
+              -Dorg.gradle.internal.http.connectionTimeout=120000 \
+              -Dorg.gradle.internal.http.socketTimeout=300000 \
+              -Dorg.gradle.internal.repository.max.tentatives=5 \
+              -Dorg.gradle.internal.repository.initial.backoff=1000 \
+              :app:bundleRelease :app:assembleRelease > "$LOG" 2>&1; then
+              echo "PASS: signed AAB/APK compilation completed on attempt $attempt."
+              exit 0
+            fi
+            if ! grep -Eqi 'Read timed out|Connection reset|Connect timed out|Connection timed out|Could not download|Could not GET|Network is unreachable' "$LOG"; then
+              echo "::error::Gradle failed for a non-network reason. Inspect the private runner log."
+              sed -n '/^FAILURE:/,$p' "$LOG" | head -n 100 | sed -E 's/((PASSWORD|TOKEN|SECRET|KEY)=[^[:space:]]+)/[REDACTED]/Ig' || true
+              exit 1
+            fi
+            echo "::warning::Official dependency download failed on attempt $attempt."
+            if [ "$attempt" -eq 2 ]; then
+              echo "::error::Maven download failed again; release was not produced."
+              exit 1
+            fi
+            echo "Retrying the same release build with retained Gradle cache."
+            sleep 20
+          done
+
+      - name: Verify signed app bundle and target API exactly 36
+        env:
+          STORE_PASS: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          AAB=android/app/build/outputs/bundle/release/app-release.aab
+          test -s "$AAB"
+          unzip -t "$AAB" >/dev/null
+          jarsigner -verify "$AAB" >/dev/null
+          curl --fail --show-error --silent -L \
+            https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar \
+            -o "$RUNNER_TEMP/bundletool.jar"
+          echo "a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29  $RUNNER_TEMP/bundletool.jar" | sha256sum --check --status
+          TOOL="$RUNNER_TEMP/bundletool.jar"
+          java -jar "$TOOL" validate --bundle="$AAB"
+          TARGET=$(java -jar "$TOOL" dump manifest --bundle="$AAB" --xpath=/manifest/uses-sdk/@android:targetSdkVersion | tr -d '\r\n"')
+          PACKAGE=$(java -jar "$TOOL" dump manifest --bundle="$AAB" --xpath=/manifest/@package | tr -d '\r\n"')
+          CODE=$(java -jar "$TOOL" dump manifest --bundle="$AAB" --xpath=/manifest/@android:versionCode | tr -d '\r\n"')
+          EXPECTED_CODE=$(node -p "require('./app.json').expo.android.versionCode")
+          [[ "$TARGET" == 36 && "$PACKAGE" == com.traydaq.app && "$CODE" == "$EXPECTED_CODE" ]] || {
+            echo "::error::Bundle manifest mismatch: target=$TARGET package=$PACKAGE code=$CODE"; exit 1;
+          }
+          keytool -list -v -keystore "$TRAYDAQ_UPLOAD_KEYSTORE" -storepass:env STORE_PASS \
+            -alias "$TRAYDAQ_UPLOAD_ALIAS" > "$RUNNER_TEMP/expected-cert.txt"
+          keytool -printcert -jarfile "$AAB" > "$RUNNER_TEMP/aab-cert.txt"
+          EXPECTED=$(sed -n 's/^[[:space:]]*SHA256: //p' "$RUNNER_TEMP/expected-cert.txt" | head -1 | tr -d ':' | tr '[:upper:]' '[:lower:]')
+          ACTUAL=$(sed -n 's/^[[:space:]]*SHA256: //p' "$RUNNER_TEMP/aab-cert.txt" | head -1 | tr -d ':' | tr '[:upper:]' '[:lower:]')
+          [[ -n "$EXPECTED" && "$EXPECTED" == "$ACTUAL" ]] || {
+            echo "::error::AAB does not use the original release certificate"; exit 1;
+          }
+          [[ "$ACTUAL" == "$TRAYDAQ_EXPECTED_SIGNING_SHA256" ]]
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$APK"
+          APK_CERT=$("$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -1)
+          [[ "${APK_CERT,,}" == "$TRAYDAQ_EXPECTED_SIGNING_SHA256" ]]
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" | grep -F "package: name='com.traydaq.app' versionCode='68' versionName='1.0.66'"
+          # R8 must produce a real version-specific mapping file. Android Gradle
+          # Plugin embeds it in App Bundles for automatic Google Play ingestion.
+          MAP=android/app/build/outputs/mapping/release/mapping.txt
+          test -s "$MAP" || { echo "::error::R8 was not enabled or mapping.txt was not generated"; exit 1; }
+          MAP_ENTRY=BUNDLE-METADATA/com.android.tools.build.obfuscation/proguard.map
+          unzip -Z1 "$AAB" | grep -Fx "$MAP_ENTRY" >/dev/null || {
+            echo "::error::AAB lacks embedded Google Play deobfuscation mapping"; exit 1;
+          }
+          cmp "$MAP" <(unzip -p "$AAB" "$MAP_ENTRY") || {
+            echo "::error::Embedded AAB mapping differs from generated R8 mapping"; exit 1;
+          }
+          echo "PASS: release R8 mapping generated and embedded for automatic Google Play ingestion."
+          mkdir -p play-release
+          java -jar "$TOOL" dump manifest --bundle="$AAB" > play-release/AndroidManifest.xml
+          keytool -exportcert -rfc -keystore "$TRAYDAQ_UPLOAD_KEYSTORE" -storepass:env STORE_PASS -alias "$TRAYDAQ_UPLOAD_ALIAS" > play-release/TRAYDAQ-public-signing-certificate.pem
+          cp package.json play-release/resolved-expo-package.json
+          cp package-lock.json play-release/resolved-expo-package-lock.json
+          cp "$AAB" play-release/TRAYDAQ-1.0.66-68.aab
+          cp "$APK" play-release/TRAYDAQ-1.0.66-68.apk
+          cp "$MAP" play-release/mapping.txt
+          python3 - <<'PY'
+          import zipfile,struct,hashlib,json,os,xml.etree.ElementTree as ET
+          root=ET.parse('play-release/AndroidManifest.xml').getroot();ns='{http://schemas.android.com/apk/res/android}'
+          assert root.attrib.get('package')=='com.traydaq.app'
+          assert root.attrib.get(ns+'versionCode')=='68'
+          assert root.find('uses-sdk').attrib.get(ns+'targetSdkVersion')=='36'
+          permissions=[x.attrib.get(ns+'name') for x in root.findall('uses-permission')]
+          assert 'android.permission.SYSTEM_ALERT_WINDOW' not in permissions
+          assert 'android.permission.RECORD_AUDIO' in permissions, 'Voice-note recording permission missing'
+          for required in ('android.permission.CAMERA','android.permission.ACCESS_FINE_LOCATION',
+                           'android.permission.ACCESS_COARSE_LOCATION','android.permission.POST_NOTIFICATIONS',
+                           'android.permission.USE_BIOMETRIC'):
+              assert required in permissions, 'Missing feature permission: '+required
+          assert 'android.permission.READ_CONTACTS' not in permissions
+          assert 'android.permission.READ_SMS' not in permissions
+          assert 'android.permission.MANAGE_EXTERNAL_STORAGE' not in permissions
+          assert 'android.permission.ACCESS_BACKGROUND_LOCATION' not in permissions
+          assert 'com.google.android.gms.permission.AD_ID' not in permissions
+          assert 'android.permission.READ_MEDIA_IMAGES' not in permissions
+          assert 'android.permission.READ_MEDIA_VIDEO' not in permissions
+          # Verify optional hardware requirements in the final Play-delivered manifest.
+          optional_features=(
+              'android.hardware.camera','android.hardware.camera.any',
+              'android.hardware.camera.front','android.hardware.camera.autofocus',
+              'android.hardware.camera.flash','android.hardware.microphone',
+              'android.hardware.location','android.hardware.location.gps',
+              'android.hardware.location.network','android.hardware.fingerprint')
+          declared_features=root.findall('uses-feature')
+          for feature in optional_features:
+              entries=[x for x in declared_features if x.attrib.get(ns+'name')==feature]
+              assert len(entries)==1, 'Optional hardware declaration missing or duplicated: '+feature
+              assert entries[0].attrib.get(ns+'required')=='false', 'Google Play hardware filter still required: '+feature
+          checked=[]
+          with zipfile.ZipFile('play-release/TRAYDAQ-1.0.66-68.aab') as z:
+              for name in z.namelist():
+                  if name.endswith('.so') and ('/arm64-v8a/' in name or '/x86_64/' in name):
+                      b=z.read(name);phoff=struct.unpack_from('<Q',b,32)[0];esz,count=struct.unpack_from('<HH',b,54)
+                      for i in range(count):
+                          p=phoff+i*esz
+                          if struct.unpack_from('<I',b,p)[0]==1:
+                              assert struct.unpack_from('<Q',b,p+48)[0]>=16384, '16KiB alignment failure: '+name
+                      checked.append(name)
+          assert checked,'No 64-bit native libraries were verified'
+          with zipfile.ZipFile('play-release/TRAYDAQ-1.0.66-68.aab') as z:
+              for abi in ('arm64-v8a','armeabi-v7a','x86_64','x86'):
+                  assert 'base/lib/'+abi+'/libtraydaq_mls_qualification.so' in z.namelist(), 'Missing MLS ABI: '+abi
+          with zipfile.ZipFile('play-release/TRAYDAQ-1.0.66-68.apk') as z:
+              for abi in ('arm64-v8a','armeabi-v7a','x86_64','x86'):
+                  assert 'lib/'+abi+'/libtraydaq_mls_qualification.so' in z.namelist(), 'Missing MLS ABI: '+abi
+          print('Verified packaged MLS libraries for all four Android ABIs.')
+          mapping=open('play-release/mapping.txt','rb').read()
+          assert len(mapping)>100, 'R8 mapping file missing or empty'
+          with zipfile.ZipFile('play-release/TRAYDAQ-1.0.66-68.aab') as z:
+              assert z.read('BUNDLE-METADATA/com.android.tools.build.obfuscation/proguard.map')==mapping, 'R8 metadata mismatch'
+          info={'package':'com.traydaq.app','versionName':'1.0.66','versionCode':68,'targetSdk':36,
+                'minSdk':int(root.find('uses-sdk').attrib[ns+'minSdkVersion']),
+                'privateSourceCommit':os.environ['TRAYDAQ_SOURCE_SHA'],
+                'signingCertificateSha256':os.environ['TRAYDAQ_EXPECTED_SIGNING_SHA256'],
+                'referenceApkRun':40043905049,'referenceApkVersion':'1.0.1 (3)',
+                'native64BitLibraries16KiBVerified':len(checked),'permissions':permissions,
+                'optionalHardwareFeaturesVerified':list(optional_features),
+                'r8Enabled':True,'googlePlayMappingEmbedded':True,
+                'mappingSha256':hashlib.sha256(mapping).hexdigest(),
+                'playAppSigningConfigured':False,'uploadedToGooglePlay':False,'staffBuilt':False,
+                'files':{}}
+          for f in ['TRAYDAQ-1.0.66-68.aab','TRAYDAQ-1.0.66-68.apk','mapping.txt']:
+              b=open('play-release/'+f,'rb').read();info['files'][f]={'size':len(b),'sha256':hashlib.sha256(b).hexdigest()}
+          json.dump(info,open('play-release/release-verification.json','w'),indent=2)
+          print('Verified same-certificate AAB/APK, target 36, permissions and',len(checked),'16KiB ELF libraries.')
+          PY
+          cat > play-release/GOOGLE-PLAY-TESTING-NOTES.txt <<'NOTES'
+          TRAYDAQ User Android 1.0.66 (68) — E2EE candidate, not activated or distributed
+          Application ID: com.traydaq.app
+          Source: 5918b9d3bb5cd35f917f30d50b8d4d156e6c8843
+          Includes new-conversation encrypted messaging and verified device rosters.
+          Existing ordinary conversations and staff applications remain unchanged.
+          Do not distribute or upload this candidate to Play until production Firebase rules,
+          server activation and physical-device verification have passed.
+          NOTES
+          echo "PASS: user AAB; package=$PACKAGE versionCode=$CODE target API=$TARGET, original signing key."
+          sha256sum "$AAB"
+
+      - name: Save signed user AAB, compatible APK and public verification evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: TRAYDAQ-V2-User-1.0.66-68-E2EE-Candidate
+          path: private-src/mobile/play-release/
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Remove temporary signing files
+        if: always()
+        working-directory: .
+        run: rm -f "$RUNNER_TEMP/traydaq-existing-upload.jks" "$RUNNER_TEMP/original-cert.txt" "$RUNNER_TEMP/expected-cert.txt" "$RUNNER_TEMP/aab-cert.txt" "$RUNNER_TEMP/key-check.csr"
+

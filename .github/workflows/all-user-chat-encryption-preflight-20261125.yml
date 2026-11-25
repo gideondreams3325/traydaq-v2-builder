@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 7a4b2abf1b3c25e09bb0c209f445d68d2b1f12f2
+          ref: 570957a0a97bf7ba1dc92d1b0ef50ce7d34687ae
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
@@ -27,7 +27,7 @@ jobs:
       - name: Validate exact candidate and migration preflight
         working-directory: private-src
         run: |
-          test "$(git rev-parse HEAD)" = "7a4b2abf1b3c25e09bb0c209f445d68d2b1f12f2"
+          test "$(git rev-parse HEAD)" = "570957a0a97bf7ba1dc92d1b0ef50ce7d34687ae"
           deno test supabase/functions/_shared/encryptedOnlyThread_test.ts > "$RUNNER_TEMP/preflight.log" 2>&1 || { echo "::error::Migration routing tests failed"; exit 1; }
           echo "PASS: legacy successor and existing encryption policy tests"
           node --test tests/all-user-chat-encryption-cutover.test.mjs > "$RUNNER_TEMP/cutover.log" 2>&1 || { echo "::error::Cutover guard tests failed"; exit 1; }

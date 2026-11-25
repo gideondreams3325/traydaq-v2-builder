@@ -51,7 +51,11 @@ jobs:
             if(!res.ok)throw Error('Live Firebase rules readback denied: HTTP '+res.status);
             const live=await res.json(),expected=JSON.parse(readFileSync('firebase/database.rules.json','utf8'));
             const canonical=x=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.keys(x).sort().map(k=>[k,canonical(x[k])])):Array.isArray(x)?x.map(canonical):x;
-            if(JSON.stringify(canonical(live))!==JSON.stringify(canonical(expected)))throw Error('Live Firebase rules differ from the validated source; no rules were changed');
+            const equal=(a,b)=>JSON.stringify(canonical(a))===JSON.stringify(canonical(b));
+            const roots=['messages','messageThreads','chatReadReceipts','userConversations','chatE2eePilotV2Devices','chatE2eePilotV3Devices','chatE2eePilotV2Relay','memberAccess','memberSanctions','memberBlocks'];
+            for(const key of roots) console.log('Reviewed rule section '+key+': '+(equal(live.rules?.[key],expected.rules?.[key])?'MATCH':'DIFFERS'));
+            console.log('Root read/write default deny: '+(live.rules?.['.read']===false&&live.rules?.['.write']===false?'YES':'NO'));
+            if(!equal(live,expected))throw Error('Live Firebase rules differ from the validated source; no rules were changed');
             console.log('PASS: live Firebase RTDB rules match the reviewed source exactly.');
           }catch(e){
             // Never print provider response bodies, keys or rule contents.

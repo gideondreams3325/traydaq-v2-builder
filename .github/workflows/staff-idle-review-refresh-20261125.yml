@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 0ca3c6a3624edfa4327b4fbc2cb578c770c09488
+          ref: 0da8fe9a13325f0b1a37be72b23ccb019b347c31
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: source
           persist-credentials: false
@@ -23,10 +23,10 @@ jobs:
           node-version: '22'
       - name: Verify exact candidate
         working-directory: source
-        run: test "$(git rev-parse HEAD)" = "0ca3c6a3624edfa4327b4fbc2cb578c770c09488"
+        run: test "$(git rev-parse HEAD)" = "0da8fe9a13325f0b1a37be72b23ccb019b347c31"
       - name: Native staff security regressions
         working-directory: source/admin-native
-        run: npm run test:security && node --test tests/staff-idle-review-refresh.test.mjs
+        run: npm run test:security && node --test tests/staff-idle-review-refresh.test.mjs tests/staff-current-currency-collaboration.test.mjs
       - name: Native staff typecheck
         working-directory: source/admin-native
         run: npm install --no-audit --no-fund && npm run typecheck
@@ -36,3 +36,20 @@ jobs:
       - name: Staff web security regressions
         working-directory: source
         run: node --test tests/staff-*.test.mjs
+  edge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 0da8fe9a13325f0b1a37be72b23ccb019b347c31
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: source
+          persist-credentials: false
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Typecheck staff Edge handler
+        working-directory: source
+        run: deno check --node-modules-dir=auto supabase/functions/firebase-admin-workspace/index.ts

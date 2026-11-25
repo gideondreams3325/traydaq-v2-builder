@@ -17,11 +17,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 5918b9d3bb5cd35f917f30d50b8d4d156e6c8843
+          ref: d91390f43cc5a6a08e3d2cde5d49f1c37ba6b6c2
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
-      - run: test "$(git -C private-src rev-parse HEAD)" = "5918b9d3bb5cd35f917f30d50b8d4d156e6c8843"
+      - run: test "$(git -C private-src rev-parse HEAD)" = "d91390f43cc5a6a08e3d2cde5d49f1c37ba6b6c2"
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -36,9 +36,9 @@ jobs:
         run: |
           set -euo pipefail
           npm ci --no-audit --no-fund > "$RUNNER_TEMP/native-app-deps.log" 2>&1 || { echo "::error::Dependencies failed"; exit 1; }
-          node --experimental-strip-types ../security/mls-qualification/tests/receipt-smoke.mjs
-          node --experimental-strip-types ../security/mls-qualification/tests/reference-smoke.mjs
-          node --experimental-strip-types ../security/mls-qualification/tests/png-smoke.mjs
+          node --experimental-strip-types ../security/mls-qualification/tests/receipt-smoke.mjs > "$RUNNER_TEMP/app-receipt.log" 2>&1 || { echo "::error::Receipt smoke failed"; exit 1; }
+          node --experimental-strip-types ../security/mls-qualification/tests/reference-smoke.mjs > "$RUNNER_TEMP/app-reference.log" 2>&1 || { echo "::error::Reference smoke failed"; exit 1; }
+          node --experimental-strip-types ../security/mls-qualification/tests/png-smoke.mjs > "$RUNNER_TEMP/app-png.log" 2>&1 || { echo "::error::PNG smoke failed"; exit 1; }
           npm run typecheck > "$RUNNER_TEMP/native-app-ts.log" 2>&1 || { grep -E 'error TS[0-9]+' "$RUNNER_TEMP/native-app-ts.log" | cut -c1-180 | head -25 || true; exit 1; }
       - name: Cross-platform archive format verification
         working-directory: private-src
@@ -48,7 +48,7 @@ jobs:
           javac -d "$RUNNER_TEMP/backup-classes" security/mls-qualification/android/com/traydaq/e2ee/ChatBackup.java security/mls-qualification/android/com/traydaq/e2ee/ChatBackupSmoke.java
           java -cp "$RUNNER_TEMP/backup-classes" com.traydaq.e2ee.ChatBackupSmoke "$RUNNER_TEMP/synthetic.tdbackup"
           npm ci --no-audit --no-fund > "$RUNNER_TEMP/archive-deps.log" 2>&1
-          TRAYDAQ_BACKUP_JAVA_FIXTURE="$RUNNER_TEMP/synthetic.tdbackup" node --test tests/e2ee-backup-export.test.mjs
+          TRAYDAQ_BACKUP_JAVA_FIXTURE="$RUNNER_TEMP/synthetic.tdbackup" node --test tests/e2ee-backup-export.test.mjs > "$RUNNER_TEMP/archive-test.log" 2>&1 || { grep -E '^(not ok|# (tests|pass|fail))' "$RUNNER_TEMP/archive-test.log" | cut -c1-180 | head -30 || true; exit 1; }
       - name: Build native MLS libraries for gated source compilation
         working-directory: private-src/security/mls-qualification
         shell: bash

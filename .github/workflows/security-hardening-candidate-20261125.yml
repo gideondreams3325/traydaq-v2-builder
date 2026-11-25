@@ -1,0 +1,109 @@
+name: TRAYDAQ security hardening candidate validation (No APK)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/security-hardening-candidate-20261125.yml']
+permissions:
+  contents: read
+jobs:
+  source-config:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: cc3e1f68d424dd63c0cf986ec5744d94ea9f658e
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - name: Validate exact migration and dependency configuration
+        working-directory: private-src
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, yaml
+          p=pathlib.Path('supabase/migrations')
+          rls=(p/'20261125184048_private_internal_tables_rls_hardening.sql').read_text()
+          assert rls.count('ENABLE ROW LEVEL SECURITY')==3
+          mime=(p/'20261125184745_private_job_application_mime_allowlist.sql').read_text()
+          assert "WHERE id='traydaq-job-applications' AND public=false AND file_size_limit=10485760" in mime
+          assert len(re.findall(r"'(?:application|image|text)/[^']+'",mime))==10
+          updates=yaml.safe_load(pathlib.Path('.github/dependabot.yml').read_text())['updates']
+          actual={x['directory'] for x in updates if x['package-ecosystem']=='npm'}
+          assert actual=={'/','/mobile','/admin-native','/firebase'}
+          assert all(pathlib.Path(x.lstrip('/') or '.', 'package.json').is_file() for x in actual)
+          print('Exact candidate migration and Dependabot checks passed.')
+          PY
+  dependency-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [web, user-android, staff-android, firebase-tools]
+        include:
+          - component: web
+            directory: .
+          - component: user-android
+            directory: mobile
+          - component: staff-android
+            directory: admin-native
+          - component: firebase-tools
+            directory: firebase
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: cc3e1f68d424dd63c0cf986ec5744d94ea9f658e
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test patched dependencies in isolated checkout
+        working-directory: private-src/${{ matrix.directory }}
+        env:
+          COMPONENT: ${{ matrix.component }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'JS'
+          const fs=require('node:fs');
+          const p=JSON.parse(fs.readFileSync('package.json','utf8'));
+          p.overrides={...p.overrides,'@grpc/grpc-js':'1.14.7'};
+          if(process.env.COMPONENT==='web') {
+            p.dependencies['@capacitor/android']='8.5.1';
+            p.dependencies['@capacitor/core']='8.5.1';
+            p.devDependencies['@capacitor/cli']='8.5.1';
+          }
+          fs.writeFileSync('package.json', JSON.stringify(p,null,2)+'\n');
+          JS
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund >"$RUNNER_TEMP/resolve.log" 2>&1 || { echo "::error::Candidate dependency resolution failed"; exit 1; }
+          npm ci --ignore-scripts --no-audit --no-fund >"$RUNNER_TEMP/install.log" 2>&1 || { echo "::error::Candidate clean install failed"; exit 1; }
+          npm audit --package-lock-only --json >"$RUNNER_TEMP/audit.json" 2>/dev/null || true
+          node <<'JS'
+          const fs=require('node:fs');
+          const report=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/audit.json','utf8'));
+          if(!report.metadata?.vulnerabilities) process.exit(1);
+          console.log('Candidate dependency counts: '+JSON.stringify(report.metadata.vulnerabilities));
+          const ids=new Set();
+          for(const v of Object.values(report.vulnerabilities||{})) for(const a of v.via||[]) {
+            if(typeof a==='object' && a) {
+              const id=/^https:\/\/github\.com\/advisories\/(GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4})$/i.exec(a.url||'')?.[1];
+              if(id) ids.add(id);
+            }
+          }
+          console.log('Remaining public advisory IDs: '+[...ids].sort().join(', '));
+          if([...ids].some(x=>['GHSA-rvm3-566m-v7fv','GHSA-m9gg-hp2v-232j','GHSA-f596-whhp-79r4'].includes(x.toLowerCase()))) process.exit(1);
+          JS
+          case "$COMPONENT" in
+            web|user-android|staff-android)
+              npm run typecheck >"$RUNNER_TEMP/typecheck.log" 2>&1 || { echo "::error::Candidate typecheck failed"; exit 1; }
+              ;;
+            firebase-tools)
+              npm run test:static >"$RUNNER_TEMP/static.log" 2>&1 || { echo "::error::Candidate Firebase static test failed"; exit 1; }
+              ;;
+          esac
+          echo "Candidate targeted remediation and compatibility checks passed. Other advisories are reported, not waived."

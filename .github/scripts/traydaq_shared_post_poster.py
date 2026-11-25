@@ -71,12 +71,14 @@ def identity_token():
 
 
 def jpeg_frame(video: pathlib.Path, destination: pathlib.Path):
-    # Capture the 0.5s video frame, preserving aspect ratio without stretching.
+    # Capture the 0.5s video frame, preserving original proportions and avoiding upscaling.
+    # Discover can use 1200px-wide frames where original video resolution permits.
+    # Retain the existing JPEG size cap, reviewed-public-only access and no overwrites.
     # The script does NOT rely on the mobile device or private repo credentials.
     for quality in [4, 7, 10]:
         command = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin",
                    "-y", "-ss", "0.5", "-i", str(video), "-an",
-                   "-vf", "scale=960:960:force_original_aspect_ratio=decrease",
+                   "-vf", "scale='min(1200,iw)':'min(2160,ih)':force_original_aspect_ratio=decrease:force_divisible_by=2",
                    "-frames:v", "1", "-q:v", str(quality), str(destination)]
         try:
             subprocess.run(command, check=True, timeout=40,

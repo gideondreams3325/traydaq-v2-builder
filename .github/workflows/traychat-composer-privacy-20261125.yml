@@ -1,0 +1,118 @@
+name: TRAYDAQ composer width and privacy notice QA
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/traychat-composer-privacy-20261125.yml']
+permissions:
+  contents: read
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check private checkout credential
+        shell: bash
+        env:
+          TOKEN_PRESENT: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$TOKEN_PRESENT" = true
+      - name: Fetch exact private source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fe77a50d646bcc4ae46665a78d540cc13cf22492
+          path: src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Validate private source SHA
+        shell: bash
+        run: test "$(git -C src rev-parse HEAD)" = "fe77a50d646bcc4ae46665a78d540cc13cf22492"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Web install, TypeScript, tests and build (private logs)
+        shell: bash
+        working-directory: src
+        run: |
+          set -euo pipefail
+          failed=0
+          run_check(){
+            label="$1"; shift
+            if "$@" > "$RUNNER_TEMP/traydaq-$label.log" 2>&1; then
+              echo "::notice::$label passed"
+            else
+              echo "::error::$label failed. Private diagnostic content remains on the runner only."
+              python3 - "$RUNNER_TEMP/traydaq-$label.log" <<'PY'
+          import re,sys,os
+          t=open(sys.argv[1],errors='replace').read()
+          for path,line,col,code in re.findall(r'([^\s:()]+)\((\d+),(\d+)\): error (TS\d+):',t)[:25]:
+              print("::notice::TypeScript",os.path.basename(path),line,col,code)
+          for m in list(re.finditer(r'^not ok \d+ - (.+)$',t,re.M))[:14]:
+              print("::notice::Test:",re.sub('[^a-zA-Z0-9 ._/-]','',m.group(1))[:95])
+              context=t[m.end():m.end()+2200]
+              loc=re.search(r'location:.*?/tests/([a-zA-Z0-9_.-]+\.test\.mjs):(\d+):',context)
+              if loc: print("::notice::Test location:",loc.group(1),"line",loc.group(2))
+          PY
+              failed=$((failed+1))
+            fi
+          }
+          run_check web-install npm ci --no-audit --no-fund
+          run_check web-typecheck npm run typecheck
+          run_check web-tests npm test
+          run_check web-build npm run build
+          test "$failed" -eq 0
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check private checkout credential
+        shell: bash
+        env:
+          TOKEN_PRESENT: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN != '' }}
+        run: test "$TOKEN_PRESENT" = true
+      - name: Fetch exact private source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: fe77a50d646bcc4ae46665a78d540cc13cf22492
+          path: src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Validate private source SHA
+        shell: bash
+        run: test "$(git -C src rev-parse HEAD)" = "fe77a50d646bcc4ae46665a78d540cc13cf22492"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Android React Native tests and types (no APK build)
+        shell: bash
+        working-directory: src/mobile
+        run: |
+          set -euo pipefail
+          failed=0
+          run_check(){
+            label="$1"; shift
+            if "$@" > "$RUNNER_TEMP/traydaq-$label.log" 2>&1; then
+              echo "::notice::$label passed"
+            else
+              echo "::error::$label failed. Private diagnostic content remains on the runner only."
+              python3 - "$RUNNER_TEMP/traydaq-$label.log" <<'PY'
+          import re,sys,os
+          t=open(sys.argv[1],errors='replace').read()
+          for path,line,col,code in re.findall(r'([^\s:()]+)\((\d+),(\d+)\): error (TS\d+):',t)[:30]:
+              print("::notice::TypeScript",os.path.basename(path),line,col,code)
+          for m in list(re.finditer(r'^not ok \d+ - (.+)$',t,re.M))[:14]:
+              print("::notice::Test:",re.sub('[^a-zA-Z0-9 ._/-]','',m.group(1))[:95])
+              context=t[m.end():m.end()+2200]
+              loc=re.search(r'location:.*?/tests/([a-zA-Z0-9_.-]+\.test\.mjs):(\d+):',context)
+              if loc: print("::notice::Test location:",loc.group(1),"line",loc.group(2))
+          PY
+              failed=$((failed+1))
+            fi
+          }
+          run_check native-install npm ci --no-audit --no-fund
+          run_check focused-composer node --test tests/traychat-composer-privacy-notice-20261125.test.mjs
+          run_check native-tests bash -c 'node --test tests/*.test.mjs'
+          run_check native-typecheck npm run typecheck
+          test "$failed" -eq 0
+

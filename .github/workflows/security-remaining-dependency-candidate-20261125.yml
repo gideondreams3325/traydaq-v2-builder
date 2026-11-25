@@ -1,0 +1,80 @@
+name: TRAYDAQ remaining dependency security qualification (No APK)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/security-remaining-dependency-candidate-20261125.yml']
+permissions:
+  contents: read
+jobs:
+  public-metadata:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Obtain public package registry metadata
+        run: |
+          npm view zod@4.6.6 version dist engines license --json
+  candidate:
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [user-android, firebase-tools]
+        include:
+          - component: user-android
+            directory: mobile
+          - component: firebase-tools
+            directory: firebase
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: b6205bb554e6727ba8f5c4150f2dc8a47115b1f1
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          path: private-src
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Qualify remaining high severity fixes
+        working-directory: private-src/${{ matrix.directory }}
+        env:
+          COMPONENT: ${{ matrix.component }}
+        run: |
+          set -euo pipefail
+          node <<'JS'
+          const fs=require('fs');
+          const p=JSON.parse(fs.readFileSync('package.json','utf8'));
+          if(process.env.COMPONENT==='user-android') p.overrides={...p.overrides,zod:'4.6.6'};
+          else {p.devDependencies['firebase-tools']='15.37.0';p.devDependencies['firebase']='13.4.0';}
+          fs.writeFileSync('package.json',JSON.stringify(p,null,2)+'\n');
+          JS
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund >"$RUNNER_TEMP/resolve.log" 2>&1 || { echo "::error::Resolution failed"; exit 1; }
+          npm ci --ignore-scripts --no-audit --no-fund >"$RUNNER_TEMP/install.log" 2>&1 || { echo "::error::Clean install failed"; exit 1; }
+          npm audit --json --package-lock-only >"$RUNNER_TEMP/audit.json" 2>/dev/null || true
+          node <<'JS'
+          const fs=require('fs');
+          const a=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/audit.json','utf8'));
+          if(!a.metadata?.vulnerabilities) process.exit(1);
+          console.log('Remaining counts: '+JSON.stringify(a.metadata.vulnerabilities));
+          const ids=new Set();
+          for(const v of Object.values(a.vulnerabilities||{})) for(const item of v.via||[]) {
+            if(typeof item==='object' && item) {
+              const id=/^https:\/\/github\.com\/advisories\/(GHSA-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4})$/i.exec(item.url||'')?.[1];
+              if(id) ids.add(id);
+            }
+          }
+          console.log('Remaining public advisory IDs: '+[...ids].sort().join(', '));
+          JS
+          if [ "$COMPONENT" = user-android ]; then
+            npm run typecheck >"$RUNNER_TEMP/typecheck.log" 2>&1 || { echo "::error::Typecheck failed"; exit 1; }
+            npx expo config --type public >"$RUNNER_TEMP/expo-config.log" 2>&1 || { echo "::error::Expo config failed"; exit 1; }
+            npx expo export --platform android >"$RUNNER_TEMP/expo-export.log" 2>&1 || { echo "::error::Android source export failed"; exit 1; }
+          else
+            npm run test:static >"$RUNNER_TEMP/static.log" 2>&1 || { echo "::error::Firebase static test failed"; exit 1; }
+            npx firebase --version
+          fi
+          echo "Compatibility qualification passed; advisory counts are not waived."

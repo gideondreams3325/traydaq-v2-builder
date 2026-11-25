@@ -1,0 +1,47 @@
+name: TRAYDAQ Legal refresh — source validation only
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/traydaq-legal-refresh-20261125.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-legal-refresh-20261125
+  cancel-in-progress: false
+env:
+  SOURCE_SHA: a69eae02b57e8c76361453707bee81cbf79ff93f
+jobs:
+  policy-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify exact candidate
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+      - name: Policy parity, generator and Android policy source checks
+        working-directory: private-src
+        run: |
+          node --test tests/legal-refresh-20261125.test.mjs tests/worldwide-id-no-extra-otp.test.mjs tests/existing-app-public-legal-parity.test.mjs tests/legal-public-contact-parity.test.mjs tests/release-publisher-contact.test.mjs tests/standalone-legal-cloudflare.test.mjs mobile/tests/about-legal-verification.test.mjs > "$RUNNER_TEMP/legal-tests.log" 2>&1 || {
+            grep -E '^not ok [0-9]+|^# fail [1-9]' "$RUNNER_TEMP/legal-tests.log" | cut -c1-180 || true
+            echo "::error::Legal policy regression failed"; exit 1;
+          }
+          echo "PASS: policy source tests"
+      - name: Build standalone legal site without deployment
+        working-directory: private-src
+        run: |
+          npm run build:legal > "$RUNNER_TEMP/legal-build.log" 2>&1 || {
+            echo "::error::Legal static build failed"; exit 1;
+          }
+          echo "PASS: standalone legal build"
+# No artifacts, private source output, deployment, database writes or app builds.

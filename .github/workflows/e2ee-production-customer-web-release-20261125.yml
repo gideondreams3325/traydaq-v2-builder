@@ -1,0 +1,100 @@
+name: TRAYDAQ production E2EE web - existing customer Worker
+# Owner-authorized exact merged user web source; never deploy staff/legal or create a Worker.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/e2ee-production-customer-web-release-20261125.yml'
+permissions:
+  contents: read
+concurrency:
+  group: traydaq-v2-cloudflare-production
+  cancel-in-progress: false
+jobs:
+  deploy-verified-customer-worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: private-src
+    steps:
+      - name: Checkout exact merged TRAYDAQ V2 website source
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: d2c35da394fa3de2bba003318f8190bf470aa7bb
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Confirm exact authorized main SHA and existing customer Worker target
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "d2c35da394fa3de2bba003318f8190bf470aa7bb"
+          node --input-type=module -e "
+            import {readFileSync} from 'node:fs';
+            const c=JSON.parse(readFileSync('wrangler.jsonc','utf8'));
+            if(c.name!=='traydaq-v2'||c.main!=='./worker/seo.js'||
+              c.assets?.directory!=='./dist'||!c.assets?.run_worker_first?.includes('/'))
+              throw Error('Not the original TRAYDAQ V2 customer Worker');
+
+          "
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: private-src/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify public sharing regression tests
+        run: node --test tests/all-content-shared-previews.test.mjs tests/shared-post-link-preview.test.mjs tests/google-public-indexing.test.mjs
+      - name: Compile browser MLS engine
+        working-directory: private-src/security/mls-qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup update stable
+          rustup default stable
+          rustup target add wasm32-unknown-unknown
+          cargo build --target wasm32-unknown-unknown --release > "$RUNNER_TEMP/mls-build.log" 2>&1 || { echo "::error::MLS browser compilation failed"; exit 1; }
+          version=$(cargo tree --target wasm32-unknown-unknown --prefix none --format '{p}' | sed -nE 's/^wasm-bindgen v([0-9.]+).*$/\1/p' | sort -u)
+          test "$(echo "$version" | wc -l)" -eq 1
+          test -n "$version"
+          cargo install wasm-bindgen-cli --version "=$version" --locked > "$RUNNER_TEMP/mls-bindgen.log" 2>&1 || { echo "::error::MLS bindgen installation failed"; exit 1; }
+          mkdir -p ../../public/e2ee-pilot
+          wasm-bindgen --target web --out-dir ../../public/e2ee-pilot target/wasm32-unknown-unknown/release/traydaq_mls_qualification.wasm
+      - name: Verify entire web app and package encrypted-only creation
+        env:
+          VITE_TRAYDAQ_E2EE_PILOT: 'true'
+          VITE_TRAYDAQ_E2EE_ONLY_PILOT: 'true'
+          CF_PAGES_COMMIT_SHA: 'd2c35da394fa3de2bba003318f8190bf470aa7bb'
+        run: |
+          set -euo pipefail
+          npm test
+          npm run typecheck
+          npm run build
+          test -s dist/e2ee-pilot/traydaq_mls_qualification.js
+          test -s dist/e2ee-pilot/traydaq_mls_qualification_bg.wasm
+          node --input-type=module -e "import {readFileSync} from 'node:fs'; if(!WebAssembly.validate(readFileSync('dist/e2ee-pilot/traydaq_mls_qualification_bg.wasm')))throw Error('Invalid MLS binary');"
+      - name: Verify official music branding in deployable assets
+        run: |
+          test -s dist/traydaq-music-logo.webp
+          node scripts/verify-public-search-output.mjs dist
+      - name: Authenticate only to existing customer Cloudflare Worker (read-only)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          node scripts/verify-existing-customer-worker.mjs
+      - name: Deploy only TRAYDAQ existing customer Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          workingDirectory: private-src
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: 4.156.2
+          command: deploy --config wrangler.jsonc
+      - name: Report only verified production deploy
+        if: success()
+        run: echo "Existing traydaq-v2 customer Worker was deployed at source d2c35da394fa3de2bba003318f8190bf470aa7bb. No APK/AAB or staff/legal Worker changes."

@@ -114,6 +114,7 @@ jobs:
             grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-web-tests.log" | tail -3 || true
           else
             echo "::error::FAIL: private web tests. Source-level test diagnostics remain private."
+            grep -E '^not ok [0-9]+ - ' "$RUNNER_TEMP/traydaq-web-tests.log" | sed 's/[^A-Za-z0-9_. -]/-/g' | cut -c1-150 | head -15 || true
             grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-web-tests.log" | tail -3 || true
             exit 1
           fi

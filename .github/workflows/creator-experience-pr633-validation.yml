@@ -1,0 +1,129 @@
+name: TRAYDAQ PR 633 creator experience validation
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/creator-experience-pr633-validation.yml'
+permissions:
+  contents: read
+env:
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 267e874913c459745d724e9fe8c81f486976799a
+          path: private-src
+          persist-credentials: false
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+      - name: Verify private revision
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "267e874913c459745d724e9fe8c81f486976799a"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+      - name: Web tests, typecheck and build
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -- 'node --test tests/creator-experience-20261125.test.mjs' 'npm test' 'npm run typecheck' 'npm run build'
+          failed=0
+          for task in "$@"; do
+            label=$(printf '%s' "$task" | tr -cs 'A-Za-z0-9' '-')
+            if bash -c "$task" > "$RUNNER_TEMP/$label.log" 2>&1; then
+              echo "PASS $label"
+            else
+              echo "::error::FAIL $label (private log withheld)"
+              grep -E '^[[:space:]]*not ok [0-9]+ - ' "$RUNNER_TEMP/$label.log" | sed -E 's/[^A-Za-z0-9 _:,.-]/-/g' | cut -c 1-150 | head -60 || true
+              failed=1
+            fi
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/$label.log" | tail -3 || true
+            grep -oE 'error TS[0-9]+' "$RUNNER_TEMP/$label.log" | sort | uniq -c | head -60 || true
+          done
+          test "$failed" -eq 0
+
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 267e874913c459745d724e9fe8c81f486976799a
+          path: private-src
+          persist-credentials: false
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+      - name: Verify private revision
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "267e874913c459745d724e9fe8c81f486976799a"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+      - name: Native tests, typecheck and export
+        working-directory: private-src/mobile
+        shell: bash
+        run: |
+          set -- 'node --test tests/*.test.mjs' 'npm run typecheck' 'npm run export:android'
+          failed=0
+          for task in "$@"; do
+            label=$(printf '%s' "$task" | tr -cs 'A-Za-z0-9' '-')
+            if bash -c "$task" > "$RUNNER_TEMP/$label.log" 2>&1; then
+              echo "PASS $label"
+            else
+              echo "::error::FAIL $label (private log withheld)"
+              grep -E '^[[:space:]]*not ok [0-9]+ - ' "$RUNNER_TEMP/$label.log" | sed -E 's/[^A-Za-z0-9 _:,.-]/-/g' | cut -c 1-150 | head -60 || true
+              failed=1
+            fi
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/$label.log" | tail -3 || true
+            grep -oE 'error TS[0-9]+' "$RUNNER_TEMP/$label.log" | sort | uniq -c | head -60 || true
+          done
+          test "$failed" -eq 0
+
+  edge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 267e874913c459745d724e9fe8c81f486976799a
+          path: private-src
+          persist-credentials: false
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+      - name: Verify private revision
+        working-directory: private-src
+        run: test "$(git rev-parse HEAD)" = "267e874913c459745d724e9fe8c81f486976799a"
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Deno checks
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -- 'deno check --node-modules-dir=auto supabase/functions/firebase-native-content/index.ts' 'deno check --node-modules-dir=auto supabase/functions/firebase-native-profile/index.ts'
+          failed=0
+          for task in "$@"; do
+            label=$(printf '%s' "$task" | tr -cs 'A-Za-z0-9' '-')
+            if bash -c "$task" > "$RUNNER_TEMP/$label.log" 2>&1; then
+              echo "PASS $label"
+            else
+              echo "::error::FAIL $label (private log withheld)"
+              grep -E '^[[:space:]]*not ok [0-9]+ - ' "$RUNNER_TEMP/$label.log" | sed -E 's/[^A-Za-z0-9 _:,.-]/-/g' | cut -c 1-150 | head -60 || true
+              failed=1
+            fi
+            grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/$label.log" | tail -3 || true
+            grep -oE 'error TS[0-9]+' "$RUNNER_TEMP/$label.log" | sort | uniq -c | head -60 || true
+          done
+          test "$failed" -eq 0
+

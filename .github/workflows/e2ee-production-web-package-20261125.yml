@@ -1,0 +1,108 @@
+name: TRAYDAQ production encrypted-only web package qualification (no deployment)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/e2ee-production-web-package-20261125.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  protocol:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 207f61a6c902362484a3214ca4e2fef015d31af2
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - name: Verify exact source
+        run: test "$(git -C private-src rev-parse HEAD)" = "207f61a6c902362484a3214ca4e2fef015d31af2"
+      - name: Rust toolchain
+        run: |
+          rustup update stable > "$RUNNER_TEMP/rust.log" 2>&1
+          rustup default stable
+          rustc --version
+      - name: Synthetic direct and group protocol qualification
+        working-directory: private-src/security/mls-qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          if cargo test > "$RUNNER_TEMP/mls-test.log" 2>&1; then
+            echo "PASS: isolated MLS protocol qualification"
+            grep -E '^test result: ' "$RUNNER_TEMP/mls-test.log" || true
+          else
+            echo "::error::MLS qualification failed (private source logs not exported)"
+            grep -E '^error(\[E[0-9]+\])?:|^test result:' "$RUNNER_TEMP/mls-test.log" | cut -c1-180 | head -20 || true
+            exit 1
+          fi
+      - name: Compile browser WebAssembly bridge
+        working-directory: private-src/security/mls-qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup target add wasm32-unknown-unknown > "$RUNNER_TEMP/wasm-target.log" 2>&1
+          if cargo build --target wasm32-unknown-unknown --release > "$RUNNER_TEMP/wasm-build.log" 2>&1; then
+            echo "PASS: browser WebAssembly bridge compiles"
+          else
+            echo "::error::WebAssembly bridge build failed"
+            grep -E '^error(\[E[0-9]+\])?:|^ *--> ' "$RUNNER_TEMP/wasm-build.log" | cut -c1-180 | tail -25 || true
+            exit 1
+          fi
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Execute synthetic WebAssembly client integration
+        working-directory: private-src/security/mls-qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(cargo tree --target wasm32-unknown-unknown --prefix none --format '{p}' | sed -nE 's/^wasm-bindgen v([0-9.]+).*$/\1/p' | sort -u)
+          test "$(echo "$version" | wc -l)" -eq 1
+          test -n "$version"
+          cargo install wasm-bindgen-cli --version "=$version" --locked > "$RUNNER_TEMP/wasm-cli.log" 2>&1 || { echo "::error::Could not install matching WebAssembly bindgen CLI"; exit 1; }
+          wasm-bindgen --target nodejs --out-dir wasm-node target/wasm32-unknown-unknown/release/traydaq_mls_qualification.wasm > "$RUNNER_TEMP/wasm-bindgen.log" 2>&1 || { echo "::error::WebAssembly bindings generation failed"; exit 1; }
+          printf '{"type":"commonjs"}\n' > wasm-node/package.json
+          node tests/wasm-smoke.mjs > "$RUNNER_TEMP/wasm-smoke.log" 2>&1 || { echo "::error::WebAssembly client integration failed"; grep -E '^(AssertionError|Error|TypeError|ReferenceError|RuntimeError|FAIL|PASS)' "$RUNNER_TEMP/wasm-smoke.log" | cut -c1-180 | head -12 || true; exit 1; }
+          echo "PASS: WebAssembly client messaging integration"
+      - name: Browser storage adapter typecheck and synthetic integration
+        working-directory: private-src/security/mls-qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/mls-test-deps" --no-audit --no-fund --save-exact fake-indexeddb@6.2.4 typescript@5.9.3 > "$RUNNER_TEMP/mls-npm.log" 2>&1 || { echo "::error::Synthetic browser-test dependency installation failed"; exit 1; }
+          "$RUNNER_TEMP/mls-test-deps/node_modules/.bin/tsc" --strict --noEmit --target ES2022 --lib ES2022,DOM,DOM.Iterable --module ESNext --moduleResolution Bundler ../../src/native-parity/e2ee/browserDeviceStore.ts > "$RUNNER_TEMP/mls-ts.log" 2>&1 || { echo "::error::Browser MLS store TypeScript failed"; grep -E 'error TS[0-9]+' "$RUNNER_TEMP/mls-ts.log" | cut -c1-180 | head -15 || true; exit 1; }
+          TEST_IDB_MODULE="$RUNNER_TEMP/mls-test-deps/node_modules/fake-indexeddb" node --experimental-strip-types tests/browser-store-smoke.mjs > "$RUNNER_TEMP/mls-store.log" 2>&1 || { echo "::error::Browser MLS store integration failed"; grep -E '^(AssertionError|Error|TypeError|SyntaxError|ReferenceError|RuntimeError|DOMException|FAIL|PASS)|ERR_[A-Z_]+|code:' "$RUNNER_TEMP/mls-store.log" | cut -c1-180 | head -12 || true; exit 1; }
+          echo "PASS: browser encrypted persistence and durable ciphertext outbox"
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Ciphertext relay typecheck and authorization contract tests
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          deno check --node-modules-dir=auto supabase/functions/firebase-member-chat/index.ts > "$RUNNER_TEMP/e2ee-relay-types.log" 2>&1 || { echo "::error::Ciphertext relay typecheck failed"; grep -E 'TS[0-9]{4}|^error:' "$RUNNER_TEMP/e2ee-relay-types.log" | cut -c1-160 | head -12 || true; exit 1; }
+          deno test supabase/functions/_shared/e2eePilotRelay_test.ts > "$RUNNER_TEMP/e2ee-relay-test.log" 2>&1 || { echo "::error::Ciphertext relay contract tests failed"; exit 1; }
+          echo "PASS: ciphertext relay contract tests and chat edge typecheck"
+      - name: Compile gated web pilot UI with the generated browser module
+        working-directory: private-src
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/e2ee-web-install.log" 2>&1 || { echo "::error::Web dependencies failed"; exit 1; }
+          mkdir -p public/e2ee-pilot
+          wasm-bindgen --target web --out-dir public/e2ee-pilot security/mls-qualification/target/wasm32-unknown-unknown/release/traydaq_mls_qualification.wasm
+          npm run typecheck > "$RUNNER_TEMP/e2ee-web-type.log" 2>&1 || { echo "::error::Web pilot typecheck failed"; grep -E 'error TS[0-9]+' "$RUNNER_TEMP/e2ee-web-type.log" | cut -c1-180 | head -20 || true; exit 1; }
+          VITE_TRAYDAQ_E2EE_PILOT=true VITE_TRAYDAQ_E2EE_ONLY_PILOT=true npm run build > "$RUNNER_TEMP/e2ee-web-build.log" 2>&1 || { echo "::error::Web pilot build failed"; exit 1; }
+          test -s dist/e2ee-pilot/traydaq_mls_qualification.js
+          test -s dist/e2ee-pilot/traydaq_mls_qualification_bg.wasm
+          node --input-type=module <<'NODE'
+          import {readFileSync} from 'node:fs';
+          const bytes=readFileSync('dist/e2ee-pilot/traydaq_mls_qualification_bg.wasm');
+          if(!WebAssembly.validate(bytes))throw Error('Production browser MLS binary is invalid');
+          console.log('PASS: production web package contains valid browser MLS binary and both encryption gates are enabled.');
+          NODE
+# No user data, deployed changes, binaries or private-source artifacts.

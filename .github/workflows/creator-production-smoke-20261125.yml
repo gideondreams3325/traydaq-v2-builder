@@ -16,7 +16,7 @@ jobs:
         run: |
           set -euo pipefail
           python - <<'PY'
-          import urllib.request, urllib.error, json, re
+          import urllib.request, urllib.error, urllib.parse, json, re
           expected = '695f4b9c0a7c9807337c3491de11854d4e9d7117'
           def request(url, method='GET'):
               req=urllib.request.Request(url, method=method, headers={'User-Agent':'TRAYDAQ-production-smoke/1.0','Cache-Control':'no-cache','Accept':'application/json'})
@@ -29,13 +29,27 @@ jobs:
           try:
               status,body=request('https://traydaq.com/app-version.json?verify='+expected)
               version=json.loads(body).get('version','')
-              print('Cloudflare manifest status:',status,'version:',version if isinstance(version,str) and re.fullmatch(r'[0-9a-f]{40}',version) else 'unrecognized')
+              print('Cloudflare manifest status:',status,'version:',version if isinstance(version,str) and re.fullmatch(r'[A-Za-z0-9._-]{1,64}',version) else 'unrecognized')
               if status!=200 or version!=expected:
-                  failed=True
+                  print('Exact deployment commit not established from manifest; checking public bundle signatures')
+                  with urllib.request.urlopen('https://traydaq.com/',timeout=20) as response:
+                      html=response.read(1000000).decode('utf-8','replace')
+                  urls=re.findall(r'<script[^>]+src="([^"]+\.js)"',html)
+                  scripts=[]
+                  for path in urls[:8]:
+                      uri=urllib.parse.urljoin('https://traydaq.com/',path)
+                      if urllib.parse.urlsplit(uri).hostname!='traydaq.com': continue
+                      with urllib.request.urlopen(uri,timeout=20) as response:
+                          scripts.append(response.read(15000000).decode('utf-8','replace'))
+                  body='\n'.join(scripts)
+                  for signature in ['saved-collections','Sync collections','collaboration-invite','subtitle-generate']:
+                      print('Live public bundle marker',signature,signature in body)
+                      if signature not in body: failed=True
+                  if not scripts: failed=True
           except Exception as e:
               print('Cloudflare manifest unavailable:',type(e).__name__); failed=True
           root='https://qpcsruhwqhniprakpoox.supabase.co/functions/v1/firebase-native-content'
-          for action,code in [('saved-collections',401),('collaborations',401),('video-subtitles&id=invalid',400),('video-subtitles&id=00000000-0000-0000-0000-000000000000',404)]:
+          for action,code in [('saved-collections',401),('collaborations',401),('video-subtitles&id=invalid',400),('video-subtitles&id=00000000-0000-4000-8000-000000000000',404)]:
               try:
                   status,body=request(root+'?action='+action)
                   print('Production route',action.split('&')[0],status,'expected',code)

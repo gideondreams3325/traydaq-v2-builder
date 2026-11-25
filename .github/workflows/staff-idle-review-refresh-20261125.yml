@@ -1,0 +1,38 @@
+name: Staff idle review refresh source QA
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/staff-idle-review-refresh-20261125.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  staff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 0ca3c6a3624edfa4327b4fbc2cb578c770c09488
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify exact candidate
+        working-directory: source
+        run: test "$(git rev-parse HEAD)" = "0ca3c6a3624edfa4327b4fbc2cb578c770c09488"
+      - name: Native staff security regressions
+        working-directory: source/admin-native
+        run: npm run test:security && node --test tests/staff-idle-review-refresh.test.mjs
+      - name: Native staff typecheck
+        working-directory: source/admin-native
+        run: npm ci --no-audit --no-fund && npm run typecheck
+      - name: iPhone staff typecheck and build
+        working-directory: source
+        run: npm ci --no-audit --no-fund && npm run typecheck:staff && npm run build:staff
+      - name: Staff web security regressions
+        working-directory: source
+        run: node --test tests/staff-*.test.mjs

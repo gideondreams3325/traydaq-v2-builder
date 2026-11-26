@@ -40,7 +40,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 874a36c1e2af1ed744acfa29b217a55e5fd45290
+          ref: 3e53ab68f9b9dcd453e018f7d9a1f83cbf89104d
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -64,7 +64,7 @@ jobs:
             if(c.name!=='traydaq-v2'||c.assets?.directory!=='./dist')
               throw Error('Unexpected Cloudflare Workers assets configuration');
           "
-          echo "Private source ref: 874a36c1e2af1ed744acfa29b217a55e5fd45290"
+          echo "Private source ref: 3e53ab68f9b9dcd453e018f7d9a1f83cbf89104d"
           echo "Private source SHA: $(git rev-parse HEAD)"
           echo "Hosting validation target: Cloudflare Workers, not Vercel"
       - name: Install private web dependencies with protected logs
@@ -259,7 +259,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 874a36c1e2af1ed744acfa29b217a55e5fd45290
+          ref: 3e53ab68f9b9dcd453e018f7d9a1f83cbf89104d
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -432,7 +432,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 874a36c1e2af1ed744acfa29b217a55e5fd45290
+          ref: 3e53ab68f9b9dcd453e018f7d9a1f83cbf89104d
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
@@ -464,7 +464,7 @@ jobs:
           import os,re,json,urllib.request
           log=open(os.environ["RUNNER_TEMP"]+"/privacy-edge.log").read()
           log=re.sub(r"\x1b\[[0-9;]*m","",log)
-          codes=re.findall(r"TS\d{4}",log)
+          codes=re.findall(r"TS\d{4,5}",log)
           if not codes:
            category=next((word for word in ("unexpected argument","node_modules","Module not found","Could not resolve","PermissionDenied","error sending request","lockfile","Failed to parse","not supported","failed to download") if word.lower() in log.lower()),"unclassified")
            body=json.dumps(dict(state="failure",context="traydaq-v2/edge/cli-"+re.sub(r"[^A-Za-z0-9-]","-",category),description="Sanitized CLI failure category")).encode()

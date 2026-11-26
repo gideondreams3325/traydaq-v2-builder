@@ -1,0 +1,29 @@
+name: Async MLS main negotiation source qualification
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/validate-async-mls-main-negotiation-20261126.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  edge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 05488121f75ce28c0dbdc0f0c87440b9a7726db5
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Verify main negotiation backend and relay tests
+        working-directory: private-src
+        run: |
+          deno check --node-modules-dir=auto supabase/functions/firebase-member-chat/index.ts > "$RUNNER_TEMP/edge.log" 2>&1 || { grep -E 'TS[0-9]+|^error:' "$RUNNER_TEMP/edge.log" | cut -c1-160 | head -20; exit 1; }
+          deno test supabase/functions/_shared/e2eePilotRelay_test.ts > "$RUNNER_TEMP/relay.log" 2>&1 || { echo "Relay tests failed"; exit 1; }
+          echo "PASS: main negotiation backend typecheck and relay tests"

@@ -1,0 +1,84 @@
+name: Compare Android minimum device support for SDK 58
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/compare-sdk58-minimum-android-20261126.yml']
+permissions:
+  contents: read
+jobs:
+  minimum-sdk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+      NODE_OPTIONS: '--max-old-space-size=6144'
+    steps:
+      - name: Checkout current production baseline
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 7cd4dbd5aa14531491c66f785bed0e12d6d618d7
+          path: private-base
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Checkout SDK 58 candidate
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 8c8e92939e414706b060f69fda9b75c58f59d71a
+          path: private-candidate
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Generate both Android projects and compare resolved minimum SDK
+        run: |
+          set -e
+          test "$(git -C private-base rev-parse HEAD)" = 7cd4dbd5aa14531491c66f785bed0e12d6d618d7
+          test "$(git -C private-candidate rev-parse HEAD)" = 8c8e92939e414706b060f69fda9b75c58f59d71a
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --channel=3 'platforms;android-36' 'platforms;android-37.0' 'build-tools;36.0.0' 'build-tools;37.0.0' > "$RUNNER_TEMP/min-sdk-install.log" 2>&1 || { echo '::error::Android SDK installation failed'; exit 1; }
+          cat > "$RUNNER_TEMP/min-sdk.gradle" <<'GRADLE'
+          gradle.projectsEvaluated {
+            if (gradle.parent != null) return
+            def app = gradle.rootProject.findProject(':app')
+            if (app == null) throw new GradleException('Android app missing')
+            def config = app.extensions.getByName('android').defaultConfig
+            def min = config.hasProperty('minSdk') ? config.minSdk : config.minSdkVersion
+            def value = min instanceof Number ? min : min?.apiLevel
+            if (value == null) throw new GradleException('Unable to resolve Android min SDK')
+            println('TRAYDAQ_MIN_SDK=' + value)
+          }
+          GRADLE
+          for name in base candidate; do
+            cd "$GITHUB_WORKSPACE/private-$name/mobile"
+            npm ci --no-audit --no-fund > "$RUNNER_TEMP/$name-install.log" 2>&1 || { echo "::error::$name dependency installation failed"; exit 1; }
+            npx expo prebuild --platform android --non-interactive > "$RUNNER_TEMP/$name-prebuild.log" 2>&1 || { echo "::error::$name Android prebuild failed"; exit 1; }
+            cd android
+            chmod +x gradlew
+            ./gradlew --no-daemon --console=plain -I "$RUNNER_TEMP/min-sdk.gradle" :app:help > "$RUNNER_TEMP/$name-gradle.log" 2>&1 || {
+              echo "::error::$name minimum SDK resolution failed"
+              grep -Ei '^FAILURE:|^\* What went wrong:|^A problem occurred|^Could not |^> Task .*FAILED|^BUILD FAILED' "$RUNNER_TEMP/$name-gradle.log" | head -20 || true
+              awk '/^[*] What went wrong:/{p=1;next} /^[*] (Try|Exception is):/{p=0} p && NF{print}' "$RUNNER_TEMP/$name-gradle.log" | cut -c1-200 | head -15 || true
+              exit 1
+            }
+            sed -n 's/^TRAYDAQ_MIN_SDK=//p' "$RUNNER_TEMP/$name-gradle.log" | tail -1 > "$RUNNER_TEMP/$name-min.txt"
+            test -s "$RUNNER_TEMP/$name-min.txt"
+          done
+          baseline=$(cat "$RUNNER_TEMP/base-min.txt")
+          candidate=$(cat "$RUNNER_TEMP/candidate-min.txt")
+          echo "Baseline minimum Android API: $baseline"
+          echo "Candidate minimum Android API: $candidate"
+          case "$baseline:$candidate" in *[!0-9:]*|:*|*:) echo '::error::Invalid minimum SDK values'; exit 1;; esac
+          if [ "$candidate" -gt "$baseline" ]; then
+            echo '::error::Migration drops previously supported Android versions'
+            exit 1
+          fi
+          echo 'PASS: migration does not raise the minimum supported Android API'
+# Generates projects only. No APK/AAB, app release or deployment.

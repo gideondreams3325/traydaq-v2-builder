@@ -1,0 +1,211 @@
+name: User chat E2EE retirement validation
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/validate-user-e2ee-retirement-20261126.yml"]
+permissions:
+  contents: read
+  statuses: write
+jobs:
+  android-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 56e73cbb3212e434dd9ce5ca20a34406d5eb5a11
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        id: install
+        working-directory: private-src/mobile
+        run: npm install --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+      - name: Run source tests
+        working-directory: private-src/mobile
+        run: |
+          set +e
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/tests.log" 2>&1
+          rc=$?
+          grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/tests.log" | tail -3 || true
+          if [ "$rc" != 0 ]; then
+            node -e 'const fs=require("fs"),crypto=require("crypto");const hash=x=>crypto.createHash("sha256").update(x).digest("hex").slice(0,16);const data=fs.readFileSync(process.argv[1],"utf8");for(const block of data.split(/\n(?=not ok \d+ - )/).slice(1)){const name=block.match(/^not ok \d+ - (.*)/)?.[1]||"";const loc=block.match(/location:.*?\/tests\/([^:\x27]+):(\d+):(\d+)/);const stack=block.match(/\/tests\/([^:\s]+\.mjs):(\d+):(\d+)/);const file=loc||stack;console.log("Failed test identifier: "+hash(name)+" file="+(file?hash(file[1])+" line="+file[2]:"unknown")+" kind="+(block.match(/error:.*?\b(TypeError|ReferenceError|AssertionError|SyntaxError)\b/)?.[1]||"test failure"));}' "$RUNNER_TEMP/tests.log"
+          fi
+          exit "$rc"
+      - name: TypeScript validation
+        if: always() && steps.install.outcome == 'success'
+        working-directory: private-src/mobile
+        run: |
+          set +e
+          npm run typecheck > "$RUNNER_TEMP/typecheck.log" 2>&1
+          rc=$?
+          if [ "$rc" != 0 ]; then
+            grep -E '^src/(lib/trayTrustProof|lib/trayTrustGate|lib/nativeE2eePilot|native-parity/e2ee/trayTrustProof|native-parity/e2ee/trayTrustGate|native-parity/e2ee/pilotSession)\.tsx?\([0-9]+,[0-9]+\): error TS[0-9]+' "$RUNNER_TEMP/typecheck.log" | sed -E 's/(: error TS[0-9]+):.*/\1/' || true
+            grep -oE 'error TS[0-9]+' "$RUNNER_TEMP/typecheck.log" | sort | uniq -c || true
+          fi
+          exit "$rc"
+      - name: Publish sanitized status
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JOB_RESULT: ${{ job.status }}
+        run: |
+          if [ "$JOB_RESULT" = success ]; then STATE=success; else STATE=failure; fi
+          payload="$(jq -n --arg state "$STATE" '{state:$state,context:"traydaq-v2/user-e2ee-retirement-android",description:"Source tests and TypeScript validation"}')"
+          curl --fail --silent --show-error -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" -d "$payload" >/dev/null
+  web-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 56e73cbb3212e434dd9ce5ca20a34406d5eb5a11
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        id: install
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+      - name: Run retirement and full web tests
+        working-directory: private-src
+        run: |
+          set +e
+          node --test tests/user-e2ee-retirement-20261126.test.mjs > "$RUNNER_TEMP/retirement.log" 2>&1
+          focused=$?
+          grep -E '^# (tests|pass|fail) [0-9]+
+          rc=$?
+          grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/prekeys.log" | tail -3 || true
+          if [ "$rc" != 0 ]; then node -e 'const fs=require("fs"),crypto=require("crypto");const hash=x=>crypto.createHash("sha256").update(x).digest("hex").slice(0,16);for(const block of fs.readFileSync(process.argv[1],"utf8").split(/\n(?=not ok \d+ - )/).slice(1)){const name=block.match(/^not ok \d+ - (.*)/)?.[1]||"";const loc=block.match(/location:.*?\/tests\/([^:\x27]+):(\d+):(\d+)/);const stack=block.match(/\/tests\/([^:\s]+\.mjs):(\d+):(\d+)/);const file=loc||stack;console.log("Failed test identifier: "+hash(name)+" file="+(file?hash(file[1])+" line="+file[2]:"unknown"));}' "$RUNNER_TEMP/prekeys.log"; fi
+          exit "$rc"
+      - name: TypeScript validation
+        if: always() && steps.install.outcome == 'success'
+        working-directory: private-src
+        run: |
+          set +e
+          npm run typecheck > "$RUNNER_TEMP/typecheck.log" 2>&1
+          rc=$?
+          if [ "$rc" != 0 ]; then
+            grep -E '^src/(lib/trayTrustProof|lib/trayTrustGate|lib/nativeE2eePilot|native-parity/e2ee/trayTrustProof|native-parity/e2ee/trayTrustGate|native-parity/e2ee/pilotSession)\.tsx?\([0-9]+,[0-9]+\): error TS[0-9]+' "$RUNNER_TEMP/typecheck.log" | sed -E 's/(: error TS[0-9]+):.*/\1/' || true
+            grep -oE 'error TS[0-9]+' "$RUNNER_TEMP/typecheck.log" | sort | uniq -c || true
+          fi
+          exit "$rc"
+      - name: Web bundle
+        if: always() && steps.install.outcome == 'success'
+        working-directory: private-src
+        run: npm run build > "$RUNNER_TEMP/build.log" 2>&1
+      - name: Publish sanitized status
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JOB_RESULT: ${{ job.status }}
+        run: |
+          if [ "$JOB_RESULT" = success ]; then STATE=success; else STATE=failure; fi
+          payload="$(jq -n --arg state "$STATE" '{state:$state,context:"traydaq-v2/user-e2ee-retirement-web",description:"Source tests and TypeScript validation"}')"
+          curl --fail --silent --show-error -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" -d "$payload" >/dev/null
+  edge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 56e73cbb3212e434dd9ce5ca20a34406d5eb5a11
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Edge typecheck and existing relay tests
+        working-directory: private-src
+        run: |
+          deno check --node-modules-dir=auto supabase/functions/firebase-member-chat/index.ts > "$RUNNER_TEMP/edge.log" 2>&1 || { grep -E 'TS[0-9]+|error:|Found [0-9]+ errors' "$RUNNER_TEMP/edge.log" | cut -c1-160 | head -20; exit 1; }
+          deno test --allow-env supabase/functions/_shared/e2eePilotRelay_test.ts > "$RUNNER_TEMP/edge-tests.log" 2>&1 || { echo "::error::Relay tests failed"; exit 1; }
+          echo "PASS: authenticated relay typecheck and existing tests"
+ "$RUNNER_TEMP/retirement.log" | tail -3
+          if [ "$focused" != 0 ]; then echo 'Retirement contract failed'; exit "$focused"; fi
+          npm test > "$RUNNER_TEMP/prekeys.log" 2>&1
+          rc=$?
+          grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/prekeys.log" | tail -3 || true
+          exit "$rc"
+      - name: TypeScript validation
+        if: always() && steps.install.outcome == 'success'
+        working-directory: private-src
+        run: |
+          set +e
+          npm run typecheck > "$RUNNER_TEMP/typecheck.log" 2>&1
+          rc=$?
+          if [ "$rc" != 0 ]; then
+            grep -E '^src/(lib/trayTrustProof|lib/trayTrustGate|lib/nativeE2eePilot|native-parity/e2ee/trayTrustProof|native-parity/e2ee/trayTrustGate|native-parity/e2ee/pilotSession)\.tsx?\([0-9]+,[0-9]+\): error TS[0-9]+' "$RUNNER_TEMP/typecheck.log" | sed -E 's/(: error TS[0-9]+):.*/\1/' || true
+            grep -oE 'error TS[0-9]+' "$RUNNER_TEMP/typecheck.log" | sort | uniq -c || true
+          fi
+          exit "$rc"
+      - name: Web bundle
+        if: always() && steps.install.outcome == 'success'
+        working-directory: private-src
+        run: npm run build > "$RUNNER_TEMP/build.log" 2>&1
+      - name: Publish sanitized status
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JOB_RESULT: ${{ job.status }}
+        run: |
+          if [ "$JOB_RESULT" = success ]; then STATE=success; else STATE=failure; fi
+          payload="$(jq -n --arg state "$STATE" '{state:$state,context:"traydaq-v2/user-e2ee-retirement-web",description:"Source tests and TypeScript validation"}')"
+          curl --fail --silent --show-error -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" -d "$payload" >/dev/null
+  edge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 56e73cbb3212e434dd9ce5ca20a34406d5eb5a11
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Edge typecheck and existing relay tests
+        working-directory: private-src
+        run: |
+          deno check --node-modules-dir=auto supabase/functions/firebase-member-chat/index.ts > "$RUNNER_TEMP/edge.log" 2>&1 || { grep -E 'TS[0-9]+|error:|Found [0-9]+ errors' "$RUNNER_TEMP/edge.log" | cut -c1-160 | head -20; exit 1; }
+          deno test --allow-env supabase/functions/_shared/e2eePilotRelay_test.ts > "$RUNNER_TEMP/edge-tests.log" 2>&1 || { echo "::error::Relay tests failed"; exit 1; }
+          echo "PASS: authenticated relay typecheck and existing tests"
+
+  live-compatible-edge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 6d1c5d0919b018f324b026daac83e9427a018c5d
+          path: live-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Verify isolated production-compatible retirement backend
+        working-directory: live-src
+        run: |
+          deno check --node-modules-dir=auto supabase/functions/firebase-member-chat/index.ts > "$RUNNER_TEMP/live-edge.log" 2>&1 || { grep -E 'TS[0-9]+|^error:' "$RUNNER_TEMP/live-edge.log" | cut -c1-160 | head -20; exit 1; }
+          deno test supabase/functions/_shared/e2eePilotRelay_test.ts > "$RUNNER_TEMP/live-relay.log" 2>&1 || { echo 'Historical relay tests failed'; exit 1; }
+          echo 'PASS: production-compatible retirement backend'

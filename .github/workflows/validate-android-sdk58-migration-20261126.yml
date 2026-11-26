@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: d687033b7bb70a33cf3b80848fe3df4c78691f61
+          ref: 0c872f4143d11317595cdd27024fe62857947eb9
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -54,6 +54,24 @@ jobs:
             grep -E 'error TS[0-9]+' "$RUNNER_TEMP/ts.log" | cut -c1-180 | head -100 || true
             exit 1
           }
+      - name: Identify dependency system bar API source locations
+        run: |
+          python3 - <<'PY'
+          import pathlib,re,collections
+          root=pathlib.Path('node_modules')
+          allowed={'react-native','react-native-screens','react-native-safe-area-context','react-native-webview','react-native-edge-to-edge','@react-native-google-signin/google-signin','expo','expo-modules-core','expo-status-bar','expo-splash-screen','expo-video','expo-image-picker','expo-navigation-bar'}
+          rx=re.compile(r'\b(?:getStatusBarColor|setStatusBarColor|setNavigationBarColor)\s*\(|\b(?:statusBarColor|navigationBarColor)\s*=')
+          counts=collections.Counter()
+          for pkg in sorted(allowed):
+            for f in (root/pkg).rglob('*'):
+              if f.suffix not in ('.kt','.java') or not f.is_file(): continue
+              if 'node_modules' in f.relative_to(root/pkg).parts: continue
+              for i,line in enumerate(f.read_text(errors='replace').splitlines(),1):
+                if rx.search(line):
+                  counts[pkg]+=1
+                  if counts[pkg]<=30: print(f'{f.relative_to(root)}:{i}')
+          for pkg,count in counts.items(): print(f'{pkg}: {count} candidate source locations')
+          PY
       - name: SDK 58 Android prebuild compatibility
         run: |
           npx expo prebuild --platform android --non-interactive > "$RUNNER_TEMP/prebuild.log" 2>&1 || {
@@ -141,18 +159,48 @@ jobs:
           target.mkdir(exist_ok=True)
           names=['getStatusBarColor','setStatusBarColor','setNavigationBarColor']
           hits={n:0 for n in names}
+          from collections import Counter,defaultdict
+          callers=Counter()
+          classes={}
+          methods=defaultdict(set)
+          owner=None
+          for line in pathlib.Path('app/build/outputs/mapping/release/mapping.txt').open(errors='replace'):
+            m=re.fullmatch(r'(\S+) -> (\S+):\s*',line)
+            if m:
+              original,owner=m.groups()
+              classes[owner]=original
+            elif owner and line.startswith(' ') and ' -> ' in line and '(' in line:
+              left,right=line.strip().rsplit(' -> ',1)
+              name=left.split('(',1)[0].split()[-1]
+              methods[(owner,right)].add(name)
+          allowed=('androidx.','android.support.','com.facebook.','com.swmansion.','expo.','com.google.android.','com.reactnativecommunity.','com.horcrux.','com.th3rdwave.','com.zoontek.','com.oblador.','com.airbnb.','com.android.')
+          def safe_class(name):
+            return name if name.startswith(allowed) else '[unattributed or application class]'
+          def safe_method(name):
+            return name if name.startswith(allowed) else '[unattributed method]'
           with zipfile.ZipFile('app/build/outputs/bundle/release/app-release.aab') as z:
             for item in z.namelist():
               if not re.fullmatch(r'base/dex/classes[0-9]*\.dex',item): continue
               path=target/pathlib.Path(item).name
               path.write_bytes(z.read(item))
               with subprocess.Popen([os.environ['ANDROID_HOME']+'/build-tools/36.0.0/dexdump','-d',str(path)],stdout=subprocess.PIPE,text=True,errors='replace') as p:
+                cls=method=''
                 for line in p.stdout:
+                  cm=re.search(r"Class descriptor\s*:\s*'L([^']+);'",line)
+                  if cm: cls=cm.group(1).replace('/','.'); method=''
+                  mm=re.search(r"^\s*name\s*:\s*'([^']+)'",line)
+                  if mm: method=mm.group(1)
                   if 'invoke-' in line and ('android/view/Window' in line or 'android.view.Window' in line):
                     for n in names:
-                      if n in line: hits[n]+=1
+                      if n in line:
+                        hits[n]+=1
+                        original=safe_class(classes.get(cls,cls))
+                        inline=tuple(sorted({safe_method(x) for x in methods.get((cls,method),set()) if '.' in x}))
+                        callers[(n,original,inline)]+=1
                 if p.wait(): raise SystemExit('DEX inspection failed')
           if not list(target.glob('*.dex')): raise SystemExit('No compiled DEX found')
           for n,count in hits.items(): print(f'{n}: {count} compiled invocation(s)')
+          for (api,owner,inline),count in sorted(callers.items()):
+            print(f'{api}: {count} in {owner}; mapped inline origins: {", ".join(inline) or "none identified"}')
           if any(hits.values()): raise SystemExit('Deprecated system bar invocations remain')
           PY

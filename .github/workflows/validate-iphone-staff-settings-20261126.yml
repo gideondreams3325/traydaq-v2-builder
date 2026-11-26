@@ -1,0 +1,46 @@
+name: TRAYDAQ iPhone Staff settings validation
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/validate-iphone-staff-settings-20261126.yml"]
+permissions:
+  contents: read
+jobs:
+  staff-iphone:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 77b20429e79d5b6cde85d08cf645231d930ce0b5
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Staff-only TypeScript, regression tests and PWA build
+        working-directory: private-src
+        env:
+          CI: "1"
+          CF_PAGES_COMMIT_SHA: "77b20429e79d5b6cde85d08cf645231d930ce0b5"
+        run: |
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { echo 'Dependency install failed'; exit 1; }
+          set +e
+          npm run typecheck:staff > "$RUNNER_TEMP/ts.log" 2>&1
+          ts_rc=$?
+          grep -E 'error TS[0-9]+' "$RUNNER_TEMP/ts.log" | cut -c1-180 | head -40 || true
+          node --test tests/staff-iphone-*.test.mjs tests/staff-strict-role-duty-isolation.test.mjs > "$RUNNER_TEMP/tests.log" 2>&1
+          test_rc=$?
+          grep -E '^(not ok|# (tests|pass|fail) [0-9]+)' "$RUNNER_TEMP/tests.log" | cut -c1-180 | head -80 || true
+          npm run build:staff > "$RUNNER_TEMP/build.log" 2>&1
+          build_rc=$?
+          if [ "$build_rc" -ne 0 ]; then echo 'Staff PWA build failed'; fi
+          if [ "$build_rc" -eq 0 ]; then
+            grep -q -F '77b20429e79d5b6cde85d08cf645231d930ce0b5' dist-staff/assets/*.js || build_rc=1
+            grep -q -F '© 2026 POMAAH GROUP. All rights reserved.' dist-staff/assets/*.js || build_rc=1
+          fi
+          echo "Staff TypeScript=$ts_rc tests=$test_rc PWA build=$build_rc"
+          test "$ts_rc" -eq 0 && test "$test_rc" -eq 0 && test "$build_rc" -eq 0

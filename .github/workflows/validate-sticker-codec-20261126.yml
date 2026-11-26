@@ -1,0 +1,25 @@
+name: Sticker codec qualification
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/validate-sticker-codec-20261126.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  codec:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify pinned WebP asset from npm tarball
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          npm pack @jsquash/webp@1.5.0 --silent
+          tar -xf jsquash-webp-1.5.0.tgz
+          wc -c package/codec/dec/webp_dec.wasm
+          sha256sum package/codec/dec/webp_dec.wasm
+          curl --fail --silent --show-error https://cdn.jsdelivr.net/npm/@jsquash/webp@1.5.0/codec/dec/webp_dec.wasm -o decoder.wasm
+          cmp decoder.wasm package/codec/dec/webp_dec.wasm

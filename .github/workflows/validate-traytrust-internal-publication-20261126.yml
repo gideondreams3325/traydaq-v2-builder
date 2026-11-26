@@ -147,9 +147,9 @@ jobs:
         working-directory: private-src
         run: |
           set +e
-          deno check --no-lock supabase/functions/_shared/trayTrustInternalRuntime.ts supabase/functions/traytrust-internal-bootstrap/index.ts > "$RUNNER_TEMP/traytrust-edge.log" 2>&1
+          deno check --no-lock --node-modules-dir=auto supabase/functions/_shared/trayTrustInternalRuntime.ts supabase/functions/traytrust-internal-bootstrap/index.ts > "$RUNNER_TEMP/traytrust-edge.log" 2>&1
           rc=$?
           if [ "$rc" != 0 ]; then
-            grep -E 'error\[TS[0-9]+\]|TS[0-9]+ \[ERROR\]|at file:.*trayTrust|at file:.*traytrust-internal' "$RUNNER_TEMP/traytrust-edge.log" | sed -E 's|file:.*private-src/|file:private-src/|' | cut -c1-180 | head -30 || true
+            grep -Ei 'error\[TS[0-9]+\]|TS[0-9]+ \[ERROR\]|at file:.*trayTrust|at file:.*traytrust-internal|error:|could not find|invalid value' "$RUNNER_TEMP/traytrust-edge.log" | sed -E 's|file:.*private-src/|file:private-src/|' | cut -c1-180 | head -30 || true
           fi
           exit "$rc"

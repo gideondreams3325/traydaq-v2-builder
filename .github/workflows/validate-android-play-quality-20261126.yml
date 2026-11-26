@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 77f12409300204cb0524901145d24074ce612a5f
+          ref: 11e757f02767f255030639c7440920b7dc6314
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -39,12 +39,6 @@ jobs:
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0" > "$RUNNER_TEMP/sdk.log" 2>&1
       - name: Install
         run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
-      - name: Resolve SDK 57 patch updates in disposable workspace
-        run: |
-          npm install expo@~57.0.34 expo-asset@~57.0.22 expo-image-manipulator@~57.0.23 expo-image-picker@~57.0.22 expo-location@~57.0.24 expo-notifications@~57.0.26 expo-sharing@~57.0.27 expo-splash-screen@~57.0.12 --no-audit --no-fund > "$RUNNER_TEMP/patch.log" 2>&1 || {
-            grep -Ei 'npm (error|ERR!) (code|peer|could not resolve|conflicting|notarget)' "$RUNNER_TEMP/patch.log" | cut -c1-180 | head -30 || true
-            exit 1
-          }
       - name: Native tests
         run: |
           set +e

@@ -1,0 +1,67 @@
+name: TRAYDAQ all public legal routes recovery QA
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/public-legal-routes-recovery-20261126.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  SOURCE_SHA: eaa03f588697f65f1170d36275b7c48df94d6e24
+jobs:
+  legal-routing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ env.SOURCE_SHA }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify exact source and focused regressions
+        working-directory: private-src
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          node --test tests/owner-legal-route-recovery.test.mjs tests/standalone-legal-cloudflare.test.mjs tests/public-legal-routing.test.mjs
+          npm run build:legal
+      - name: Test real Cloudflare Worker routing on both configurations
+        working-directory: private-src
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp -r dist-legal/. dist/
+          cp public/_redirects dist/_redirects
+          for config in wrangler.legal.jsonc wrangler.jsonc; do
+            npx --yes wrangler@4.156.2 dev --config "$config" --local --ip 127.0.0.1 --port 8787 >/tmp/legal-worker.log 2>&1 &
+            pid=$!
+            trap 'kill "$pid" 2>/dev/null || true' EXIT
+            ready=0
+            for i in $(seq 1 90); do
+              if curl -fsS --max-time 3 http://127.0.0.1:8787/child-safety/ -o /tmp/legal-check; then ready=1; break; fi
+              sleep 1
+            done
+            if [ "$ready" -ne 1 ]; then cat /tmp/legal-worker.log; exit 1; fi
+            for slug in privacy terms delete-account child-safety community-guidelines data-retention copyright reporting-appeals; do
+              for path in "$slug" "$slug/" "$slug/index.html"; do
+                status=$(curl -sS --max-time 15 -o /tmp/legal-check -w '%{http_code}' "http://127.0.0.1:8787/$path")
+                test "$status" = 200
+                grep -Fq 'support@traydaq.com' /tmp/legal-check
+                grep -Fq '<h1>' /tmp/legal-check
+                echo "PASS $config /$path"
+              done
+            done
+            for alias in child-safety-standards child-safety-standards.html; do
+              curl -fsS --max-time 15 "http://127.0.0.1:8787/$alias" -o /tmp/legal-check
+              grep -Fq 'Child Safety Standards' /tmp/legal-check
+              grep -Fq 'child sexual abuse and exploitation' /tmp/legal-check
+            done
+            kill "$pid" || true
+            wait "$pid" || true
+            trap - EXIT
+          done

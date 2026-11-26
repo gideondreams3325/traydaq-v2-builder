@@ -78,17 +78,17 @@ jobs:
           # SDK 58's generated version catalog requires compileSdk 37 and build tools 37.
           sdkmanager --list --channel=3 > "$RUNNER_TEMP/sdk-list.log" 2>&1
           grep -E '^[[:space:]]*(platforms;android-|build-tools;37)' "$RUNNER_TEMP/sdk-list.log" | cut -c1-180 | tail -45 || true
-          if ! test -s "$ANDROID_HOME/platforms/android-37/android.jar"; then
-            if ! grep -Eq '^[[:space:]]*platforms;android-37[[:space:]]*\|' "$RUNNER_TEMP/sdk-list.log"; then
-              echo "::error::Required Android API 37 platform is not installed or listed by the current SDK manager."
+          if ! test -s "$ANDROID_HOME/platforms/android-37.0/android.jar"; then
+            if ! grep -Eq '^[[:space:]]*platforms;android-37\.0[[:space:]]*\|' "$RUNNER_TEMP/sdk-list.log"; then
+              echo "::error::Required Android API 37.0 platform is not installed or listed by the current SDK manager."
               exit 1
             fi
-            sdkmanager --channel=3 "platforms;android-37" > "$RUNNER_TEMP/sdk-platform.log" 2>&1 || {
+            sdkmanager --channel=3 "platforms;android-37.0" > "$RUNNER_TEMP/sdk-platform.log" 2>&1 || {
               tr '\r' '\n' < "$RUNNER_TEMP/sdk-platform.log" | grep -Ei 'failed|error|not found|warning:|license' | cut -c1-180 | tail -20 || true
               exit 1
             }
           fi
-          test -s "$ANDROID_HOME/platforms/android-37/android.jar"
+          test -s "$ANDROID_HOME/platforms/android-37.0/android.jar"
           sdkmanager --channel=3 "platforms;android-36" "build-tools;36.0.0" "build-tools;37.0.0" > "$RUNNER_TEMP/sdk.log" 2>&1 || {
             tr '\r' '\n' < "$RUNNER_TEMP/sdk.log" | grep -Ei 'failed|error|not found|warning:|license' | cut -c1-180 | tail -20 || true
             exit 1

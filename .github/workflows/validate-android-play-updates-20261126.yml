@@ -1,0 +1,166 @@
+name: TRAYDAQ Android Google Play update validation
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/validate-android-play-updates-20261126.yml"]
+permissions:
+  contents: read
+jobs:
+  sdk58:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+      NODE_OPTIONS: "--max-old-space-size=6144"
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 2b76e18cc6e9e2c64af70331b86c69f4ead8ba65
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install committed SDK 58 dependencies
+        run: |
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+          npx expo install --check > "$RUNNER_TEMP/check.log" 2>&1 || {
+            grep -Ei 'expected version|should be updated|Error:' "$RUNNER_TEMP/check.log" | cut -c1-180 | head -40 || true
+            exit 1
+          }
+          node -e 'for(const p of ["expo","react-native","react"]) console.log(p,require(p+"/package.json").version)'
+      - name: Native tests against upgraded dependencies
+        run: |
+          set +e
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/tests.log" 2>&1
+          rc=$?
+          grep -E '^(not ok|# (tests|pass|fail) [0-9]+)' "$RUNNER_TEMP/tests.log" | cut -c1-180 | head -80
+          if test "$rc" -ne 0; then
+            grep -E "Unmocked native dependency: [A-Za-z@./_-]+|error: '(Cannot read properties|No instances found|Expected values|Unsupported language)" "$RUNNER_TEMP/tests.log" | cut -c1-180 | head -30 || true
+            grep -E '^# .*\.test\.mjs:[0-9]+' "$RUNNER_TEMP/tests.log" | sed -E 's@/home/runner/work/[^ ]*/mobile/tests/@tests/@g' | cut -c1-180 | head -30 || true
+          fi
+          exit "$rc"
+      - name: TypeScript compatibility
+        if: always()
+        run: |
+          npm run typecheck > "$RUNNER_TEMP/ts.log" 2>&1 || {
+            grep -E 'error TS[0-9]+' "$RUNNER_TEMP/ts.log" | cut -c1-180 | head -100 || true
+            exit 1
+          }
+      - name: SDK 58 Android prebuild compatibility
+        run: |
+          npx expo prebuild --platform android --non-interactive > "$RUNNER_TEMP/prebuild.log" 2>&1 || {
+            grep -Ei 'Error:|PluginError|Cannot find module|Unable to verify|Expected Expo' "$RUNNER_TEMP/prebuild.log" | cut -c1-180 | head -30 || true
+            exit 1
+          }
+          grep -q 'TraydaqCropEdgeToEdge' node_modules/expo-image-picker/android/src/main/AndroidManifest.xml
+          grep -q 'WindowCompat.setDecorFitsSystemWindows(this, false)' node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/ExpoCropImageActivity.kt
+          if grep -q 'WindowCompat.enableEdgeToEdge(this)' node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/ExpoCropImageActivity.kt; then exit 1; fi
+          grep -q 'TRAYDAQ: host status bar is managed by the app' node_modules/react-native-video-trim/android/src/main/java/com/videotrim/BaseVideoTrimModule.kt
+          if grep -Eq 'originalStatusBarColor|restoreStatusBarColor|changeStatusBarColor|shouldChangeStatusBarColorOnOpen' node_modules/react-native-video-trim/android/src/main/java/com/videotrim/BaseVideoTrimModule.kt; then exit 1; fi
+          grep -q 'TRAYDAQ RN source build' android/settings.gradle
+          grep -q 'traydaq-splashscreen' android/settings.gradle
+          grep -q 'TRAYDAQ: system bar backgrounds come from the activity or dialog theme' node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/views/view/WindowUtil.kt
+          grep -Fq 'compileOnly("com.facebook.hermes:hermes-android:260318099.0.5")' node_modules/react-native/ReactAndroid/build.gradle.kts
+          test -s android/traydaq-splashscreen/build.gradle
+          grep -Fq 'com.google.android.play:app-update:2.1.0' android/app/build.gradle
+          test -s android/app/src/main/java/com/traydaq/playupdates/TraydaqPlayUpdates.kt
+          grep -R -Fq 'com.traydaq.playupdates.TraydaqPlayUpdates.attach(this)' android/app/src/main/java
+          echo 'PASS: generated Android integration and existing native patches; no release built'
+
+      - name: Use preinstalled current Android command-line tools
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMANAGER"
+          "$SDKMANAGER" --version
+          echo "$(dirname "$SDKMANAGER")" >> "$GITHUB_PATH"
+      - name: Inspect generated toolchain requirements
+        run: |
+          for f in android/gradle/wrapper/gradle-wrapper.properties node_modules/react-native/gradle/libs.versions.toml node_modules/@react-native/gradle-plugin/gradle/libs.versions.toml; do
+            if test -f "$f"; then
+              grep -E '^(distributionUrl|agp|androidGradlePlugin|compileSdk|targetSdk|buildTools|kotlin|ndk|ndkVersion)[[:space:]]*=' "$f" | head -15 || true
+            fi
+          done
+          # SDK 58's generated version catalog requires compileSdk 37 and build tools 37.
+          sdkmanager --list --channel=3 > "$RUNNER_TEMP/sdk-list.log" 2>&1
+          grep -E '^[[:space:]]*(platforms;android-|build-tools;37)' "$RUNNER_TEMP/sdk-list.log" | cut -c1-180 | tail -45 || true
+          if ! test -s "$ANDROID_HOME/platforms/android-37.0/android.jar"; then
+            if ! grep -Eq '^[[:space:]]*platforms;android-37\.0[[:space:]]*\|' "$RUNNER_TEMP/sdk-list.log"; then
+              echo "::error::Required Android API 37.0 platform is not installed or listed by the current SDK manager."
+              exit 1
+            fi
+            sdkmanager --channel=3 "platforms;android-37.0" > "$RUNNER_TEMP/sdk-platform.log" 2>&1 || {
+              tr '\r' '\n' < "$RUNNER_TEMP/sdk-platform.log" | grep -Ei 'failed|error|not found|warning:|license' | cut -c1-180 | tail -20 || true
+              exit 1
+            }
+          fi
+          test -s "$ANDROID_HOME/platforms/android-37.0/android.jar"
+          sdkmanager --channel=3 "platforms;android-36" "build-tools;36.0.0" "build-tools;37.0.0" > "$RUNNER_TEMP/sdk.log" 2>&1 || {
+            tr '\r' '\n' < "$RUNNER_TEMP/sdk.log" | grep -Ei 'failed|error|not found|warning:|license' | cut -c1-180 | tail -20 || true
+            exit 1
+          }
+      - name: Install exact React Native native source toolchain
+        run: |
+          # React Native 0.88.1 requires this CMake and NDK for its source build.
+          cmake_version=3.30.5
+          ndk_version="$(sed -nE 's/^ndkVersion[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' node_modules/react-native/gradle/libs.versions.toml)"
+          test "$ndk_version" = "27.1.12297006"
+          sdkmanager --channel=3 "cmake;$cmake_version" "ndk;$ndk_version" > "$RUNNER_TEMP/native-sdk.log" 2>&1 || {
+            tr '\r' '\n' < "$RUNNER_TEMP/native-sdk.log" | grep -Ei 'failed|error|not found|warning:|license' | cut -c1-180 | tail -30 || true
+            exit 1
+          }
+          test -x "$ANDROID_HOME/cmake/$cmake_version/bin/cmake"
+          test -x "$ANDROID_HOME/cmake/$cmake_version/bin/ninja"
+          test -s "$ANDROID_HOME/ndk/$ndk_version/source.properties"
+          "$ANDROID_HOME/cmake/$cmake_version/bin/cmake" --version | head -1
+          grep '^Pkg.Revision' "$ANDROID_HOME/ndk/$ndk_version/source.properties"
+          echo "CMAKE_VERSION=$cmake_version" >> "$GITHUB_ENV"
+      - name: Verify resolved Android Gradle Plugin version
+        working-directory: private-src/mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew --version | grep -E "^(Gradle |Kotlin:|Launcher JVM:|Daemon JVM:)" || true
+          cat > "$RUNNER_TEMP/verify-agp.gradle" <<'GRADLE'
+          gradle.projectsEvaluated {
+            // Init scripts also run in React Native/Expo included builds, which have no :app.
+            if (gradle.parent != null) return
+            def app = gradle.rootProject.findProject(':app')
+            if (app == null) throw new GradleException('Main Android app project missing')
+            def plugin = app.plugins.findPlugin('com.android.application')
+            if (plugin == null) throw new GradleException('Android application plugin missing')
+            def version = plugin.class.classLoader.loadClass('com.android.Version').getField('ANDROID_GRADLE_PLUGIN_VERSION').get(null)
+            println("TRAYDAQ_AGP_VERSION=" + version)
+          }
+          GRADLE
+          if ! ./gradlew --no-daemon --console=plain -I "$RUNNER_TEMP/verify-agp.gradle" :app:help > "$RUNNER_TEMP/agp.log" 2>&1; then
+            grep -Ei '^> Task .*FAILED|^Execution failed for task|^BUILD FAILED|^FAILURE:|^\* What went wrong:|^Could not |^A problem occurred|^Plugin .* was not found|^Minimum supported|^Android Gradle plugin|^Gradle requires|^Error:' "$RUNNER_TEMP/agp.log" | cut -c1-200 | head -40 || true
+            awk '/^[*] What went wrong:/{p=1;next} /^[*] (Try|Exception is):/{p=0} p && NF{print}' "$RUNNER_TEMP/agp.log" | sed -E 's@/home/runner/work/[^ ]+@<workspace-path>@g; s@https?://[^ ]+@<url>@g' | cut -c1-240 | head -30 || true
+            echo "AGP configuration command failed"
+            exit 1
+          fi
+          grep -E '^TRAYDAQ_AGP_VERSION=' "$RUNNER_TEMP/agp.log" || true
+          if ! grep -Eq '^TRAYDAQ_AGP_VERSION=9\.' "$RUNNER_TEMP/agp.log"; then
+            echo "Resolved Android Gradle Plugin is not version 9.x or was not identified."
+            exit 1
+          fi
+      - name: Compile Android release Kotlin with official Play dependency (no package or release)
+        working-directory: private-src/mobile/android
+        run: |
+          if ! ./gradlew --no-daemon --console=plain :app:compileReleaseKotlin > "$RUNNER_TEMP/play-compile.log" 2>&1; then
+            grep -Ei '^> Task .*FAILED|^Execution failed for task|^BUILD FAILED|^FAILURE:|^Could not |^A problem occurred|^Missing class |^ERROR:|^e: ' "$RUNNER_TEMP/play-compile.log" | sed -E 's@/home/runner/work/[^ ]+@<workspace-path>@g; s@https?://[^ ]+@<url>@g' | cut -c1-200 | head -50 || true
+            exit 1
+          fi
+          grep -E '^> Task :app:compileReleaseKotlin' "$RUNNER_TEMP/play-compile.log" | tail -1
+          test ! -f app/build/outputs/bundle/release/app-release.aab
+          echo 'PASS: Native Kotlin compilation; no new app package, release or deployment'

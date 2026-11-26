@@ -8,7 +8,7 @@ on:
 permissions:
   contents: read
 env:
-  SOURCE_SHA: f08425d364b1bd9d822bb3bd641115e29398f2a0
+  SOURCE_SHA: f074e6643c7f4448a15e864744aa979229f40b08
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: f08425d364b1bd9d822bb3bd641115e29398f2a0
+          ref: f074e6643c7f4448a15e864744aa979229f40b08
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
@@ -30,7 +30,7 @@ jobs:
         working-directory: private-src
         run: |
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
-          node --test tests/traystudio-overlay-sizing-20261126.test.mjs tests/traystudio-expanded-text-styles-20261126.test.mjs tests/traydaq-expanded-user-languages-20261126.test.mjs tests/biometrics-locales.test.mjs tests/username-country-translation.test.mjs tests/traystudio-photo-workspace-script-20261124.test.mjs tests/traystudio-workspace-copy-20261124.test.mjs tests/traystudio-video-composition-20261124.test.mjs tests/traystudio-web-20261123.test.mjs > "$RUNNER_TEMP/studio-tests.log" 2>&1 || { echo "::error::TrayStudio focused regression failed"; grep -E '^not ok |^# fail ' "$RUNNER_TEMP/studio-tests.log" | cut -c1-180; exit 1; }
+          node --test tests/traystudio-overlay-sizing-20261126.test.mjs tests/traystudio-expanded-text-styles-20261126.test.mjs tests/traydaq-expanded-user-languages-20261126.test.mjs tests/traydaq-pidgin-languages-20261126.test.mjs tests/biometrics-locales.test.mjs tests/username-country-translation.test.mjs tests/traystudio-photo-workspace-script-20261124.test.mjs tests/traystudio-workspace-copy-20261124.test.mjs tests/traystudio-video-composition-20261124.test.mjs tests/traystudio-web-20261123.test.mjs > "$RUNNER_TEMP/studio-tests.log" 2>&1 || { echo "::error::TrayStudio focused regression failed"; grep -E '^not ok |^# fail ' "$RUNNER_TEMP/studio-tests.log" | cut -c1-180; exit 1; }
           grep -E '^# (tests|pass|fail) ' "$RUNNER_TEMP/studio-tests.log"
           cd mobile
           node --test tests/traystudio-editor-20261123.test.mjs tests/traystudio-video-native-20261123.test.mjs tests/username-country-translation.test.mjs > "$RUNNER_TEMP/studio-native.log" 2>&1 || { echo "::error::Native studio regression failed"; grep -E '^not ok |^# fail ' "$RUNNER_TEMP/studio-native.log" | cut -c1-180; exit 1; }
@@ -45,7 +45,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: f08425d364b1bd9d822bb3bd641115e29398f2a0
+          ref: f074e6643c7f4448a15e864744aa979229f40b08
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false

@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 7710a551caa3e5b43b77e8f628aed05b2bc0e8e4
+          ref: 8c8e92939e414706b060f69fda9b75c58f59d71a
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -180,7 +180,12 @@ jobs:
       - name: Compile optimized Android bundle
         working-directory: private-src/mobile/android
         run: |
-          ./gradlew --no-daemon --console=plain :app:bundleRelease > "$RUNNER_TEMP/gradle.log" 2>&1 || {
+          for key in android.enableMinifyInReleaseBuilds android.enableShrinkResourcesInReleaseBuilds android.r8.optimizedResourceShrinking; do
+            grep -Fx "$key=true" gradle.properties
+          done
+          grep -q 'proguard-android-optimize.txt' app/build.gradle
+          set -o pipefail
+          ./gradlew --no-daemon --console=plain :app:bundleRelease 2>&1 | tee "$RUNNER_TEMP/gradle.log" | awk '/^> Task / { print; fflush() }' || {
             grep -Ei '^> Task .*FAILED|^Execution failed for task|^BUILD FAILED|^FAILURE:|^\* What went wrong:|^Could not |^A problem occurred|^Missing class |^ERROR:|^e: ' "$RUNNER_TEMP/gradle.log" | cut -c1-180 | head -50 || true
             awk '/^[*] What went wrong:/{p=1;next} /^[*] (Try|Exception is):/{p=0} p && NF{print}' "$RUNNER_TEMP/gradle.log" | sed -E 's@/home/runner/work/[^ ]+@<workspace-path>@g; s@https?://[^ ]+@<url>@g' | cut -c1-260 | head -40 || true
             find ../node_modules/react-native/ReactAndroid/hermes-engine/build -name 'configure-hermesc.log' -o -name 'build-hermesc.error.log' 2>/dev/null | while read -r log; do
@@ -190,6 +195,12 @@ jobs:
           }
           if ! grep -Eq '^> Task :expo-image-picker:compileReleaseKotlin([[:space:]]|$)' "$RUNNER_TEMP/gradle.log"; then
             echo 'Patched ImagePicker source compilation not confirmed'; exit 1
+          fi
+          if ! grep -Eq '^> Task :react-native-video-trim:compileReleaseKotlin([[:space:]]|$)' "$RUNNER_TEMP/gradle.log"; then
+            echo 'Patched video trim source compilation not confirmed'; exit 1
+          fi
+          if ! grep -Eq '^> Task :app:minifyReleaseWithR8([[:space:]]|$)' "$RUNNER_TEMP/gradle.log"; then
+            echo 'R8 release optimization not confirmed'; exit 1
           fi
           grep -E '^> Task :(expo-image-picker|react-native-video-trim):compileReleaseKotlin' "$RUNNER_TEMP/gradle.log" | head -10
           if ! grep -Eq '^> Task .*ReactAndroid:compileReleaseKotlin([[:space:]]|$)' "$RUNNER_TEMP/gradle.log"; then

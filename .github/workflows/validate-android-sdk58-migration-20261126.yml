@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 282ab78aaf2b63b07803258d53289d29f862306e
+          ref: 58becfc763a387721405b28e35469c0997cf8d0d
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -72,7 +72,10 @@ jobs:
               grep -E '^(distributionUrl|agp|androidGradlePlugin|compileSdk|targetSdk|buildTools|kotlin|ndk)[[:space:]]*=' "$f" | head -15 || true
             fi
           done
-          sdkmanager "platforms;android-36" "build-tools;36.0.0" > "$RUNNER_TEMP/sdk.log" 2>&1 || {
+          # SDK 58's generated version catalog requires compileSdk 37 and build tools 37.
+          sdkmanager --list --channel=3 > "$RUNNER_TEMP/sdk-list.log" 2>&1
+          grep -E '^[[:space:]]*(platforms;android-37|build-tools;37\.0\.0)[[:space:]]*\|' "$RUNNER_TEMP/sdk-list.log" | head -10 || true
+          sdkmanager --channel=3 "platforms;android-36" "build-tools;36.0.0" "platforms;android-37" "build-tools;37.0.0" > "$RUNNER_TEMP/sdk.log" 2>&1 || {
             grep -Ei 'failed|error|not found|warning:' "$RUNNER_TEMP/sdk.log" | cut -c1-180 | head -15 || true
             exit 1
           }
@@ -92,7 +95,7 @@ jobs:
           GRADLE
           if ! ./gradlew --no-daemon --console=plain -I "$RUNNER_TEMP/verify-agp.gradle" :app:help > "$RUNNER_TEMP/agp.log" 2>&1; then
             grep -Ei '^> Task .*FAILED|^Execution failed for task|^BUILD FAILED|^FAILURE:|^\* What went wrong:|^Could not |^A problem occurred|^Plugin .* was not found|^Minimum supported|^Android Gradle plugin|^Gradle requires|^Error:' "$RUNNER_TEMP/agp.log" | cut -c1-200 | head -40 || true
-            awk '/^\\* What went wrong:/{p=1;next} /^\\* (Try|Exception is):/{p=0} p && NF{print}' "$RUNNER_TEMP/agp.log" | sed -E 's@/home/runner/work/[^ ]+@<workspace-path>@g; s@https?://[^ ]+@<url>@g' | cut -c1-240 | head -30 || true
+            awk '/^[*] What went wrong:/{p=1;next} /^[*] (Try|Exception is):/{p=0} p && NF{print}' "$RUNNER_TEMP/agp.log" | sed -E 's@/home/runner/work/[^ ]+@<workspace-path>@g; s@https?://[^ ]+@<url>@g' | cut -c1-240 | head -30 || true
             echo "AGP configuration command failed"
             exit 1
           fi

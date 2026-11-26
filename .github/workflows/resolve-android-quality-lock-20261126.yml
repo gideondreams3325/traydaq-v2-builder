@@ -28,13 +28,14 @@ jobs:
       - name: Resolve public npm dependencies only
         run: |
           cp package-lock.json "$RUNNER_TEMP/original-lock.json"
-          npm install --package-lock-only --ignore-scripts --no-audit --no-fund expo@~57.0.34 expo-asset@~57.0.22 expo-image-manipulator@~57.0.23 expo-image-picker@~57.0.22 expo-location@~57.0.24 expo-notifications@~57.0.26 expo-sharing@~57.0.27 expo-splash-screen@~57.0.12 > "$RUNNER_TEMP/npm.log" 2>&1
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund --registry=https://registry.npmjs.org --replace-registry-host=always expo@~57.0.34 expo-asset@~57.0.22 expo-image-manipulator@~57.0.23 expo-image-picker@~57.0.22 expo-location@~57.0.24 expo-notifications@~57.0.26 expo-sharing@~57.0.27 expo-splash-screen@~57.0.12 > "$RUNNER_TEMP/npm.log" 2>&1
           node - <<'NODE'
           const fs=require('node:fs');
           const before=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/original-lock.json','utf8'));
           const after=require('./package-lock.json');
           const names=['expo','expo-asset','expo-image-manipulator','expo-image-picker','expo-location','expo-notifications','expo-sharing','expo-splash-screen'];
           for(const [key,item] of Object.entries(after.packages)){
+            if(key && JSON.stringify(before.packages[key])===JSON.stringify(item))continue;
             if(!key)continue;
             if(!key.startsWith('node_modules/')||!/^https:\/\/registry\.npmjs\.org\//.test(item.resolved||'')||!item.integrity||item.link)
               throw Error('Non-public dependency metadata cannot be reported.');

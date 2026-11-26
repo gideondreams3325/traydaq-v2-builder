@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 236d1b6db1e2ca97976d4cfff4d72e86a72d8eb7
+          ref: f562ca5b0a771b8f3d582c9e16bc0132afa5361d
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -26,6 +26,7 @@ jobs:
         with:
           node-version: "22"
       - name: Install dependencies
+        id: install
         working-directory: private-src/mobile
         run: npm install --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
       - name: Run Android regression suite
@@ -35,10 +36,22 @@ jobs:
           node --test tests/*.test.mjs > "$RUNNER_TEMP/tests.log" 2>&1
           rc=$?
           grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/tests.log" | tail -3 || true
+          if [ "$rc" != 0 ]; then
+            node -e 'const fs=require("fs"),crypto=require("crypto");for(const l of fs.readFileSync(process.argv[1],"utf8").split("\n")){const m=l.match(/^not ok \d+ - (.*)$/);if(m)console.log("Failed test identifier: "+crypto.createHash("sha256").update(m[1]).digest("hex").slice(0,16));}' "$RUNNER_TEMP/tests.log"
+          fi
           exit "$rc"
       - name: TypeScript validation
+        if: always() && steps.install.outcome == 'success'
         working-directory: private-src/mobile
-        run: npm run typecheck > "$RUNNER_TEMP/typecheck.log" 2>&1
+        run: |
+          set +e
+          npm run typecheck > "$RUNNER_TEMP/typecheck.log" 2>&1
+          rc=$?
+          if [ "$rc" != 0 ]; then
+            grep -E '^src/(data/messages|App|new-design/HomeFeedScreen)\.tsx?\([0-9]+,[0-9]+\): error TS[0-9]+' "$RUNNER_TEMP/typecheck.log" | sed -E 's/(: error TS[0-9]+):.*/\1/' || true
+            grep -oE 'error TS[0-9]+' "$RUNNER_TEMP/typecheck.log" | sort | uniq -c || true
+          fi
+          exit "$rc"
       - name: Publish sanitized status
         if: always()
         env:

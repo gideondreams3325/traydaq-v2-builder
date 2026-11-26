@@ -444,10 +444,12 @@ jobs:
         working-directory: private-src
         shell: bash
         run: |
-          if deno check supabase/functions/firebase-native-shops/index.ts > "$RUNNER_TEMP/store-edge.log" 2>&1; then
+          if deno check --no-config --node-modules-dir=none --no-lock supabase/functions/firebase-native-shops/index.ts > "$RUNNER_TEMP/store-edge.log" 2>&1; then
             echo "PASS: store Edge Function typecheck"
           else
             echo "::error::FAIL: store Edge Function typecheck"
-            grep -E 'TS[0-9]{4}' "$RUNNER_TEMP/store-edge.log" | grep -oE 'TS[0-9]{4}' | sort -u | head -10 || true
+            grep -oE 'TS[0-9]{4}' "$RUNNER_TEMP/store-edge.log" | sort -u | head -10 || true
+            grep -oE 'firebase-native-shops/index.ts:[0-9]+:[0-9]+' "$RUNNER_TEMP/store-edge.log" | sort -u | head -10 || true
+            grep -oiE 'node_modules|lockfile|permission denied|module not found|could not resolve|error downloading|certificate|npm package' "$RUNNER_TEMP/store-edge.log" | sort -u | head -10 || true
             exit 1
           fi

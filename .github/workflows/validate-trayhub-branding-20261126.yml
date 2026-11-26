@@ -1,0 +1,33 @@
+name: Trayhub Android navigation validation (no app build)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/validate-trayhub-branding-20261126.yml']
+  pull_request:
+    paths: ['.github/workflows/validate-trayhub-branding-20261126.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 74847f6c384f68de00b67a75525e88f2ad5ab242
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run native source regressions
+        working-directory: private-src/mobile
+        run: node --test tests/*.test.mjs
+      - name: Install locked dependencies
+        working-directory: private-src/mobile
+        run: npm ci --no-audit --no-fund
+      - name: Native typecheck
+        working-directory: private-src/mobile
+        run: npm run typecheck

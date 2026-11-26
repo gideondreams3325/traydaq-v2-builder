@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 4e8583ea3031f15341f6cc794f5fdfd753f83c68
+          ref: f0f2fd13ad3909717aa161cd3ee86b996dc3b474
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -163,6 +163,10 @@ jobs:
             grep -Ei '^> Task .*FAILED|^Execution failed for task|^BUILD FAILED|^FAILURE:|^\* What went wrong:|^Could not |^A problem occurred|^Missing class |^ERROR:|^e: ' "$RUNNER_TEMP/gradle.log" | cut -c1-180 | head -50 || true
             exit 1
           }
+          if ! grep -Eq '^> Task :expo-image-picker:compileReleaseKotlin([[:space:]]|$)' "$RUNNER_TEMP/gradle.log"; then
+            echo 'Patched ImagePicker source compilation not confirmed'; exit 1
+          fi
+          grep -E '^> Task :(expo-image-picker|react-native-video-trim):compileReleaseKotlin' "$RUNNER_TEMP/gradle.log" | head -10
           test -s app/build/outputs/bundle/release/app-release.aab
           test -s app/build/outputs/mapping/release/mapping.txt
           echo 'PASS: optimized AGP 9 release bundle built; no distribution'

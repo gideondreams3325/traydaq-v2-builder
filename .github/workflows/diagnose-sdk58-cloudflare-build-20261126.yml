@@ -1,0 +1,57 @@
+name: Read-only encrypted Cloudflare build diagnosis
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/diagnose-sdk58-cloudflare-build-20261126.yml']
+permissions:
+  contents: read
+jobs:
+  diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Read build metadata and logs without exposing credentials or plaintext
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          node <<'NODE'
+          const crypto=require('node:crypto');
+          const token=process.env.CF_API_TOKEN||'';
+          const account=process.env.CF_ACCOUNT_ID||'';
+          if(!token||!account){console.log('CF_DIAGNOSTIC_CREDENTIALS_MISSING token='+Boolean(token)+' account='+Boolean(account));process.exit(1);}
+          const publicKey="-----BEGIN PUBLIC KEY-----\nMIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEA6zreOyxao5led94tk9qR\nhjnTDx5wEd+gZJObngnA9GGKuwajep4Pq5RuQdLoUS/ibZNfP2WHosTh7c2jySJU\nCj0OWqDeOw1UjKQ32VUHvw/eFMNn8QHDGoCP1j8qNgkLQDW17XoZfq8MojQwuRRr\ndtOcfSQmfQd++5v2QI9MwMEPLhVt9adMnJbZ4YaP8m0K2wcKeEztq46YUUAyr+Ov\nXH98deqeEGsdM/b5eqRB83RUIO6CiyVCznDCCN+f+e+n3hFCdy0Z/X+H0rpb99Ue\nhFCWYf55wAoL42Q5CVlbIoqF0iKk/8iixmzF24FWEVEhGfBSD+yyByMlOIGzsT9C\n/0h66mDeuFoY7zqExbzS3ItPHeTsKObfdCMv7mA8ca7s77tvRV/GLmoBlBGYQpT+\nvujSipEHCx/wOe8gzAATmXV8PuNvkHko9yw/yG2OqksccGhXe7aktOjc36VpB4L1\nK+5qnBoonnjmcXTwSdG8aIWj5Ktjg2l5fukLZvQrXyOpAgMBAAE=\n-----END PUBLIC KEY-----";
+          const ids=['a1a32146-4811-4635-8152-f0aa8eff3f1f','bf608370-a3e6-4ffa-a47c-66422feab319'];
+          const payload=[];
+          async function get(path){
+           const resp=await fetch('https://api.cloudflare.com/client/v4/accounts/'+encodeURIComponent(account)+path,{headers:{Authorization:'Bearer '+token}});
+           const json=await resp.json();return {http:resp.status,body:json};
+          }
+          (async()=>{
+           for(const id of ids){
+            const build=await get('/builds/builds/'+id);
+            const result=build.body.result||{};
+            const meta=result.build_trigger_metadata||{};
+            const safe={id,http:build.http,success:build.body.success,errors:build.body.errors,build_outcome:result.build_outcome,status:result.status,branch:meta.branch,commit_hash:meta.commit_hash,source:meta.build_trigger_source,logs:[]};
+            let cursor='';
+            for(let page=0;page<5;page++){
+             const log=await get('/builds/builds/'+id+'/logs'+(cursor?'?cursor='+encodeURIComponent(cursor):''));
+             safe.log_http=log.http;safe.log_errors=log.body.errors;
+             if(!log.body.success)break;
+             const part=log.body.result||{};safe.logs.push(...(part.lines||[]));
+             if(!part.truncated||!part.cursor||part.cursor===cursor)break;cursor=part.cursor;
+            }
+            payload.push(safe);
+           }
+           const key=crypto.randomBytes(32),iv=crypto.randomBytes(12);
+           const cipher=crypto.createCipheriv('aes-256-gcm',key,iv);
+           const encrypted=Buffer.concat([cipher.update(JSON.stringify(payload),'utf8'),cipher.final()]);
+           const wrapped=crypto.publicEncrypt({key:publicKey,oaepHash:'sha256'},key);
+           console.log('CF_DIAGNOSTIC_V1 '+JSON.stringify({key:wrapped.toString('base64'),iv:iv.toString('base64'),tag:cipher.getAuthTag().toString('base64'),data:encrypted.toString('base64')}));
+          })().catch(e=>{console.log('CF_DIAGNOSTIC_REQUEST_FAILED '+e.name);process.exitCode=1;});
+          NODE
+# Read-only API requests. No deploy, release, secret output or plaintext build logs.

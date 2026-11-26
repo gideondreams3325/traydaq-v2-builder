@@ -67,18 +67,34 @@ jobs:
           packages: platform-tools
       - name: Android SDK
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0" > "$RUNNER_TEMP/sdk.log" 2>&1
-      - name: Verify AGP version and compile optimized Android bundle
+      - name: Verify resolved Android Gradle Plugin version
         working-directory: private-src/mobile/android
         run: |
           chmod +x gradlew
-          ./gradlew --no-daemon :app:buildEnvironment > "$RUNNER_TEMP/agp.log" 2>&1 || {
-            grep -E '^> Task .*FAILED|^Execution failed for task|^BUILD FAILED|^\* What went wrong:' "$RUNNER_TEMP/agp.log" | cut -c1-160 | head -30
-            exit 1
+          cat > "$RUNNER_TEMP/verify-agp.gradle" <<'GRADLE'
+          gradle.projectsEvaluated {
+            def app = gradle.rootProject.findProject(':app')
+            def plugin = app.plugins.findPlugin('com.android.application')
+            if (plugin == null) throw new GradleException('Android application plugin missing')
+            def version = plugin.class.classLoader.loadClass('com.android.Version').getField('ANDROID_GRADLE_PLUGIN_VERSION').get(null)
+            println("TRAYDAQ_AGP_VERSION=" + version)
           }
-          grep -E 'com.android.tools.build:gradle:[0-9]' "$RUNNER_TEMP/agp.log" | head -8
-          grep -Eq 'com.android.tools.build:gradle:9\.' "$RUNNER_TEMP/agp.log"
-          ./gradlew --no-daemon :app:bundleRelease > "$RUNNER_TEMP/gradle.log" 2>&1 || {
-            grep -E '^> Task .*FAILED|^Execution failed for task|^BUILD FAILED|^\* What went wrong:' "$RUNNER_TEMP/gradle.log" | cut -c1-160 | head -30
+          GRADLE
+          if ! ./gradlew --no-daemon --console=plain -I "$RUNNER_TEMP/verify-agp.gradle" :app:help > "$RUNNER_TEMP/agp.log" 2>&1; then
+            grep -Ei '^> Task .*FAILED|^Execution failed for task|^BUILD FAILED|^FAILURE:|^\* What went wrong:|^Could not |^A problem occurred|^Plugin .* was not found|^Minimum supported|^Android Gradle plugin|^Gradle requires|^Error:' "$RUNNER_TEMP/agp.log" | cut -c1-200 | head -40 || true
+            echo "AGP configuration command failed"
+            exit 1
+          fi
+          grep -E '^TRAYDAQ_AGP_VERSION=' "$RUNNER_TEMP/agp.log" || true
+          if ! grep -Eq '^TRAYDAQ_AGP_VERSION=9\.' "$RUNNER_TEMP/agp.log"; then
+            echo "Resolved Android Gradle Plugin is not version 9.x or was not identified."
+            exit 1
+          fi
+      - name: Compile optimized Android bundle
+        working-directory: private-src/mobile/android
+        run: |
+          ./gradlew --no-daemon --console=plain :app:bundleRelease > "$RUNNER_TEMP/gradle.log" 2>&1 || {
+            grep -Ei '^> Task .*FAILED|^Execution failed for task|^BUILD FAILED|^FAILURE:|^\* What went wrong:|^Could not |^A problem occurred|^Missing class |^ERROR:|^e: ' "$RUNNER_TEMP/gradle.log" | cut -c1-180 | head -50 || true
             exit 1
           }
           test -s app/build/outputs/bundle/release/app-release.aab

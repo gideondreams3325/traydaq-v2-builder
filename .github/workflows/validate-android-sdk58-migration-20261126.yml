@@ -112,7 +112,7 @@ jobs:
         run: |
           for f in android/gradle/wrapper/gradle-wrapper.properties node_modules/react-native/gradle/libs.versions.toml node_modules/@react-native/gradle-plugin/gradle/libs.versions.toml; do
             if test -f "$f"; then
-              grep -E '^(distributionUrl|agp|androidGradlePlugin|compileSdk|targetSdk|buildTools|kotlin|ndk)[[:space:]]*=' "$f" | head -15 || true
+              grep -E '^(distributionUrl|agp|androidGradlePlugin|compileSdk|targetSdk|buildTools|kotlin|ndk|ndkVersion)[[:space:]]*=' "$f" | head -15 || true
             fi
           done
           # SDK 58's generated version catalog requires compileSdk 37 and build tools 37.
@@ -133,6 +133,22 @@ jobs:
             tr '\r' '\n' < "$RUNNER_TEMP/sdk.log" | grep -Ei 'failed|error|not found|warning:|license' | cut -c1-180 | tail -20 || true
             exit 1
           }
+      - name: Install exact React Native native source toolchain
+        run: |
+          # React Native 0.88.1 requires this CMake and NDK for its source build.
+          cmake_version=3.30.5
+          ndk_version="$(sed -nE 's/^ndkVersion[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' node_modules/react-native/gradle/libs.versions.toml)"
+          test "$ndk_version" = "27.1.12297006"
+          sdkmanager --channel=3 "cmake;$cmake_version" "ndk;$ndk_version" > "$RUNNER_TEMP/native-sdk.log" 2>&1 || {
+            tr '\r' '\n' < "$RUNNER_TEMP/native-sdk.log" | grep -Ei 'failed|error|not found|warning:|license' | cut -c1-180 | tail -30 || true
+            exit 1
+          }
+          test -x "$ANDROID_HOME/cmake/$cmake_version/bin/cmake"
+          test -x "$ANDROID_HOME/cmake/$cmake_version/bin/ninja"
+          test -s "$ANDROID_HOME/ndk/$ndk_version/source.properties"
+          "$ANDROID_HOME/cmake/$cmake_version/bin/cmake" --version | head -1
+          grep '^Pkg.Revision' "$ANDROID_HOME/ndk/$ndk_version/source.properties"
+          echo "CMAKE_VERSION=$cmake_version" >> "$GITHUB_ENV"
       - name: Verify resolved Android Gradle Plugin version
         working-directory: private-src/mobile/android
         run: |

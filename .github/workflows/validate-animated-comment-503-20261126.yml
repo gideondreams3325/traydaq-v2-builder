@@ -26,8 +26,8 @@ jobs:
         working-directory: private-src
         run: |
           set -e
-          deno check supabase/functions/firebase-discussions/index.ts supabase/functions/firebase-store-reviews/index.ts > "$RUNNER_TEMP/edge-check.log" 2>&1 || { echo "::error::Edge typecheck failed"; grep -E '(^error:|TS[0-9]+|animatedStickerModeration\.ts:[0-9]+|lockfile)' "$RUNNER_TEMP/edge-check.log" | sed -E 's#(/home/runner/[^ ]*/private-src/)#private-src/#g' | cut -c1-180 | head -20 || true; exit 1; }
-          deno test -A supabase/functions/_shared/animatedStickerModeration_test.ts > "$RUNNER_TEMP/edge-test.log" 2>&1 || { echo "::error::Animated sticker regression test failed"; grep -E '^(FAILED|error:|test result:)' "$RUNNER_TEMP/edge-test.log" | cut -c1-150 | head -10 || true; exit 1; }
+          NO_COLOR=1 deno check --no-config --no-lock supabase/functions/firebase-discussions/index.ts supabase/functions/firebase-store-reviews/index.ts > "$RUNNER_TEMP/edge-check.log" 2>&1 || { echo "::error::Edge typecheck failed"; grep -E '(error:|TS[0-9]+|animatedStickerModeration\.ts:[0-9]+|lockfile|unexpected argument|node_modules|package.json)' "$RUNNER_TEMP/edge-check.log" | sed -E 's#(/home/runner/[^ ]*/private-src/)#private-src/#g' | cut -c1-180 | head -20 || true; exit 1; }
+          NO_COLOR=1 deno test --no-config --no-lock -A supabase/functions/_shared/animatedStickerModeration_test.ts > "$RUNNER_TEMP/edge-test.log" 2>&1 || { echo "::error::Animated sticker regression test failed"; grep -E '^(FAILED|error:|test result:)' "$RUNNER_TEMP/edge-test.log" | cut -c1-150 | head -10 || true; exit 1; }
           grep -E 'ok \| [0-9]+ passed' "$RUNNER_TEMP/edge-test.log" | tail -1 || true
       - name: Report validation status
         if: always()

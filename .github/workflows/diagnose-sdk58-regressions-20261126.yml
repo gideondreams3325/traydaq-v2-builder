@@ -1,0 +1,55 @@
+name: Diagnose SDK 58 regression failures against baseline
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/diagnose-sdk58-regressions-20261126.yml']
+permissions:
+  contents: read
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        source:
+          - 7710a551caa3e5b43b77e8f628aed05b2bc0e8e4
+          - 7cd4dbd5aa14531491c66f785bed0e12d6d618d7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ${{ matrix.source }}
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run failing regressions and report assertion locations
+        working-directory: private-src
+        run: |
+          test "$(git rev-parse HEAD)" = '${{ matrix.source }}'
+          set +e
+          node --test --test-concurrency=1 tests/cloudflare-worker-release-contract-20261120.test.mjs tests/existing-app-public-legal-parity.test.mjs tests/native-android-animated-stickers-20261122.test.mjs tests/restore-original-immersive-feeds-20261117.test.mjs tests/verification-photo-size-parity.test.mjs > "$RUNNER_TEMP/focused.log" 2>&1
+          rc=$?
+          python3 - <<'PY'
+          import os,pathlib,re
+          lines=(pathlib.Path(os.environ['RUNNER_TEMP'])/'focused.log').read_text(errors='replace').splitlines()
+          failed=False
+          for line in lines:
+              if line.startswith('not ok '):
+                  failed=True
+                  print(line[:180])
+              elif line.startswith('ok '):
+                  failed=False
+              elif failed and re.match(r'^\s*(location|failureType|code|operator):',line):
+                  print(re.sub(r'/home/runner/work/[^ ]*/private-src/', '', line)[:200])
+              elif failed and re.search(r'TestContext\.<anonymous>.*tests/.*\.test\.mjs:\d+:\d+',line):
+                  match=re.search(r'tests/[^):]+\.test\.mjs:\d+:\d+',line)
+                  if match: print('  assertion: '+match.group())
+              elif re.match(r'^# (tests|pass|fail) \d+',line): print(line)
+          PY
+          exit "$rc"
+# Source tests only. No app packaging, deployment, or publication.

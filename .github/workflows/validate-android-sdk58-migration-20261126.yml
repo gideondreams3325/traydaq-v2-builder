@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: e3c8c9ea73c1f79c5931f5de2eb488d347b7ff51
+          ref: 5846fef3fea6f52f9157fb07aef7f1ed73d579a1
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -38,8 +38,19 @@ jobs:
             grep -Ei 'npm error (code|peer|could not resolve|conflicting|notarget|eresolve)' "$RUNNER_TEMP/upgrade.log" | cut -c1-180 | head -30 || true
             exit 1
           }
-          npx expo install --fix > "$RUNNER_TEMP/fix.log" 2>&1 || {
-            grep -Ei 'npm error (code|peer|could not resolve|conflicting)|^Error:' "$RUNNER_TEMP/fix.log" | cut -c1-180 | head -30 || true
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const pkg=require('./package.json');
+          const versions=require('expo/bundledNativeModules.json');
+          for(const section of ['dependencies','devDependencies']){
+            for(const name of Object.keys(pkg[section]||{})){
+              if(name!=='expo'&&typeof versions[name]==='string')pkg[section][name]=versions[name];
+            }
+          }
+          fs.writeFileSync('package.json',JSON.stringify(pkg,null,2)+'\n');
+          NODE
+          npm install --no-audit --no-fund > "$RUNNER_TEMP/fix.log" 2>&1 || {
+            grep -Ei 'npm (error|ERR!) (code|peer|could not resolve|conflicting|notarget)|^Error:' "$RUNNER_TEMP/fix.log" | cut -c1-180 | head -40 || true
             exit 1
           }
           npx expo install --check > "$RUNNER_TEMP/check.log" 2>&1 || {

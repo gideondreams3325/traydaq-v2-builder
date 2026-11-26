@@ -8,7 +8,7 @@ on:
 permissions:
   contents: read
 env:
-  SOURCE_SHA: 598c81203cb266650880aa3f63a3d42d175e1ec4
+  SOURCE_SHA: 6d4a99fe1291780eefd2b66c8fe76f38a6420566
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 598c81203cb266650880aa3f63a3d42d175e1ec4
+          ref: 6d4a99fe1291780eefd2b66c8fe76f38a6420566
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
@@ -33,7 +33,7 @@ jobs:
           node --test tests/traystudio-overlay-sizing-20261126.test.mjs tests/traystudio-expanded-text-styles-20261126.test.mjs tests/traydaq-expanded-user-languages-20261126.test.mjs tests/traydaq-pidgin-languages-20261126.test.mjs tests/traydaq-auth-language-selection-20261126.test.mjs tests/signup-country-lock-relocation.test.mjs tests/auth-reference-design.test.mjs tests/web-form-parity.test.mjs tests/biometrics-locales.test.mjs tests/username-country-translation.test.mjs tests/traystudio-photo-workspace-script-20261124.test.mjs tests/traystudio-workspace-copy-20261124.test.mjs tests/traystudio-video-composition-20261124.test.mjs tests/traystudio-web-20261123.test.mjs > "$RUNNER_TEMP/studio-tests.log" 2>&1 || { echo "::error::TrayStudio focused regression failed"; grep -E '^not ok |^# fail ' "$RUNNER_TEMP/studio-tests.log" | cut -c1-180; exit 1; }
           grep -E '^# (tests|pass|fail) ' "$RUNNER_TEMP/studio-tests.log"
           cd mobile
-          node --test tests/account-access-dropdown.test.mjs tests/traystudio-editor-20261123.test.mjs tests/traystudio-video-native-20261123.test.mjs tests/username-country-translation.test.mjs > "$RUNNER_TEMP/studio-native.log" 2>&1 || { echo "::error::Native studio regression failed"; grep -E '^not ok |^# fail ' "$RUNNER_TEMP/studio-native.log" | cut -c1-180; exit 1; }
+          node --test tests/push-permission-fast-dismiss-20261126.test.mjs tests/first-run-push-multi-account-categories.test.mjs tests/push-settings-real-delivery.test.mjs tests/account-access-dropdown.test.mjs tests/traystudio-editor-20261123.test.mjs tests/traystudio-video-native-20261123.test.mjs tests/username-country-translation.test.mjs > "$RUNNER_TEMP/studio-native.log" 2>&1 || { echo "::error::Native studio regression failed"; grep -E '^not ok |^# fail ' "$RUNNER_TEMP/studio-native.log" | cut -c1-180; exit 1; }
           grep -E '^# (tests|pass|fail) ' "$RUNNER_TEMP/studio-native.log"
   types:
     strategy:
@@ -45,7 +45,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 598c81203cb266650880aa3f63a3d42d175e1ec4
+          ref: 6d4a99fe1291780eefd2b66c8fe76f38a6420566
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
@@ -59,5 +59,5 @@ jobs:
         run: |
           test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
           npm ci --no-audit --no-fund > "$RUNNER_TEMP/studio-install.log" 2>&1 || { echo "::error::Dependency install failed"; exit 1; }
-          npm run typecheck > "$RUNNER_TEMP/studio-types.log" 2>&1 || { echo "::error::Typecheck failed"; grep -E 'TrayStudio|trayStudio|AccountAccess|AuthLanguagePicker|authLanguageCopy|AuthScreen' "$RUNNER_TEMP/studio-types.log" | cut -c1-160 | head -n 15 || true; exit 1; }
+          npm run typecheck > "$RUNNER_TEMP/studio-types.log" 2>&1 || { echo "::error::Typecheck failed"; grep -E 'TrayStudio|trayStudio|AccountAccess|AuthLanguagePicker|authLanguageCopy|AuthScreen|androidPush|FirstRunNotificationPrompt' "$RUNNER_TEMP/studio-types.log" | cut -c1-160 | head -n 15 || true; exit 1; }
 # Source validation only. No deployment, APK, AAB, or release.

@@ -1,0 +1,51 @@
+name: Resolve Android quality public dependency metadata
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/resolve-android-quality-lock-20261126.yml"]
+permissions:
+  contents: read
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      CI: "1"
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 77f12409300204cb0524901145d24074ce612a5f
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Resolve public npm dependencies only
+        run: |
+          cp package-lock.json "$RUNNER_TEMP/original-lock.json"
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund expo@~57.0.34 expo-asset@~57.0.22 expo-image-manipulator@~57.0.23 expo-image-picker@~57.0.22 expo-location@~57.0.24 expo-notifications@~57.0.26 expo-sharing@~57.0.27 expo-splash-screen@~57.0.12 > "$RUNNER_TEMP/npm.log" 2>&1
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const before=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/original-lock.json','utf8'));
+          const after=require('./package-lock.json');
+          const names=['expo','expo-asset','expo-image-manipulator','expo-image-picker','expo-location','expo-notifications','expo-sharing','expo-splash-screen'];
+          for(const [key,item] of Object.entries(after.packages)){
+            if(!key)continue;
+            if(!key.startsWith('node_modules/')||!/^https:\/\/registry\.npmjs\.org\//.test(item.resolved||'')||!item.integrity||item.link)
+              throw Error('Non-public dependency metadata cannot be reported.');
+          }
+          // Emit only changed public npm dependency entries, never project source, root manifest or credentials.
+          const dependencies=Object.fromEntries(names.map(n=>[n,after.packages[''].dependencies[n]]));
+          const changed=Object.entries(after.packages).filter(([k,v])=>k&&JSON.stringify(before.packages[k])!==JSON.stringify(v));
+          const removed=Object.keys(before.packages).filter(k=>k&&!(k in after.packages));
+          console.log('LOCK_ROOT '+JSON.stringify(dependencies));
+          for(const row of changed)console.log('LOCK_SET '+JSON.stringify(row));
+          for(const key of removed)console.log('LOCK_REMOVE '+JSON.stringify(key));
+          console.log('LOCK_COUNTS '+JSON.stringify([changed.length,removed.length]));
+          NODE
+          npm ci --ignore-scripts --no-audit --no-fund > "$RUNNER_TEMP/verify.log" 2>&1

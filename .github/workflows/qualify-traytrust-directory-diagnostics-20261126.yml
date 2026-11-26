@@ -1,0 +1,45 @@
+name: TrayTrust synthetic directory diagnostic
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/qualify-traytrust-directory-diagnostics-20261126.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  diagnostics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 76ec1fd299446b24c2c4f00d1ccc3cc343615e1a
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+      - name: Synthetic directory tests
+        working-directory: private-src
+        run: |
+          set +e
+          node --test tests/traytrust-platform-directory-20261126.test.mjs > "$RUNNER_TEMP/traytrust.log" 2>&1
+          rc=$?
+          node --input-type=module - "$RUNNER_TEMP/traytrust.log" <<'JS'
+          import fs from 'node:fs';
+          const log=fs.readFileSync(process.argv[2],'utf8');
+          for(const l of log.split('\n')){
+            if(/^# (tests|pass|fail) \d+$/.test(l)) console.log(l);
+            if(/^\s*(code|name): ['"]?[A-Za-z0-9_]+['"]?\s*$/.test(l))console.log(l.trim());
+            const m=l.match(/(?:traytrust-platform-directory-20261126\.test\.mjs|postgresDirectory\.mjs|witnessQualification\.mjs):(\d+):(\d+)/);
+            if(m)console.log('Synthetic test location '+(l.includes('postgresDirectory.mjs')?'directory':l.includes('witnessQualification.mjs')?'witness':'test')+':'+m[1]+':'+m[2]);
+            if(/TrayTrust directory unavailable|TrayTrust witness rejected update|TrayTrust proof rejected/.test(l))console.log('Known verification error: '+l.match(/TrayTrust (?:directory unavailable|witness rejected update|proof rejected)/)[0]);
+            for(const term of ['malformed array literal','invalid input syntax','permission denied','not supported','does not exist','already exists','cannot','constraint','not a function','undefined','AssertionError','TypeError'])if(l.trim().startsWith('error:')&&l.includes(term))console.log('Error category: '+term);
+          }
+          JS
+          exit "$rc"

@@ -1,0 +1,117 @@
+name: SDK 58 older Android startup smoke tests
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/validate-sdk58-device-startup-20261126.yml']
+permissions:
+  contents: read
+jobs:
+  emulator-startup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      CI: '1'
+      EXPO_NO_TELEMETRY: '1'
+      NODE_OPTIONS: '--max-old-space-size=6144'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 8c8e92939e414706b060f69fda9b75c58f59d71a
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Prepare exact Android build toolchain
+        working-directory: private-src/mobile
+        run: |
+          test "$(git rev-parse HEAD)" = 8c8e92939e414706b060f69fda9b75c58f59d71a
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/smoke-install.log" 2>&1 || { echo '::error::Dependency install failed'; exit 1; }
+          npx expo prebuild --platform android --non-interactive > "$RUNNER_TEMP/smoke-prebuild.log" 2>&1 || { echo '::error::Android prebuild failed'; exit 1; }
+          ndk_version=$(sed -nE 's/^ndkVersion[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' node_modules/react-native/gradle/libs.versions.toml)
+          test "$ndk_version" = '27.1.12297006'
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --channel=3 'platforms;android-36' 'platforms;android-37.0' 'build-tools;36.0.0' 'build-tools;37.0.0' 'cmake;3.30.5' "ndk;$ndk_version" > "$RUNNER_TEMP/smoke-sdk.log" 2>&1 || { echo '::error::Android toolchain install failed'; exit 1; }
+      - name: Build local optimized x86_64 APK for emulators
+        working-directory: private-src/mobile/android
+        run: |
+          chmod +x gradlew
+          for key in android.enableMinifyInReleaseBuilds android.enableShrinkResourcesInReleaseBuilds android.r8.optimizedResourceShrinking; do grep -Fx "$key=true" gradle.properties; done
+          set -o pipefail
+          ./gradlew --no-daemon --console=plain :app:assembleRelease -PreactNativeArchitectures=x86_64 2>&1 | tee "$RUNNER_TEMP/smoke-gradle.log" | awk '/^> Task / { print; fflush() }' || {
+            echo '::error::Emulator validation APK build failed'
+            grep -Ei '^> Task .*FAILED|^FAILURE:|^\* What went wrong:|^Execution failed for task|^BUILD FAILED|^e: ' "$RUNNER_TEMP/smoke-gradle.log" | cut -c1-200 | head -40 || true
+            awk '/^[*] What went wrong:/{p=1;next} /^[*] (Try|Exception is):/{p=0} p && NF{print}' "$RUNNER_TEMP/smoke-gradle.log" | cut -c1-200 | head -30 || true
+            exit 1
+          }
+          test -s app/build/outputs/apk/release/app-release.apk
+          test -s app/build/outputs/mapping/release/mapping.txt
+          echo 'PASS: local APK built for emulator testing; no artifact uploaded'
+      - name: Enable hardware acceleration and prepare startup assertions
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          cat > "$RUNNER_TEMP/traydaq-smoke.sh" <<'SH'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          api="$1"
+          apk="$GITHUB_WORKSPACE/private-src/mobile/android/app/build/outputs/apk/release/app-release.apk"
+          adb wait-for-device
+          adb logcat -c
+          adb install -r "$apk" > "$RUNNER_TEMP/install-emulator-$api.log"
+          adb shell am start -W -n com.traydaq.app/.MainActivity > "$RUNNER_TEMP/launch-$api.log"
+          if ! grep -q 'Status: ok' "$RUNNER_TEMP/launch-$api.log"; then echo "::error::App did not launch on API $api"; exit 1; fi
+          sleep 25
+          if ! adb shell pidof com.traydaq.app > /dev/null; then echo "::error::App process exited on API $api"; exit 1; fi
+          adb shell settings put system accelerometer_rotation 0
+          adb shell settings put system user_rotation 1
+          sleep 5
+          adb shell settings put system user_rotation 0
+          sleep 5
+          if ! adb shell pidof com.traydaq.app > /dev/null; then echo "::error::App process exited after rotation on API $api"; exit 1; fi
+          adb logcat -d -v brief -s AndroidRuntime:E > "$RUNNER_TEMP/runtime-$api.log"
+          python3 - "$RUNNER_TEMP/runtime-$api.log" "$api" <<'PY'
+          import pathlib,sys
+          lines=pathlib.Path(sys.argv[1]).read_text(errors='replace').splitlines()
+          for i,line in enumerate(lines):
+              if 'FATAL EXCEPTION' in line and any('Process: com.traydaq.app,' in item for item in lines[i:i+12]):
+                  raise SystemExit('::error::TRAYDAQ had a fatal Android exception on API '+sys.argv[2])
+          print('PASS: startup and rotation without fatal app exception on Android API '+sys.argv[2])
+          PY
+          SH
+          chmod +x "$RUNNER_TEMP/traydaq-smoke.sh"
+      - name: Startup on oldest supported Android API 24
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 24
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash "$RUNNER_TEMP/traydaq-smoke.sh" 24
+      - name: Startup on Android API 29
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash "$RUNNER_TEMP/traydaq-smoke.sh" 29
+      - name: Startup on Android API 35
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash "$RUNNER_TEMP/traydaq-smoke.sh" 35
+# No signing secrets, uploaded artifacts, Google Play action, staff app or deployment.

@@ -1,0 +1,188 @@
+name: Asynchronous MLS account prekey qualification
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/validate-async-account-prekeys-20261126.yml"]
+permissions:
+  contents: read
+  statuses: write
+jobs:
+  android-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 955749188086253089a32e58f6823c2eb8c573c6
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        id: install
+        working-directory: private-src/mobile
+        run: npm install --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+      - name: Run source tests
+        working-directory: private-src/mobile
+        run: |
+          set +e
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/tests.log" 2>&1
+          rc=$?
+          grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/tests.log" | tail -3 || true
+          if [ "$rc" != 0 ]; then
+            node -e 'const fs=require("fs"),crypto=require("crypto");const hash=x=>crypto.createHash("sha256").update(x).digest("hex").slice(0,16);const data=fs.readFileSync(process.argv[1],"utf8");for(const block of data.split(/\n(?=not ok \d+ - )/).slice(1)){const name=block.match(/^not ok \d+ - (.*)/)?.[1]||"";const loc=block.match(/location:.*?\/tests\/([^:\x27]+):(\d+):(\d+)/);const stack=block.match(/\/tests\/([^:\s]+\.mjs):(\d+):(\d+)/);const file=loc||stack;console.log("Failed test identifier: "+hash(name)+" file="+(file?hash(file[1])+" line="+file[2]:"unknown")+" kind="+(block.match(/error:.*?\b(TypeError|ReferenceError|AssertionError|SyntaxError)\b/)?.[1]||"test failure"));}' "$RUNNER_TEMP/tests.log"
+          fi
+          exit "$rc"
+      - name: TypeScript validation
+        if: always() && steps.install.outcome == 'success'
+        working-directory: private-src/mobile
+        run: |
+          set +e
+          npm run typecheck > "$RUNNER_TEMP/typecheck.log" 2>&1
+          rc=$?
+          if [ "$rc" != 0 ]; then
+            grep -E '^src/(lib/trayTrustProof|lib/trayTrustGate|lib/nativeE2eePilot|native-parity/e2ee/trayTrustProof|native-parity/e2ee/trayTrustGate|native-parity/e2ee/pilotSession)\.tsx\([0-9]+,[0-9]+\): error TS[0-9]+' "$RUNNER_TEMP/typecheck.log" | sed -E 's/(: error TS[0-9]+):.*/\1/' || true
+            grep -oE 'error TS[0-9]+' "$RUNNER_TEMP/typecheck.log" | sort | uniq -c || true
+          fi
+          exit "$rc"
+      - name: Publish sanitized status
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JOB_RESULT: ${{ job.status }}
+        run: |
+          if [ "$JOB_RESULT" = success ]; then STATE=success; else STATE=failure; fi
+          payload="$(jq -n --arg state "$STATE" '{state:$state,context:"traydaq-v2/async-account-prekeys-android",description:"Source tests and TypeScript validation"}')"
+          curl --fail --silent --show-error -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" -d "$payload" >/dev/null
+  web-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 955749188086253089a32e58f6823c2eb8c573c6
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        id: install
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+      - name: Run focused signed account prekey tests
+        working-directory: private-src
+        run: |
+          set +e
+          node --test tests/async-account-prekeys-20261126.test.mjs tests/traytrust-enrollment-20261126.test.mjs > "$RUNNER_TEMP/prekeys.log" 2>&1
+          rc=$?
+          grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/prekeys.log" | tail -3 || true
+          exit "$rc"
+      - name: TypeScript validation
+        if: always() && steps.install.outcome == 'success'
+        working-directory: private-src
+        run: |
+          set +e
+          npm run typecheck > "$RUNNER_TEMP/typecheck.log" 2>&1
+          rc=$?
+          if [ "$rc" != 0 ]; then
+            grep -E '^src/(lib/trayTrustProof|lib/trayTrustGate|lib/nativeE2eePilot|native-parity/e2ee/trayTrustProof|native-parity/e2ee/trayTrustGate|native-parity/e2ee/pilotSession)\.tsx\([0-9]+,[0-9]+\): error TS[0-9]+' "$RUNNER_TEMP/typecheck.log" | sed -E 's/(: error TS[0-9]+):.*/\1/' || true
+            grep -oE 'error TS[0-9]+' "$RUNNER_TEMP/typecheck.log" | sort | uniq -c || true
+          fi
+          exit "$rc"
+      - name: Web bundle
+        if: always() && steps.install.outcome == 'success'
+        working-directory: private-src
+        run: npm run build > "$RUNNER_TEMP/build.log" 2>&1
+      - name: Publish sanitized status
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JOB_RESULT: ${{ job.status }}
+        run: |
+          if [ "$JOB_RESULT" = success ]; then STATE=success; else STATE=failure; fi
+          payload="$(jq -n --arg state "$STATE" '{state:$state,context:"traydaq-v2/async-account-prekeys-web",description:"Source tests and TypeScript validation"}')"
+          curl --fail --silent --show-error -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" -d "$payload" >/dev/null
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 955749188086253089a32e58f6823c2eb8c573c6
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - run: test "$(git -C private-src rev-parse HEAD)" = "955749188086253089a32e58f6823c2eb8c573c6"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Test native Rust transactions and desktop JNI exchange
+        working-directory: private-src/security/mls-qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup update stable > "$RUNNER_TEMP/native-rust.log" 2>&1
+          rustup default stable
+          cargo test --features android-jni > "$RUNNER_TEMP/native-tests.log" 2>&1 || { grep -E '^error(\[E[0-9]+\])?:|^test result:' "$RUNNER_TEMP/native-tests.log" | cut -c1-180 | head -25 || true; exit 1; }
+          cargo build --features android-jni > "$RUNNER_TEMP/native-build.log" 2>&1 || { echo "::error::Native bridge build failed"; exit 1; }
+          mkdir -p "$RUNNER_TEMP/jni-classes"
+          javac -d "$RUNNER_TEMP/jni-classes" android/com/traydaq/e2ee/NativeMls.java android/com/traydaq/e2ee/NativeMlsSmoke.java
+          java -Djava.library.path="$PWD/target/debug" -cp "$RUNNER_TEMP/jni-classes" com.traydaq.e2ee.NativeMlsSmoke
+          echo "PASS: native MLS transaction and JNI qualification"
+      - name: Compile Android Keystore and transactional store source
+        working-directory: private-src/security/mls-qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          jar=$(find "$sdk/platforms" -name android.jar | sort -V | tail -1)
+          test -f "$jar"
+          javac -cp "$jar" -d "$RUNNER_TEMP/jni-classes" android/com/traydaq/e2ee/NativeMls.java android/com/traydaq/e2ee/NativeMlsStore.java
+          node --check withNativeMlsPilot.js
+          echo "PASS: Android Keystore store compiles (not on-device validation)"
+
+  postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      db:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: fixture_only
+          POSTGRES_DB: prekey_fixture
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 955749188086253089a32e58f6823c2eb8c573c6
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - name: Qualify allocation in isolated synthetic database
+        working-directory: private-src/security/mls-qualification
+        env:
+          PGPASSWORD: fixture_only
+        run: |
+          psql -h localhost -U postgres -d prekey_fixture -v ON_ERROR_STOP=1 -f async-account-prekeys-test.sql > "$RUNNER_TEMP/prekeys-sql.log" 2>&1 || { echo "::error::Synthetic SQL qualification failed"; grep -E 'ERROR:|SQL state:' "$RUNNER_TEMP/prekeys-sql.log" | cut -c1-160 | head -10; exit 1; }
+          echo "PASS: isolated prekey allocation tests"

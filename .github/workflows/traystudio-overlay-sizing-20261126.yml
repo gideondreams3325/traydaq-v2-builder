@@ -1,0 +1,63 @@
+name: TrayStudio layer sizing source QA (no release)
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/traystudio-overlay-sizing-20261126.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  SOURCE_SHA: dbb8d4c65e57d27796b9a6611c3dc98d4a89281f
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+jobs:
+  focused:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: dbb8d4c65e57d27796b9a6611c3dc98d4a89281f
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify candidate and focused regressions
+        working-directory: private-src
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          node --test tests/traystudio-overlay-sizing-20261126.test.mjs tests/traystudio-photo-workspace-script-20261124.test.mjs tests/traystudio-workspace-copy-20261124.test.mjs tests/traystudio-video-composition-20261124.test.mjs tests/traystudio-web-20261123.test.mjs > "$RUNNER_TEMP/studio-tests.log" 2>&1 || { echo "::error::TrayStudio focused regression failed"; grep -E '^not ok |^# fail ' "$RUNNER_TEMP/studio-tests.log" | cut -c1-180; exit 1; }
+          grep -E '^# (tests|pass|fail) ' "$RUNNER_TEMP/studio-tests.log"
+          cd mobile
+          node --test tests/traystudio-editor-20261123.test.mjs tests/traystudio-video-native-20261123.test.mjs > "$RUNNER_TEMP/studio-native.log" 2>&1 || { echo "::error::Native studio regression failed"; grep -E '^not ok |^# fail ' "$RUNNER_TEMP/studio-native.log" | cut -c1-180; exit 1; }
+          grep -E '^# (tests|pass|fail) ' "$RUNNER_TEMP/studio-native.log"
+  types:
+    strategy:
+      matrix:
+        directory: [private-src, private-src/mobile]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: dbb8d4c65e57d27796b9a6611c3dc98d4a89281f
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: private-src
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ${{ matrix.directory }}/package-lock.json
+      - name: Verify source and typecheck
+        working-directory: ${{ matrix.directory }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/studio-install.log" 2>&1 || { echo "::error::Dependency install failed"; exit 1; }
+          npm run typecheck > "$RUNNER_TEMP/studio-types.log" 2>&1 || { echo "::error::Typecheck failed"; grep -E 'TrayStudio|trayStudio' "$RUNNER_TEMP/studio-types.log" | cut -c1-160 | head -n 15 || true; exit 1; }
+# Source validation only. No deployment, APK, AAB, or release.

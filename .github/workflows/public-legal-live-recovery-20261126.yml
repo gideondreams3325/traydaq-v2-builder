@@ -1,0 +1,36 @@
+name: TRAYDAQ live legal policy recovery verification
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/public-legal-live-recovery-20261126.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  public:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Verify live legal pages after production merge
+        run: |
+          node <<'NODE'
+          const titles={'privacy':'Privacy Notice','terms':'Terms of Service','delete-account':'Delete account and data','child-safety':'Child Safety Standards','community-guidelines':'Community Guidelines','data-retention':'Data Retention Policy','copyright':'Copyright Policy','reporting-appeals':'Reporting and Appeals'};
+          const checks=Object.entries(titles).flatMap(([slug,title])=>['https://traydaq.com','https://legal.traydaq.com'].map(host=>({url:host+'/'+slug+'/',title,slug})));
+          for(const host of ['https://traydaq.com','https://legal.traydaq.com'])checks.push({url:host+'/child-safety-standards.html',title:titles['child-safety'],slug:'child-safety'});
+          (async()=>{
+            for(let attempt=1;attempt<=12;attempt++){
+              const outcomes=await Promise.all(checks.map(async ({url,title,slug})=>{
+                try{
+                  const r=await fetch(url,{redirect:'manual',signal:AbortSignal.timeout(12000),headers:{'Cache-Control':'no-cache','User-Agent':'Mozilla/5.0 public-policy-verification'}});
+                  const html=await r.text();
+                  const ok=r.status===200&&/text\/html/i.test(r.headers.get('content-type')||'')&&html.includes('<h1>'+title+'</h1>')&&html.includes('support@traydaq.com')&&(slug!=='child-safety'||/child sexual abuse and exploitation/i.test(html)&&/CSAM/.test(html));
+                  console.log(ok?'PASS':'FAIL',url,r.status,r.headers.get('location')||'', 'attempt',attempt);
+                  return ok;
+                }catch(e){console.log('FAIL',url,String(e));return false;}
+              }));
+              if(outcomes.every(Boolean))return;
+              if(attempt<12)await new Promise(r=>setTimeout(r,10000));
+            }
+            process.exitCode=1;
+          })().catch(e=>{console.error(e);process.exitCode=1});
+          NODE

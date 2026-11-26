@@ -7,7 +7,7 @@ on:
 permissions:
   contents: read
 env:
-  SOURCE_SHA: 7710a551caa3e5b43b77e8f628aed05b2bc0e8e4
+  SOURCE_SHA: 8c8e92939e414706b060f69fda9b75c58f59d71a
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
   NODE_OPTIONS: '--max-old-space-size=6144'
@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 7710a551caa3e5b43b77e8f628aed05b2bc0e8e4
+          ref: 8c8e92939e414706b060f69fda9b75c58f59d71a
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -60,7 +60,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 7710a551caa3e5b43b77e8f628aed05b2bc0e8e4
+          ref: 8c8e92939e414706b060f69fda9b75c58f59d71a
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -74,4 +74,25 @@ jobs:
           npm ci --no-audit --no-fund > "$RUNNER_TEMP/mobile-install.log" 2>&1 || { echo '::error::Android dependency install failed'; exit 1; }
           npm run export:android > "$RUNNER_TEMP/mobile-export.log" 2>&1 || { echo '::error::Android JS export failed'; grep -Ei '^error:|^error |unable to resolve|bundling failed' "$RUNNER_TEMP/mobile-export.log" | cut -c1-180 | head -30 || true; exit 1; }
           echo 'PASS: Android JavaScript exported locally, without packaging or distribution'
+  server-check:
+    name: Store category source typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 8c8e92939e414706b060f69fda9b75c58f59d71a
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Check existing store function without deployment
+        working-directory: private-src
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          deno check --node-modules-dir=auto supabase/functions/firebase-native-shops/index.ts > "$RUNNER_TEMP/deno.log" 2>&1 || { echo '::error::Store function typecheck failed'; grep -E '^error:|^error\[|^TS[0-9]+' "$RUNNER_TEMP/deno.log" | cut -c1-180 | head -25 || true; exit 1; }
+          echo 'PASS: store function typecheck, no deployment'
 # Runs only tests and local builds. Does not upload artifacts, deploy or publish.

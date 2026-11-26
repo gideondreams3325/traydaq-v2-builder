@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 028f6e0b0030864e184e453c19b474ea9dbce089
+          ref: 03b128b066285194269ef826e45900f8c25f7f54
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -70,7 +70,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 028f6e0b0030864e184e453c19b474ea9dbce089
+          ref: 03b128b066285194269ef826e45900f8c25f7f54
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -90,6 +90,18 @@ jobs:
           grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/tests.log" | tail -3 || true
           if [ "$rc" != 0 ]; then
             node -e 'const fs=require("fs"),crypto=require("crypto");const hash=x=>crypto.createHash("sha256").update(x).digest("hex").slice(0,16);const data=fs.readFileSync(process.argv[1],"utf8");for(const block of data.split(/\n(?=not ok \d+ - )/).slice(1)){const name=block.match(/^not ok \d+ - (.*)/)?.[1]||"";const loc=block.match(/location:.*?\/tests\/([^:\x27]+):(\d+):(\d+)/);const stack=block.match(/\/tests\/([^:\s]+\.mjs):(\d+):(\d+)/);const file=loc||stack;console.log("Failed test identifier: "+hash(name)+" file="+(file?hash(file[1])+" line="+file[2]:"unknown")+" kind="+(block.match(/error:.*?\b(TypeError|ReferenceError|AssertionError|SyntaxError)\b/)?.[1]||"test failure"));}' "$RUNNER_TEMP/tests.log"
+            node --input-type=module - "$RUNNER_TEMP/tests.log" <<'JS'
+          import fs from 'node:fs';
+          for(const b of fs.readFileSync(process.argv[2],'utf8').split(/\n(?=not ok \d+ - )/).slice(1)){
+            if(!b.includes('traytrust-platform-directory-20261126.test.mjs'))continue;
+            for(const l of b.split('\n')){
+              if(/^\s*(code|name): ['"]?[A-Za-z0-9_]+['"]?\s*$/.test(l))console.log(l.trim());
+              const m=l.match(/(?:traytrust-platform-directory-20261126\.test\.mjs|postgresDirectory\.mjs|witnessQualification\.mjs):(\d+):(\d+)/);
+              if(m)console.log('Synthetic test location '+(l.includes('postgresDirectory.mjs')?'directory':l.includes('witnessQualification.mjs')?'witness':'test')+':'+m[1]+':'+m[2]);
+              for(const term of ['TrayTrust directory unavailable','TrayTrust witness rejected update','TrayTrust proof rejected','malformed array literal','invalid input syntax','permission denied','not supported','does not exist','not a function','AssertionError','TypeError'])if(l.trim().startsWith('error:')&&l.includes(term))console.log('Error category: '+term);
+            }
+          }
+          JS
           fi
           exit "$rc"
       - name: TypeScript validation
@@ -124,11 +136,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 028f6e0b0030864e184e453c19b474ea9dbce089
+          ref: 03b128b066285194269ef826e45900f8c25f7f54
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
-      - run: test "$(git -C private-src rev-parse HEAD)" = "028f6e0b0030864e184e453c19b474ea9dbce089"
+      - run: test "$(git -C private-src rev-parse HEAD)" = "03b128b066285194269ef826e45900f8c25f7f54"
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

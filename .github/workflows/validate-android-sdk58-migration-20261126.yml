@@ -47,6 +47,7 @@ jobs:
               if(name!=='expo'&&typeof versions[name]==='string')pkg[section][name]=versions[name];
             }
           }
+          pkg.devDependencies['@types/react']='~19.3.0';
           fs.writeFileSync('package.json',JSON.stringify(pkg,null,2)+'\n');
           NODE
           npm install --no-audit --no-fund > "$RUNNER_TEMP/fix.log" 2>&1 || {

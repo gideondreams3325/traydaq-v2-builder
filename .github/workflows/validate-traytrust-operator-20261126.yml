@@ -1,0 +1,37 @@
+name: TrayTrust operator privileges validation
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/validate-traytrust-operator-20261126.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  operator-privileges:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 6c628c1de096dfe91fec0df206019e4ee03fbac0
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install
+        working-directory: private-src
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+      - name: Run TrayTrust regression suites
+        working-directory: private-src
+        run: |
+          set +e
+          node --test tests/traytrust-*.test.mjs > "$RUNNER_TEMP/tests.log" 2>&1
+          rc=$?
+          grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/tests.log" | tail -3 || true
+          if [ "$rc" != 0 ]; then
+            node -e 'const fs=require("fs");const data=fs.readFileSync(process.argv[1],"utf8");for(const block of data.split(/\n(?=not ok \d+ - )/).slice(1)){const loc=block.match(/traytrust-operator-privileges-20261126\.test\.mjs:(\d+):(\d+)/);console.log("Failed privilege qualification: "+(loc?loc[1]+":"+loc[2]:"unknown"));}' "$RUNNER_TEMP/tests.log"
+          fi
+          exit "$rc"

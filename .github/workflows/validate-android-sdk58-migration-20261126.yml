@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: ffa96b41e194105033c992b7f7edcbc22a86d406
+          ref: c6eaac66204974b7a8249fccd3d6d4c3e00638b0
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -57,6 +57,14 @@ jobs:
                   counts[pkg]+=1
                   if counts[pkg]<=30: print(f'{f.relative_to(root)}:{i}')
           for pkg,count in counts.items(): print(f'{pkg}: {count} candidate source locations')
+          rn=root/'react-native/ReactAndroid/src/main/java/com/facebook/react/views/view/WindowUtil.kt'
+          if rn.is_file():
+            lines=rn.read_text(errors='replace').splitlines()
+            for i,line in enumerate(lines):
+              if rx.search(line):
+                print('React Native WindowUtil call context:')
+                for j in range(max(0,i-7),min(len(lines),i+8)):
+                  print(f'{j+1}: {lines[j]}')
           PY
       - name: Native tests against upgraded dependencies
         run: |

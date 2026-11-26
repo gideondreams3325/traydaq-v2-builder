@@ -37,7 +37,7 @@ jobs:
           rc=$?
           grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/tests.log" | tail -3 || true
           if [ "$rc" != 0 ]; then
-            node -e 'const fs=require("fs"),crypto=require("crypto");for(const l of fs.readFileSync(process.argv[1],"utf8").split("\n")){const m=l.match(/^not ok \d+ - (.*)$/);if(m)console.log("Failed test identifier: "+crypto.createHash("sha256").update(m[1]).digest("hex").slice(0,16));}' "$RUNNER_TEMP/tests.log"
+            node -e 'const fs=require("fs"),crypto=require("crypto");const hash=x=>crypto.createHash("sha256").update(x).digest("hex").slice(0,16);const data=fs.readFileSync(process.argv[1],"utf8");for(const block of data.split(/\n(?=not ok \d+ - )/).slice(1)){const name=block.match(/^not ok \d+ - (.*)/)?.[1]||"";const loc=block.match(/location:.*?\/tests\/([^:\x27]+):(\d+):(\d+)/);const stack=block.match(/\/tests\/([^:\s]+\.mjs):(\d+):(\d+)/);const file=loc||stack;console.log("Failed test identifier: "+hash(name)+" file="+(file?hash(file[1])+" line="+file[2]:"unknown")+" kind="+(block.match(/error:.*?\b(TypeError|ReferenceError|AssertionError|SyntaxError)\b/)?.[1]||"test failure"));}' "$RUNNER_TEMP/tests.log"
           fi
           exit "$rc"
       - name: TypeScript validation
@@ -80,7 +80,7 @@ jobs:
       - name: Install dependencies
         id: install
         working-directory: private-src
-        run: npm install --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+        run: npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
       - name: Run source tests
         working-directory: private-src
         run: |
@@ -89,7 +89,7 @@ jobs:
           rc=$?
           grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/tests.log" | tail -3 || true
           if [ "$rc" != 0 ]; then
-            node -e 'const fs=require("fs"),crypto=require("crypto");for(const l of fs.readFileSync(process.argv[1],"utf8").split("\n")){const m=l.match(/^not ok \d+ - (.*)$/);if(m)console.log("Failed test identifier: "+crypto.createHash("sha256").update(m[1]).digest("hex").slice(0,16));}' "$RUNNER_TEMP/tests.log"
+            node -e 'const fs=require("fs"),crypto=require("crypto");const hash=x=>crypto.createHash("sha256").update(x).digest("hex").slice(0,16);const data=fs.readFileSync(process.argv[1],"utf8");for(const block of data.split(/\n(?=not ok \d+ - )/).slice(1)){const name=block.match(/^not ok \d+ - (.*)/)?.[1]||"";const loc=block.match(/location:.*?\/tests\/([^:\x27]+):(\d+):(\d+)/);const stack=block.match(/\/tests\/([^:\s]+\.mjs):(\d+):(\d+)/);const file=loc||stack;console.log("Failed test identifier: "+hash(name)+" file="+(file?hash(file[1])+" line="+file[2]:"unknown")+" kind="+(block.match(/error:.*?\b(TypeError|ReferenceError|AssertionError|SyntaxError)\b/)?.[1]||"test failure"));}' "$RUNNER_TEMP/tests.log"
           fi
           exit "$rc"
       - name: TypeScript validation
@@ -105,6 +105,7 @@ jobs:
           fi
           exit "$rc"
       - name: Web bundle
+        if: always() && steps.install.outcome == 'success'
         working-directory: private-src
         run: npm run build > "$RUNNER_TEMP/build.log" 2>&1
       - name: Publish sanitized status

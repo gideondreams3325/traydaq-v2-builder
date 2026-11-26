@@ -31,7 +31,7 @@ jobs:
       EXPO_PUBLIC_TRAYDAQ_NATIVE_E2EE_PILOT: 'true'
       EXPO_PUBLIC_TRAYDAQ_E2EE_ONLY_PILOT: 'true'
       EXPO_PUBLIC_TRAYDAQ_ASYNC_MLS_PREKEYS: 'true'
-      TRAYDAQ_SOURCE_SHA: "f277994d7e5cb1ca4a32f13e8c2c5ca97c55722c"
+      TRAYDAQ_SOURCE_SHA: "34e0210a693831e2fe4b638bd0095d9acfa7f16d"
       # Public certificate from signed User APK run 40043905049 (v1.0.1/code 3).
       TRAYDAQ_EXPECTED_SIGNING_SHA256: "716a68f5734545bc9d9700f045d2bfb1b1087ffe732021f216b32a575f03f83d"
     defaults:
@@ -42,7 +42,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: "f277994d7e5cb1ca4a32f13e8c2c5ca97c55722c"
+          ref: "34e0210a693831e2fe4b638bd0095d9acfa7f16d"
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -426,7 +426,7 @@ jobs:
           cat > play-release/GOOGLE-PLAY-TESTING-NOTES.txt <<'NOTES'
           TRAYDAQ User Android 1.0.70 (72) — async MLS signed release candidate, not distributed
           Application ID: com.traydaq.app
-          Source: f277994d7e5cb1ca4a32f13e8c2c5ca97c55722c
+          Source: 34e0210a693831e2fe4b638bd0095d9acfa7f16d
           Includes latest user-app updates, Android browser safe-area fixes, automatic public prekey enrollment and async MLS session support. Existing conversation behavior is preserved. Listing privacy rollout holds remain intact.
           Existing ordinary conversations and staff applications remain unchanged.
           Do not distribute or upload this candidate to Play until live backend compatibility,

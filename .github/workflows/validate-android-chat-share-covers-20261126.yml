@@ -1,0 +1,63 @@
+name: Android chat share cover source validation (no APK)
+on:
+  workflow_dispatch:
+  push:
+    branches: [validate/android-chat-share-covers-20261126]
+    paths: [".github/workflows/validate-android-chat-share-covers-20261126.yml"]
+permissions:
+  contents: read
+  statuses: write
+jobs:
+  android-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 87154fa931d5421c2de1940939ce6bb47a0c55b7
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        id: install
+        working-directory: private-src/mobile
+        run: npm install --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+      - name: Run Android regression suite
+        working-directory: private-src/mobile
+        run: |
+          set +e
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/tests.log" 2>&1
+          rc=$?
+          grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/tests.log" | tail -3 || true
+          if [ "$rc" != 0 ]; then
+            node -e 'const fs=require("fs"),crypto=require("crypto");for(const l of fs.readFileSync(process.argv[1],"utf8").split("\n")){const m=l.match(/^not ok \d+ - (.*)$/);if(m)console.log("Failed test identifier: "+crypto.createHash("sha256").update(m[1]).digest("hex").slice(0,16));}' "$RUNNER_TEMP/tests.log"
+          fi
+          exit "$rc"
+      - name: TypeScript validation
+        if: always() && steps.install.outcome == 'success'
+        working-directory: private-src/mobile
+        run: |
+          set +e
+          npm run typecheck > "$RUNNER_TEMP/typecheck.log" 2>&1
+          rc=$?
+          if [ "$rc" != 0 ]; then
+            grep -E '^src/(new-design/SharedChatCoverFrame|new-design/sharedContentInChat|new-design/NewInboxScreen)\.tsx?\([0-9]+,[0-9]+\): error TS[0-9]+' "$RUNNER_TEMP/typecheck.log" | sed -E 's/(: error TS[0-9]+):.*/\1/' || true
+            grep -oE 'error TS[0-9]+' "$RUNNER_TEMP/typecheck.log" | sort | uniq -c || true
+          fi
+          exit "$rc"
+      - name: Publish sanitized status
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JOB_RESULT: ${{ job.status }}
+        run: |
+          if [ "$JOB_RESULT" = success ]; then STATE=success; else STATE=failure; fi
+          payload="$(jq -n --arg state "$STATE" '{state:$state,context:"traydaq-v2/android-chat-share-covers",description:"Android source tests and typecheck"}')"
+          curl --fail --silent --show-error -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" -d "$payload" >/dev/null

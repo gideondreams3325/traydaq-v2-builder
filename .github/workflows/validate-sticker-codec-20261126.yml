@@ -23,3 +23,51 @@ jobs:
           sha256sum package/codec/dec/webp_dec.wasm
           curl --fail --silent --show-error https://cdn.jsdelivr.net/npm/@jsquash/webp@1.5.0/codec/dec/webp_dec.wasm -o decoder.wasm
           cmp decoder.wasm package/codec/dec/webp_dec.wasm
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 6861aef5d5447f7146f78a21135bba301df5b26d
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Generate realistic synthetic animation fixtures and reference frames
+        run: |
+          python -m pip install --quiet pillow
+          mkdir -p "$RUNNER_TEMP/stickers"
+          python - "$RUNNER_TEMP/stickers" <<'PY'
+          import sys, random
+          from PIL import Image, ImageDraw
+          from pathlib import Path
+          dest=Path(sys.argv[1])
+          frames=[]
+          for i in range(24):
+              im=Image.new('RGBA',(320,320),(0,0,0,0))
+              d=ImageDraw.Draw(im)
+              x=12+i*8
+              d.rectangle((x,45,x+90,205), fill=(30,95,220,255))
+              d.ellipse((x+8,12,x+72,76), fill=(220,80,60,255))
+              rand=random.Random(i)
+              for j in range(700):
+                  px=x+rand.randrange(90); py=45+rand.randrange(160)
+                  d.point((px,py),fill=(rand.randrange(256),rand.randrange(256),rand.randrange(256),255))
+              frames.append(im)
+          for name in ['motion.gif','motion.webp']:
+              args=dict(save_all=True,append_images=frames[1:],duration=80,loop=0)
+              if name.endswith('.gif'): args.update(disposal=2,optimize=True)
+              else: args.update(lossless=True,quality=85,method=4)
+              frames[0].save(dest/name,**args)
+              with Image.open(dest/name) as im:
+                  assert im.n_frames==24
+                  for i in range(im.n_frames):
+                      im.seek(i); im.convert('RGBA').save(dest/(name+'-'+str(i)+'.png'))
+          PY
+      - name: Typecheck and test every decoded frame
+        working-directory: private-src
+        run: |
+          set -e
+          NO_COLOR=1 deno check --no-config --no-lock supabase/functions/firebase-discussions/index.ts supabase/functions/firebase-store-reviews/index.ts > "$RUNNER_TEMP/codec-check.log" 2>&1 || { grep -E 'error:|TS[0-9]+|animatedStickerModeration.ts:[0-9]+' "$RUNNER_TEMP/codec-check.log" | cut -c1-180 | head -20; exit 1; }
+          TRAYDAQ_SYNTHETIC_STICKER_DIR="$RUNNER_TEMP/stickers" NO_COLOR=1 deno test --no-config --no-lock -A supabase/functions/_shared/animatedStickerModeration_test.ts > "$RUNNER_TEMP/codec-test.log" 2>&1 || { grep -E 'FAILED|error:|Error:|TS[0-9]+|test result:|Mismatch|mismatch' "$RUNNER_TEMP/codec-test.log" | cut -c1-180 | head -20; exit 1; }
+          grep -E 'ok \| [0-9]+ passed' "$RUNNER_TEMP/codec-test.log" | tail -1

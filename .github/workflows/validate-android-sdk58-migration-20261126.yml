@@ -34,7 +34,8 @@ jobs:
           java-version: "17"
       - name: Resolve SDK 58 dependencies in disposable workspace only
         run: |
-          npm install expo@^58.0.0 --no-audit --no-fund > "$RUNNER_TEMP/upgrade.log" 2>&1 || {
+          cp package-lock.json "$RUNNER_TEMP/original-lock.json"
+          npm install expo@58.1.0 --registry=https://registry.npmjs.org --replace-registry-host=always --no-audit --no-fund > "$RUNNER_TEMP/upgrade.log" 2>&1 || {
             grep -Ei 'npm error (code|peer|could not resolve|conflicting|notarget|eresolve)' "$RUNNER_TEMP/upgrade.log" | cut -c1-180 | head -30 || true
             exit 1
           }
@@ -50,7 +51,7 @@ jobs:
           pkg.devDependencies['@types/react']='~19.3.0';
           fs.writeFileSync('package.json',JSON.stringify(pkg,null,2)+'\n');
           NODE
-          npm install --no-audit --no-fund > "$RUNNER_TEMP/fix.log" 2>&1 || {
+          npm install --registry=https://registry.npmjs.org --replace-registry-host=always --no-audit --no-fund > "$RUNNER_TEMP/fix.log" 2>&1 || {
             grep -Ei 'npm (error|ERR!) (code|peer|could not resolve|conflicting|notarget)|^Error:' "$RUNNER_TEMP/fix.log" | cut -c1-180 | head -40 || true
             exit 1
           }
@@ -59,6 +60,33 @@ jobs:
             exit 1
           }
           node -e 'for(const p of ["expo","react-native","react"]) console.log(p,require(p+"/package.json").version)'
+      - name: Report verified public dependency metadata
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const before=JSON.parse(fs.readFileSync(process.env.RUNNER_TEMP+'/original-lock.json','utf8'));
+          const after=require('./package-lock.json');
+          const changed=Object.entries(after.packages).filter(([k,v])=>k&&JSON.stringify(before.packages[k])!==JSON.stringify(v));
+          const removed=Object.keys(before.packages).filter(k=>k&&!(k in after.packages));
+          for(const [key,item] of changed){
+            if(!key.startsWith('node_modules/')||!/^https:\/\/registry\.npmjs\.org\//.test(item.resolved||'')||!item.integrity||item.link)
+              throw Error('Non-public dependency metadata cannot be reported.');
+          }
+          const root={};
+          for(const section of ['dependencies','devDependencies']){
+            root[section]={};
+            for(const [name,version] of Object.entries(after.packages[''][section]||{})){
+              if(before.packages[''][section]?.[name]===version)continue;
+              if(!before.packages[''][section]?.[name]||!after.packages['node_modules/'+name]?.resolved?.startsWith('https://registry.npmjs.org/'))
+                throw Error('Unverified direct dependency metadata');
+              root[section][name]=version;
+            }
+          }
+          console.log('LOCK_ROOT '+JSON.stringify(root));
+          for(const row of changed)console.log('LOCK_SET '+JSON.stringify(row));
+          for(const key of removed)console.log('LOCK_REMOVE '+JSON.stringify(key));
+          console.log('LOCK_COUNTS '+JSON.stringify([changed.length,removed.length]));
+          NODE
       - name: Native tests against upgraded dependencies
         run: |
           set +e
@@ -80,3 +108,26 @@ jobs:
             exit 1
           }
           echo 'PASS: SDK 58 generated Android project; no source changes committed or release built'
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: Android SDK
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0" > "$RUNNER_TEMP/sdk.log" 2>&1
+      - name: Verify AGP version and compile optimized Android bundle
+        working-directory: private-src/mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon :app:buildEnvironment > "$RUNNER_TEMP/agp.log" 2>&1 || {
+            grep -E '^> Task .*FAILED|^Execution failed for task|^BUILD FAILED|^\* What went wrong:' "$RUNNER_TEMP/agp.log" | cut -c1-160 | head -30
+            exit 1
+          }
+          grep -E 'com.android.tools.build:gradle:[0-9]' "$RUNNER_TEMP/agp.log" | head -8
+          grep -Eq 'com.android.tools.build:gradle:9\.' "$RUNNER_TEMP/agp.log"
+          ./gradlew --no-daemon :app:bundleRelease > "$RUNNER_TEMP/gradle.log" 2>&1 || {
+            grep -E '^> Task .*FAILED|^Execution failed for task|^BUILD FAILED|^\* What went wrong:' "$RUNNER_TEMP/gradle.log" | cut -c1-160 | head -30
+            exit 1
+          }
+          test -s app/build/outputs/bundle/release/app-release.aab
+          test -s app/build/outputs/mapping/release/mapping.txt
+          echo 'PASS: optimized AGP 9 release bundle built; no distribution'

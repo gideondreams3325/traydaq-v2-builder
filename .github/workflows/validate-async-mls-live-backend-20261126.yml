@@ -1,0 +1,29 @@
+name: Async MLS live v22 backend qualification
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/validate-async-mls-live-backend-20261126.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  edge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 7fa2cc1f185eaf773fd26298f937094d555fb0ca
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Verify isolated v22-compatible backend and relay tests
+        working-directory: private-src
+        run: |
+          deno check --node-modules-dir=auto supabase/functions/firebase-member-chat/index.ts > "$RUNNER_TEMP/edge.log" 2>&1 || { grep -E 'TS[0-9]+|^error:' "$RUNNER_TEMP/edge.log" | cut -c1-160 | head -20; exit 1; }
+          deno test supabase/functions/_shared/e2eePilotRelay_test.ts > "$RUNNER_TEMP/relay.log" 2>&1 || { echo "Relay tests failed"; exit 1; }
+          echo "PASS: isolated backend typecheck and relay tests"

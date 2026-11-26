@@ -9,7 +9,7 @@ permissions:
 jobs:
   sdk58:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 150
     env:
       CI: "1"
       EXPO_NO_TELEMETRY: "1"
@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: f0f2fd13ad3909717aa161cd3ee86b996dc3b474
+          ref: b555d34cb3887cfe345e7b2e7d5a79d3e14605c0
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -95,7 +95,11 @@ jobs:
           if grep -q 'WindowCompat.enableEdgeToEdge(this)' node_modules/expo-image-picker/android/src/main/java/expo/modules/imagepicker/ExpoCropImageActivity.kt; then exit 1; fi
           grep -q 'TRAYDAQ: host status bar is managed by the app' node_modules/react-native-video-trim/android/src/main/java/com/videotrim/BaseVideoTrimModule.kt
           if grep -Eq 'originalStatusBarColor|restoreStatusBarColor|changeStatusBarColor|shouldChangeStatusBarColorOnOpen' node_modules/react-native-video-trim/android/src/main/java/com/videotrim/BaseVideoTrimModule.kt; then exit 1; fi
-          echo 'PASS: SDK 58 generated Android project and applied cropper and trimmer patches; no release built'
+          grep -q 'TRAYDAQ RN source build' android/settings.gradle
+          grep -q 'traydaq-splashscreen' android/settings.gradle
+          grep -q 'TRAYDAQ: system bar backgrounds come from the activity or dialog theme' node_modules/react-native/ReactAndroid/src/main/java/com/facebook/react/views/view/WindowUtil.kt
+          test -s android/traydaq-splashscreen/build.gradle
+          echo 'PASS: SDK 58 generated Android project and all four native dependency patches; no release built'
 
       - name: Use preinstalled current Android command-line tools
         run: |
@@ -167,6 +171,13 @@ jobs:
             echo 'Patched ImagePicker source compilation not confirmed'; exit 1
           fi
           grep -E '^> Task :(expo-image-picker|react-native-video-trim):compileReleaseKotlin' "$RUNNER_TEMP/gradle.log" | head -10
+          if ! grep -Eq '^> Task .*ReactAndroid:compileReleaseKotlin([[:space:]]|$)' "$RUNNER_TEMP/gradle.log"; then
+            echo 'Patched React Native source compilation not confirmed'; exit 1
+          fi
+          if ! grep -Eq '^> Task :traydaq-splashscreen:compileReleaseKotlin([[:space:]]|$)' "$RUNNER_TEMP/gradle.log"; then
+            echo 'Patched AndroidX SplashScreen compilation not confirmed'; exit 1
+          fi
+          grep -E '^> Task .*ReactAndroid:compileReleaseKotlin|^> Task :traydaq-splashscreen:compileReleaseKotlin|TRAYDAQ: patched AndroidX SplashScreen 1.2.0 source' "$RUNNER_TEMP/gradle.log" | head -15
           test -s app/build/outputs/bundle/release/app-release.aab
           test -s app/build/outputs/mapping/release/mapping.txt
           echo 'PASS: optimized AGP 9 release bundle built; no distribution'

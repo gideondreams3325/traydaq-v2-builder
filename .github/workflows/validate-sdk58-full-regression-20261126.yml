@@ -1,0 +1,77 @@
+name: SDK 58 exact-candidate web and JS regression validation
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/validate-sdk58-full-regression-20261126.yml']
+permissions:
+  contents: read
+env:
+  SOURCE_SHA: 7710a551caa3e5b43b77e8f628aed05b2bc0e8e4
+  CI: '1'
+  EXPO_NO_TELEMETRY: '1'
+  NODE_OPTIONS: '--max-old-space-size=6144'
+jobs:
+  web:
+    name: Complete web regression, TypeScript and asset build
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 7710a551caa3e5b43b77e8f628aed05b2bc0e8e4
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify source and install
+        working-directory: private-src
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { echo '::error::Web dependency install failed'; exit 1; }
+      - name: Web regressions
+        working-directory: private-src
+        run: |
+          set +e
+          npm test > "$RUNNER_TEMP/web-tests.log" 2>&1
+          rc=$?
+          grep -E '^(not ok|# (tests|pass|fail) [0-9]+)' "$RUNNER_TEMP/web-tests.log" | cut -c1-180 | head -80 || true
+          exit "$rc"
+      - name: Web TypeScript
+        if: always() && !cancelled()
+        working-directory: private-src
+        run: |
+          npm run typecheck > "$RUNNER_TEMP/web-types.log" 2>&1 || { grep -E 'error TS[0-9]+' "$RUNNER_TEMP/web-types.log" | cut -c1-180 | head -60 || true; exit 1; }
+      - name: Cloudflare-targeted assets, no deployment
+        if: always() && !cancelled()
+        working-directory: private-src
+        run: |
+          npm run build > "$RUNNER_TEMP/web-build.log" 2>&1 || { echo '::error::Web asset build failed'; grep -Ei '^error:|^error |build failed|could not resolve' "$RUNNER_TEMP/web-build.log" | cut -c1-180 | head -30 || true; exit 1; }
+          test -s dist/index.html
+          echo 'PASS: Cloudflare-targeted assets built locally, without deployment'
+  android-js:
+    name: Android JavaScript export
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 7710a551caa3e5b43b77e8f628aed05b2bc0e8e4
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify source, install and export Android JavaScript
+        working-directory: private-src/mobile
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/mobile-install.log" 2>&1 || { echo '::error::Android dependency install failed'; exit 1; }
+          npm run export:android > "$RUNNER_TEMP/mobile-export.log" 2>&1 || { echo '::error::Android JS export failed'; grep -Ei '^error:|^error |unable to resolve|bundling failed' "$RUNNER_TEMP/mobile-export.log" | cut -c1-180 | head -30 || true; exit 1; }
+          echo 'PASS: Android JavaScript exported locally, without packaging or distribution'
+# Runs only tests and local builds. Does not upload artifacts, deploy or publish.

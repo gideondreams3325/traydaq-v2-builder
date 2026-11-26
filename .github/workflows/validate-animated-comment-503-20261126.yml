@@ -6,6 +6,7 @@ on:
     paths: [".github/workflows/validate-animated-comment-503-20261126.yml"]
 permissions:
   contents: read
+  statuses: write
 jobs:
   edge:
     runs-on: ubuntu-latest
@@ -28,6 +29,15 @@ jobs:
           deno check supabase/functions/firebase-discussions/index.ts supabase/functions/firebase-store-reviews/index.ts > "$RUNNER_TEMP/edge-check.log" 2>&1 || { echo "::error::Edge typecheck failed"; exit 1; }
           deno test -A supabase/functions/_shared/animatedStickerModeration_test.ts > "$RUNNER_TEMP/edge-test.log" 2>&1 || { echo "::error::Animated sticker regression test failed"; grep -E '^(FAILED|error:|test result:)' "$RUNNER_TEMP/edge-test.log" | cut -c1-150 | head -10 || true; exit 1; }
           grep -E 'ok \| [0-9]+ passed' "$RUNNER_TEMP/edge-test.log" | tail -1 || true
+      - name: Report validation status
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JOB_RESULT: ${{ job.status }}
+        run: |
+          if [ "$JOB_RESULT" = success ]; then STATE=success; else STATE=failure; fi
+          payload="$(jq -n --arg state "$STATE" '{state:$state,context:"traydaq-v2/animated-comment-edge",description:"Animated comment regression validation"}')"
+          curl --fail --silent --show-error -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" -d "$payload" >/dev/null
   android-source:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -51,3 +61,12 @@ jobs:
           npm run typecheck > "$RUNNER_TEMP/typecheck.log" 2>&1 || { echo "::error::Android typecheck failed"; exit 1; }
           node --test tests/*.test.mjs > "$RUNNER_TEMP/tests.log" 2>&1 || { grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/tests.log" | tail -3; exit 1; }
           grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/tests.log" | tail -3
+      - name: Report validation status
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JOB_RESULT: ${{ job.status }}
+        run: |
+          if [ "$JOB_RESULT" = success ]; then STATE=success; else STATE=failure; fi
+          payload="$(jq -n --arg state "$STATE" '{state:$state,context:"traydaq-v2/animated-comment-android",description:"Animated comment regression validation"}')"
+          curl --fail --silent --show-error -X POST -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" -d "$payload" >/dev/null

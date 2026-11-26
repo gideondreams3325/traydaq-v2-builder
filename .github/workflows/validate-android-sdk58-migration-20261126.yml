@@ -100,7 +100,10 @@ jobs:
           ./gradlew --version | grep -E "^(Gradle |Kotlin:|Launcher JVM:|Daemon JVM:)" || true
           cat > "$RUNNER_TEMP/verify-agp.gradle" <<'GRADLE'
           gradle.projectsEvaluated {
+            // Init scripts also run in React Native/Expo included builds, which have no :app.
+            if (gradle.parent != null) return
             def app = gradle.rootProject.findProject(':app')
+            if (app == null) throw new GradleException('Main Android app project missing')
             def plugin = app.plugins.findPlugin('com.android.application')
             if (plugin == null) throw new GradleException('Android application plugin missing')
             def version = plugin.class.classLoader.loadClass('com.android.Version').getField('ANDROID_GRADLE_PLUGIN_VERSION').get(null)

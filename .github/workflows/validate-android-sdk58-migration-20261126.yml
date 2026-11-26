@@ -1,0 +1,67 @@
+name: Android SDK 58 compatibility assessment
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/validate-android-sdk58-migration-20261126.yml"]
+permissions:
+  contents: read
+jobs:
+  sdk58:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+      NODE_OPTIONS: "--max-old-space-size=6144"
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: ca1381801b36680edfee0a879a5a8a8fe6dbe408
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Resolve SDK 58 dependencies in disposable workspace only
+        run: |
+          npm install expo@^58.0.0 --no-audit --no-fund > "$RUNNER_TEMP/upgrade.log" 2>&1 || {
+            grep -Ei 'npm error (code|peer|could not resolve|conflicting|notarget|eresolve)' "$RUNNER_TEMP/upgrade.log" | cut -c1-180 | head -30 || true
+            exit 1
+          }
+          npx expo install --fix > "$RUNNER_TEMP/fix.log" 2>&1 || {
+            grep -Ei 'npm error (code|peer|could not resolve|conflicting)|^Error:' "$RUNNER_TEMP/fix.log" | cut -c1-180 | head -30 || true
+            exit 1
+          }
+          npx expo install --check > "$RUNNER_TEMP/check.log" 2>&1
+          node -e 'for(const p of ["expo","react-native","react"]) console.log(p,require(p+"/package.json").version)'
+      - name: Native tests against upgraded dependencies
+        run: |
+          set +e
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/tests.log" 2>&1
+          rc=$?
+          grep -E '^(not ok|# (tests|pass|fail) [0-9]+)' "$RUNNER_TEMP/tests.log" | cut -c1-180 | head -80
+          exit "$rc"
+      - name: TypeScript compatibility
+        if: always()
+        run: |
+          npm run typecheck > "$RUNNER_TEMP/ts.log" 2>&1 || {
+            grep -E 'error TS[0-9]+' "$RUNNER_TEMP/ts.log" | cut -c1-180 | head -30 || true
+            exit 1
+          }
+      - name: SDK 58 Android prebuild compatibility
+        run: |
+          npx expo prebuild --platform android --non-interactive > "$RUNNER_TEMP/prebuild.log" 2>&1 || {
+            grep -Ei 'Error:|PluginError|Cannot find module|Unable to verify|Expected Expo' "$RUNNER_TEMP/prebuild.log" | cut -c1-180 | head -30 || true
+            exit 1
+          }
+          echo 'PASS: SDK 58 generated Android project; no source changes committed or release built'

@@ -40,7 +40,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 6270efe2505ab0030de2aec148e8d9e7e5cc0290
+          ref: 874a36c1e2af1ed744acfa29b217a55e5fd45290
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -64,7 +64,7 @@ jobs:
             if(c.name!=='traydaq-v2'||c.assets?.directory!=='./dist')
               throw Error('Unexpected Cloudflare Workers assets configuration');
           "
-          echo "Private source ref: 6270efe2505ab0030de2aec148e8d9e7e5cc0290"
+          echo "Private source ref: 874a36c1e2af1ed744acfa29b217a55e5fd45290"
           echo "Private source SHA: $(git rev-parse HEAD)"
           echo "Hosting validation target: Cloudflare Workers, not Vercel"
       - name: Install private web dependencies with protected logs
@@ -259,7 +259,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 6270efe2505ab0030de2aec148e8d9e7e5cc0290
+          ref: 874a36c1e2af1ed744acfa29b217a55e5fd45290
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -432,7 +432,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 6270efe2505ab0030de2aec148e8d9e7e5cc0290
+          ref: 874a36c1e2af1ed744acfa29b217a55e5fd45290
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
@@ -443,7 +443,7 @@ jobs:
       - name: Check exact Edge Function source
         working-directory: private-src
         run: |
-          if deno check supabase/functions/firebase-content-edits/index.ts supabase/functions/firebase-public-post-preview/index.ts supabase/functions/firebase-public-share-preview/index.ts > "$RUNNER_TEMP/privacy-edge.log" 2>&1; then
+          if (for f in firebase-content-edits firebase-public-post-preview firebase-public-share-preview; do deno check --no-config --node-modules-dir=none "supabase/functions/$f/index.ts" || exit 1; done) > "$RUNNER_TEMP/privacy-edge.log" 2>&1; then
             echo "PASS: Edge typecheck"
           else
             echo "::error::Edge typecheck failed; private diagnostics remain private"
@@ -465,6 +465,11 @@ jobs:
           log=open(os.environ["RUNNER_TEMP"]+"/privacy-edge.log").read()
           log=re.sub(r"\x1b\[[0-9;]*m","",log)
           codes=re.findall(r"TS\d{4}",log)
+          if not codes:
+           category=next((word for word in ("unexpected argument","node_modules","Module not found","Could not resolve","PermissionDenied","error sending request","lockfile","Failed to parse","not supported","failed to download") if word.lower() in log.lower()),"unclassified")
+           body=json.dumps(dict(state="failure",context="traydaq-v2/edge/cli-"+re.sub(r"[^A-Za-z0-9-]","-",category),description="Sanitized CLI failure category")).encode()
+           req=urllib.request.Request("https://api.github.com/repos/"+os.environ["GITHUB_REPOSITORY"]+"/statuses/"+os.environ["GITHUB_SHA"],data=body,headers={"Authorization":"Bearer "+os.environ["GH_TOKEN"],"Content-Type":"application/json","User-Agent":"traydaq-validation"})
+           urllib.request.urlopen(req).close()
           places=re.findall(r"(?:file://)?[^\s]+/(firebase-content-edits|firebase-public-post-preview|firebase-public-share-preview|_shared)/([A-Za-z0-9_.-]+):(\d+):(\d+)",log)
           for i,(code,place) in enumerate(zip(codes,places)):
            if i>=20:break

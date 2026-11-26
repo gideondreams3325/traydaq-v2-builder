@@ -8,7 +8,7 @@ on:
 permissions:
   contents: read
 env:
-  SOURCE_SHA: 810fc37094170707c882e14be6dfa0df7df29a72
+  SOURCE_SHA: ba197f3fd106908da36e31849558de7613c0cfe2
   CI: '1'
   EXPO_NO_TELEMETRY: '1'
 jobs:
@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 810fc37094170707c882e14be6dfa0df7df29a72
+          ref: ba197f3fd106908da36e31849558de7613c0cfe2
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false
@@ -45,7 +45,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 810fc37094170707c882e14be6dfa0df7df29a72
+          ref: ba197f3fd106908da36e31849558de7613c0cfe2
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false

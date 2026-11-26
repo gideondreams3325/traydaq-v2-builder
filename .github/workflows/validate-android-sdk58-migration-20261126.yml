@@ -151,6 +151,17 @@ jobs:
             echo "Resolved Android Gradle Plugin is not version 9.x or was not identified."
             exit 1
           fi
+      - name: Compile optimized Android bundle
+        working-directory: private-src/mobile/android
+        run: |
+          ./gradlew --no-daemon --console=plain :app:bundleRelease > "$RUNNER_TEMP/gradle.log" 2>&1 || {
+            grep -Ei '^> Task .*FAILED|^Execution failed for task|^BUILD FAILED|^FAILURE:|^\* What went wrong:|^Could not |^A problem occurred|^Missing class |^ERROR:|^e: ' "$RUNNER_TEMP/gradle.log" | cut -c1-180 | head -50 || true
+            exit 1
+          }
+          test -s app/build/outputs/bundle/release/app-release.aab
+          test -s app/build/outputs/mapping/release/mapping.txt
+          echo 'PASS: optimized AGP 9 release bundle built; no distribution'
+
       - name: Resolve native library versions and attribute pre-R8 API calls
         working-directory: private-src/mobile/android
         run: |
@@ -186,17 +197,6 @@ jobs:
               for line in lines: print(line)
           print(f'Inspected {len(tasks)} candidate upstream class files before R8')
           PY
-      - name: Compile optimized Android bundle
-        working-directory: private-src/mobile/android
-        run: |
-          ./gradlew --no-daemon --console=plain :app:bundleRelease > "$RUNNER_TEMP/gradle.log" 2>&1 || {
-            grep -Ei '^> Task .*FAILED|^Execution failed for task|^BUILD FAILED|^FAILURE:|^\* What went wrong:|^Could not |^A problem occurred|^Missing class |^ERROR:|^e: ' "$RUNNER_TEMP/gradle.log" | cut -c1-180 | head -50 || true
-            exit 1
-          }
-          test -s app/build/outputs/bundle/release/app-release.aab
-          test -s app/build/outputs/mapping/release/mapping.txt
-          echo 'PASS: optimized AGP 9 release bundle built; no distribution'
-
       - name: Audit compiled DEX for deprecated system bar APIs
         working-directory: private-src/mobile/android
         run: |

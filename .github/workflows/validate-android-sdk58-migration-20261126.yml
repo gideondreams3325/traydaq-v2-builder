@@ -65,8 +65,17 @@ jobs:
       - uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
-      - name: Android SDK
-        run: sdkmanager "platforms;android-36" "platforms;android-37" "build-tools;36.0.0" "build-tools;37.0.0" > "$RUNNER_TEMP/sdk.log" 2>&1
+      - name: Inspect generated toolchain requirements
+        run: |
+          for f in android/gradle/wrapper/gradle-wrapper.properties node_modules/react-native/gradle/libs.versions.toml node_modules/@react-native/gradle-plugin/gradle/libs.versions.toml; do
+            if test -f "$f"; then
+              grep -E '^(distributionUrl|agp|androidGradlePlugin|compileSdk|targetSdk|buildTools|kotlin|ndk)[[:space:]]*=' "$f" | head -15 || true
+            fi
+          done
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" > "$RUNNER_TEMP/sdk.log" 2>&1 || {
+            grep -Ei 'failed|error|not found|warning:' "$RUNNER_TEMP/sdk.log" | cut -c1-180 | head -15 || true
+            exit 1
+          }
       - name: Verify resolved Android Gradle Plugin version
         working-directory: private-src/mobile/android
         run: |

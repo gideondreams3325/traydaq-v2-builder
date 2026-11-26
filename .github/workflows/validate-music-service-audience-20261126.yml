@@ -40,7 +40,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: e3f0022e14addaca1c2a6b0ff7672baf4ffd07f9
+          ref: f95ba216d40be428629aa5bb26e39362426857bc
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -64,7 +64,7 @@ jobs:
             if(c.name!=='traydaq-v2'||c.assets?.directory!=='./dist')
               throw Error('Unexpected Cloudflare Workers assets configuration');
           "
-          echo "Private source ref: e3f0022e14addaca1c2a6b0ff7672baf4ffd07f9"
+          echo "Private source ref: f95ba216d40be428629aa5bb26e39362426857bc"
           echo "Private source SHA: $(git rev-parse HEAD)"
           echo "Hosting validation target: Cloudflare Workers, not Vercel"
       - name: Install private web dependencies with protected logs
@@ -83,7 +83,7 @@ jobs:
         working-directory: private-src
         shell: bash
         run: |
-          if node --test tests/listing-audience-enforcement-20261126.test.mjs tests/restricted-post-media-policy.test.mjs tests/music-service-audience-20261126.test.mjs > "$RUNNER_TEMP/traydaq-privacy-tests.log" 2>&1; then
+          if node --test tests/listing-audience-enforcement-20261126.test.mjs tests/restricted-post-media-policy.test.mjs tests/music-service-audience-20261126.test.mjs tests/music-service-playback-audience-guards.test.mjs > "$RUNNER_TEMP/traydaq-privacy-tests.log" 2>&1; then
             echo "PASS: restricted audience tests"
             grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/traydaq-privacy-tests.log" | tail -3 || true
           else
@@ -259,7 +259,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: e3f0022e14addaca1c2a6b0ff7672baf4ffd07f9
+          ref: f95ba216d40be428629aa5bb26e39362426857bc
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -432,7 +432,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: e3f0022e14addaca1c2a6b0ff7672baf4ffd07f9
+          ref: f95ba216d40be428629aa5bb26e39362426857bc
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: private-src
           persist-credentials: false

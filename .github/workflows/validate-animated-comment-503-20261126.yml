@@ -1,0 +1,53 @@
+name: Animated comment submission validation
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/validate-animated-comment-503-20261126.yml"]
+permissions:
+  contents: read
+jobs:
+  edge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: a67cc59b0b6bea70a1068a4a01840ad32726241a
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.1.4
+      - name: Check and test sticker moderation
+        working-directory: private-src
+        run: |
+          set -e
+          deno check supabase/functions/firebase-discussions/index.ts supabase/functions/firebase-store-reviews/index.ts > "$RUNNER_TEMP/edge-check.log" 2>&1 || { echo "::error::Edge typecheck failed"; exit 1; }
+          deno test -A supabase/functions/_shared/animatedStickerModeration_test.ts > "$RUNNER_TEMP/edge-test.log" 2>&1 || { echo "::error::Animated sticker regression test failed"; grep -E '^(FAILED|error:|test result:)' "$RUNNER_TEMP/edge-test.log" | cut -c1-150 | head -10 || true; exit 1; }
+          grep -E 'ok \| [0-9]+ passed' "$RUNNER_TEMP/edge-test.log" | tail -1 || true
+  android-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: a67cc59b0b6bea70a1068a4a01840ad32726241a
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        working-directory: private-src/mobile
+        run: npm install --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+      - name: Validate Android source
+        working-directory: private-src/mobile
+        run: |
+          npm run typecheck > "$RUNNER_TEMP/typecheck.log" 2>&1 || { echo "::error::Android typecheck failed"; exit 1; }
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/tests.log" 2>&1 || { grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/tests.log" | tail -3; exit 1; }
+          grep -E '^# (tests|pass|fail) [0-9]+$' "$RUNNER_TEMP/tests.log" | tail -3

@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 3ce3ba56003c6faac2f47b647f30b8c61ee7535d
+          ref: 480c45d5a5d9db95ba38193676152a4fdd7cdf64
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: source
           persist-credentials: false
@@ -23,7 +23,7 @@ jobs:
           node-version: '22'
       - name: Verify exact candidate
         working-directory: source
-        run: test "$(git rev-parse HEAD)" = "3ce3ba56003c6faac2f47b647f30b8c61ee7535d"
+        run: test "$(git rev-parse HEAD)" = "480c45d5a5d9db95ba38193676152a4fdd7cdf64"
       - name: Staff native security and review regressions
         working-directory: source/admin-native
         run: npm run test:security && node --test tests/staff-review-workspace.test.mjs
@@ -40,7 +40,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 3ce3ba56003c6faac2f47b647f30b8c61ee7535d
+          ref: 480c45d5a5d9db95ba38193676152a4fdd7cdf64
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: source
           persist-credentials: false
@@ -49,7 +49,7 @@ jobs:
           node-version: '22'
       - name: Verify exact candidate
         working-directory: source
-        run: test "$(git rev-parse HEAD)" = "3ce3ba56003c6faac2f47b647f30b8c61ee7535d"
+        run: test "$(git rev-parse HEAD)" = "480c45d5a5d9db95ba38193676152a4fdd7cdf64"
       - name: Staff iPhone regressions
         working-directory: source
         run: node --test tests/staff-*.test.mjs

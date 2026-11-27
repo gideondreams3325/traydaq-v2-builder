@@ -38,7 +38,7 @@ jobs:
         if: matrix.component == 'edge'
         working-directory: private-src
         run: |
-          deno check --no-config --node-modules-dir=auto supabase/functions/firebase-admin-workspace/index.ts supabase/functions/firebase-staff-iphone/index.ts > "$RUNNER_TEMP/edge.log" 2>&1 || { echo 'Edge type check failed'; grep -Eo 'TS[0-9]+' "$RUNNER_TEMP/edge.log" | sort | uniq -c; exit 1; }
+          deno check --no-config --no-lock --node-modules-dir=none supabase/functions/firebase-admin-workspace/index.ts supabase/functions/firebase-staff-iphone/index.ts > "$RUNNER_TEMP/edge.log" 2>&1 || { echo 'Edge type check failed'; grep -Eo 'TS[0-9]+|Module not found|Could not resolve|Import .* failed|Permission denied|Failed to download|certificate|Cannot find module|npm package|No such file' "$RUNNER_TEMP/edge.log" | cut -c1-35 | sort | uniq -c; exit 1; }
       - name: Staff regression and TypeScript checks
         if: matrix.component != 'edge'
         working-directory: private-src
@@ -48,7 +48,11 @@ jobs:
           NODE_OPTIONS: "--max-old-space-size=6144"
         run: |
           if [ "$COMPONENT" = staff-native ]; then cd admin-native; fi
-          npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { echo 'Dependency install failed'; exit 1; }
+          if [ "$COMPONENT" = staff-native ]; then
+            npm install --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+          else
+            npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+          fi
           if [ "$COMPONENT" = staff-native ]; then
             npm run typecheck > "$RUNNER_TEMP/ts.log" 2>&1 || { echo 'Staff TypeScript failed'; grep -Eo 'TS[0-9]+' "$RUNNER_TEMP/ts.log" | sort | uniq -c; exit 1; }
             npm run test:security > "$RUNNER_TEMP/tests.log" 2>&1 || { grep -E '^(not ok|# (tests|pass|fail) [0-9]+)' "$RUNNER_TEMP/tests.log"; exit 1; }

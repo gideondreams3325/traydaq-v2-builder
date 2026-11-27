@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 4c40c3408f5a4db85fe2f74b83dc8552799f3bc5
+          ref: 29e51443aa2e93a1ae1801389490f91207f4419b
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           path: source
           persist-credentials: false
@@ -27,10 +27,10 @@ jobs:
       - name: Validate and build exact merged staff source
         working-directory: source
         env:
-          CF_PAGES_COMMIT_SHA: "4c40c3408f5a4db85fe2f74b83dc8552799f3bc5"
+          CF_PAGES_COMMIT_SHA: "29e51443aa2e93a1ae1801389490f91207f4419b"
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD)" = "4c40c3408f5a4db85fe2f74b83dc8552799f3bc5"
+          test "$(git rev-parse HEAD)" = "29e51443aa2e93a1ae1801389490f91207f4419b"
           npm install --no-audit --no-fund
           npm run typecheck:staff
           node --test tests/staff-*.test.mjs
@@ -68,7 +68,7 @@ jobs:
           const html=readFileSync('dist-staff/index.html','utf8');
           const asset=html.match(/src="(\/assets\/[^"]+\.js)"/)?.[1];
           if(!asset)throw Error('No entry asset in local build');
-          const remote=await fetch('https://staff.traydaq.com/?verify=4c40c3408f5a4db85fe2f74b83dc8552799f3bc5',{cache:'no-store'});
+          const remote=await fetch('https://staff.traydaq.com/?verify=29e51443aa2e93a1ae1801389490f91207f4419b',{cache:'no-store'});
           if(!remote.ok)throw Error('Staff hostname unavailable: '+remote.status);
           const body=await remote.text();
           if(!body.includes(asset))throw Error('Production entry asset does not yet match validated build');

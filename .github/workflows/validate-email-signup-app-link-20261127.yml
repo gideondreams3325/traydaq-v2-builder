@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 6903f402065eba99bd4a89de81522b8e70b835d6
+          ref: 1f392dd451d3b4d21d7b23dcd034cf817966c0b6
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -56,7 +56,7 @@ jobs:
                   print(line[:180]);active=True
               elif line.startswith('ok '):active=False
               elif active and re.match(r'^  (location|failureType|code|name):',line):print(line[:220])
-              elif active and re.search(r'Unmocked native dependency:|ReferenceError:|TypeError:',line):print(line[:200])
+              elif active and re.search(r'Unmocked native dependency:|ReferenceError:|TypeError:|The input did not match the regular expression|Expected value|^    expected:',line):print(line[:280])
               elif active and re.search(r'\bat .*?tests/[^ ]+\.mjs:[0-9]+:[0-9]+',line):print(re.sub(r'.*?tests/','    tests/',line)[:200])
           PY
           if [ "$COMPONENT" = web ]; then

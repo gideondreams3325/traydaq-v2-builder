@@ -1,0 +1,62 @@
+name: TRAYDAQ Traymusic discovery validation
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/validate-traymusic-discovery-20261127.yml"]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [web, android, edge]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: c3c588f739dfd2cbbe74acac90f11e114ef4839b
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: denoland/setup-deno@v2
+        if: matrix.component == 'edge'
+        with:
+          deno-version: v2.x
+      - name: Validate clients
+        if: matrix.component != 'edge'
+        working-directory: private-src
+        env:
+          COMPONENT: ${{ matrix.component }}
+          CI: "1"
+          NODE_OPTIONS: "--max-old-space-size=6144"
+        run: |
+          if [ "$COMPONENT" = android ]; then cd mobile; fi
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { echo 'Dependency install failed'; exit 1; }
+          set +e
+          npm run typecheck > "$RUNNER_TEMP/ts.log" 2>&1
+          ts_rc=$?
+          grep -E 'error TS[0-9]+' "$RUNNER_TEMP/ts.log" | cut -c1-180 | head -60 || true
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/tests.log" 2>&1
+          test_rc=$?
+          grep -E '^(not ok|# (tests|pass|fail) [0-9]+)' "$RUNNER_TEMP/tests.log" | cut -c1-180 | head -80
+          if [ "$COMPONENT" = web ]; then
+            npm run build > "$RUNNER_TEMP/build.log" 2>&1
+            build_rc=$?
+            if [ "$build_rc" -ne 0 ]; then echo 'Web build failed'; fi
+          else build_rc=0; fi
+          test "$ts_rc" -eq 0 && test "$test_rc" -eq 0 && test "$build_rc" -eq 0
+      - name: Check music edge
+        if: matrix.component == 'edge'
+        working-directory: private-src
+        run: |
+          deno check --no-config --node-modules-dir=auto supabase/functions/firebase-native-music/index.ts > "$RUNNER_TEMP/deno.log" 2>&1 || { grep -Ei 'TS[0-9]+|error|failed|not found|could not|requires|cannot' "$RUNNER_TEMP/deno.log" | cut -c1-180 | head -40 || true; exit 1; }
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { echo 'Dependency install failed'; exit 1; }
+          node --test tests/traymusic-discovery-20261127.test.mjs > "$RUNNER_TEMP/tests.log" 2>&1
+          grep -E '^(not ok|# (tests|pass|fail) [0-9]+)' "$RUNNER_TEMP/tests.log" | cut -c1-180

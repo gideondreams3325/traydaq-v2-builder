@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 6fb14e5373792ce8ed1babcced956dae96c56f76
+          ref: 4a3ca2f28bc041b6f4921538a5f5df07073ca588
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false

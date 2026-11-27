@@ -1,4 +1,4 @@
-name: TRAYDAQ notification sound foundation validation
+name: TRAYDAQ notification sounds full validation
 on:
   workflow_dispatch:
   push:
@@ -13,12 +13,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        component: [web, android]
+        component: [web, android, edge]
     steps:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 7e9dadf7e0e0203251b751adb48c427b354d0348
+          ref: 4dccfe8c2bd63f1e33dca3cdfe356a7e40ba18fd
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -27,8 +27,18 @@ jobs:
           node-version: "22"
       - name: Check sound mapping and legacy fallback
         working-directory: private-src
-        run: node --test mobile/tests/traydaq-signature-sounds.test.mjs
+        run: node --test mobile/tests/traydaq-signature-sounds.test.mjs mobile/tests/traydaq-notification-sound-assets.test.mjs
+      - uses: denoland/setup-deno@v2
+        if: matrix.component == 'edge'
+        with:
+          deno-version: v2.x
+      - name: Check all consumer notification edge functions
+        if: matrix.component == 'edge'
+        working-directory: private-src
+        run: |
+          deno check --no-config --node-modules-dir=auto supabase/functions/{firebase-member-activity,firebase-following-notifications,firebase-native-orders,firebase-native-commerce,firebase-staff-campaign-deliver,firebase-copyright,firebase-security-broadcast,firebase-security-hub,firebase-native-push-register,firebase-entrepreneur}/index.ts > "$RUNNER_TEMP/edge.log" 2>&1 || { grep -Ei 'TS[0-9]+|error|failed|not found|could not' "$RUNNER_TEMP/edge.log" | cut -c1-180 | head -60; exit 1; }
       - name: Source regressions and typecheck (no release)
+        if: matrix.component != 'edge'
         working-directory: private-src
         env:
           COMPONENT: ${{ matrix.component }}

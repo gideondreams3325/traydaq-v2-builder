@@ -1,0 +1,62 @@
+name: Staff compact review workspace source QA
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/staff-compact-review-workspace-20261127.yml']
+permissions:
+  contents: read
+jobs:
+  staff-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 5dfe8db735681d8a5d364b21df552ad6622a8d9a
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify exact candidate
+        working-directory: source
+        run: test "$(git rev-parse HEAD)" = "5dfe8db735681d8a5d364b21df552ad6622a8d9a"
+      - name: Staff native security and review regressions
+        working-directory: source/admin-native
+        run: npm run test:security
+      - name: Native staff typecheck
+        if: always()
+        working-directory: source/admin-native
+        run: |
+          npm install --no-audit --no-fund
+          npm run typecheck
+  staff-iphone:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 5dfe8db735681d8a5d364b21df552ad6622a8d9a
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          path: source
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify exact candidate
+        working-directory: source
+        run: test "$(git rev-parse HEAD)" = "5dfe8db735681d8a5d364b21df552ad6622a8d9a"
+      - name: Staff iPhone regressions
+        working-directory: source
+        run: node --test tests/staff-*.test.mjs
+      - name: Staff iPhone typecheck and local PWA build
+        if: always()
+        working-directory: source
+        run: |
+          npm ci --no-audit --no-fund
+          npm run typecheck:staff
+          npm run build:staff

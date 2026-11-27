@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 0eb9ffeaa3d2610aee5aeb7d857668d1350aa8c9
+          ref: ffdc5b2c4549e23a7dc05b74594f26578b1f1306
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -25,21 +25,21 @@ jobs:
         working-directory: private-src
         env:
           CI: "1"
-          CF_PAGES_COMMIT_SHA: "0eb9ffeaa3d2610aee5aeb7d857668d1350aa8c9"
+          CF_PAGES_COMMIT_SHA: "ffdc5b2c4549e23a7dc05b74594f26578b1f1306"
         run: |
           npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { echo 'Dependency install failed'; exit 1; }
           set +e
           npm run typecheck:staff > "$RUNNER_TEMP/ts.log" 2>&1
           ts_rc=$?
           grep -E 'error TS[0-9]+' "$RUNNER_TEMP/ts.log" | cut -c1-180 | head -40 || true
-          node --test tests/staff-iphone-*.test.mjs tests/staff-strict-role-duty-isolation.test.mjs tests/staff-settings-cross-platform-20261126.test.mjs tests/staff-balanced-glass-polish.test.mjs > "$RUNNER_TEMP/tests.log" 2>&1
+          node --test tests/staff-iphone-*.test.mjs tests/staff-strict-role-duty-isolation.test.mjs tests/staff-settings-cross-platform-20261126.test.mjs tests/staff-balanced-glass-polish.test.mjs tests/country-scheduling-20261125.test.mjs > "$RUNNER_TEMP/tests.log" 2>&1
           test_rc=$?
           grep -E '^(not ok|# (tests|pass|fail) [0-9]+)' "$RUNNER_TEMP/tests.log" | cut -c1-180 | head -80 || true
           npm run build:staff > "$RUNNER_TEMP/build.log" 2>&1
           build_rc=$?
           if [ "$build_rc" -ne 0 ]; then echo 'Staff PWA build failed'; fi
           if [ "$build_rc" -eq 0 ]; then
-            grep -q -F '0eb9ffeaa3d2610aee5aeb7d857668d1350aa8c9' dist-staff/assets/*.js || build_rc=1
+            grep -q -F 'ffdc5b2c4549e23a7dc05b74594f26578b1f1306' dist-staff/assets/*.js || build_rc=1
             grep -q -F '© 2026 POMAAH GROUP. All rights reserved.' dist-staff/assets/*.js || build_rc=1
           fi
           echo "Staff TypeScript=$ts_rc tests=$test_rc PWA build=$build_rc"
@@ -51,19 +51,19 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: 0eb9ffeaa3d2610aee5aeb7d857668d1350aa8c9
+          ref: ffdc5b2c4549e23a7dc05b74594f26578b1f1306
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Report existing customer scheduling assertions separately
+      - name: Verify updated customer scheduling assertions
         working-directory: private-src
         run: |
           set -euo pipefail
           git show HEAD:admin-native/tests/date-time-selection.test.mjs >/dev/null
-          node --test admin-native/tests/date-time-selection.test.mjs > "$RUNNER_TEMP/date-tests.log" 2>&1 || true
+          node --test admin-native/tests/date-time-selection.test.mjs > "$RUNNER_TEMP/date-tests.log" 2>&1 || { grep -E '^(not ok|# (tests|pass|fail) [0-9]+)' "$RUNNER_TEMP/date-tests.log"; exit 1; }
           grep -E '^(not ok|# (tests|pass|fail) [0-9]+)' "$RUNNER_TEMP/date-tests.log" | cut -c1-180 | head -20 || true
       - name: Android Staff source validation only
         working-directory: private-src/admin-native

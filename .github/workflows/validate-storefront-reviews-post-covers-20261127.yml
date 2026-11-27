@@ -39,6 +39,10 @@ jobs:
           if [ "$rc" != 0 ]; then
             node -e 'const fs=require("fs"),crypto=require("crypto");for(const l of fs.readFileSync(process.argv[1],"utf8").split("\n")){const m=l.match(/^not ok \d+ - (.*)$/);if(m)console.log("Failed test identifier: "+crypto.createHash("sha256").update(m[1]).digest("hex").slice(0,16));}' "$RUNNER_TEMP/tests.log"
           fi
+            # The TAP location identifies the failing assertion without printing private source.
+          if [ "$rc" != 0 ]; then
+            grep -E "^  location:|^  code:|^  failureType:|^    at TestContext\\.<anonymous>" "$RUNNER_TEMP/tests.log" | sed -E 's@.*/private-src/mobile/@@; s@^  location:.*tests/@failure-location: tests/@; s@^.*at TestContext.*tests/@assertion-location: tests/@' | head -20 || true
+          fi
           exit "$rc"
       - name: TypeScript validation
         if: always() && steps.install.outcome == 'success'

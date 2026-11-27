@@ -63,7 +63,7 @@ jobs:
         env:
           CI: "1"
         run: |
-          npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { echo 'Dependency install failed'; exit 1; }
+          npm install --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { grep -Ei 'npm (error|ERR!) (code|notarget|eresolve|404|could not|no matching)' "$RUNNER_TEMP/install.log" | cut -c1-180 | head -20 || true; echo 'Dependency install failed'; exit 1; }
           set +e
           npm run typecheck > "$RUNNER_TEMP/ts.log" 2>&1
           ts_rc=$?

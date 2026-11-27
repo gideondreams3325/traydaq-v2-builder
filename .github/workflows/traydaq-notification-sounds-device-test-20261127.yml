@@ -1,0 +1,334 @@
+name: TRAYDAQ user notification sounds — device test APK only
+
+# APK-only device test. No release, AAB, Google Play upload, rollout or staff build.
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/traydaq-notification-sounds-device-test-20261127.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: traydaq-notification-sounds-device-test
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  signed-test-apk:
+    name: Signed notification device test APK (Android API 36)
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      CI: "1"
+      EXPO_NO_TELEMETRY: "1"
+      NODE_OPTIONS: "--max-old-space-size=6144"
+      TRAYDAQ_RELEASE_VERSION: "1.0.72"
+      TRAYDAQ_RELEASE_CODE: "74"
+      TRAYDAQ_SOURCE_SHA: "79e6654b6fe4b300c74f7e0f8d2426e7e5e9bb1e"
+      # Public certificate from signed User APK run 40043905049 (v1.0.1/code 3).
+      TRAYDAQ_EXPECTED_SIGNING_SHA256: "716a68f5734545bc9d9700f045d2bfb1b1087ffe732021f216b32a575f03f83d"
+    defaults:
+      run:
+        working-directory: private-src/mobile
+    steps:
+      - name: Checkout latest private TRAYDAQ V2 user code
+        uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: "79e6654b6fe4b300c74f7e0f8d2426e7e5e9bb1e"
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Confirm user package and release version
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const a=require('./app.json').expo;
+          if(a.android?.package!=='com.traydaq.app')throw Error('Only com.traydaq.app may be published.');
+          if(!Number.isInteger(a.android.versionCode)||a.android.versionCode!==74||a.version!=='1.0.72'||
+             Number(process.env.TRAYDAQ_RELEASE_CODE)!==74||process.env.TRAYDAQ_RELEASE_VERSION!=='1.0.72')
+            throw Error('Expected merged source and candidate release 1.0.72 (74).');
+          console.log('Package:',a.android.package,'version:',a.version,'code:',a.android.versionCode);
+          NODE
+          test "$(git -C .. rev-parse HEAD)" = "$TRAYDAQ_SOURCE_SHA"
+          echo "Source commit: $TRAYDAQ_SOURCE_SHA"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+
+      - name: Validate existing TRAYDAQ V2 release signing key
+        env:
+          KEY_B64: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEYSTORE_B64 }}
+          STORE_PASS: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEYSTORE_PASSWORD }}
+          KEY_PASS: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          for field in KEY_B64 STORE_PASS KEY_PASS; do
+            if [[ -z "${!field:-}" ]]; then echo "::error::Existing signing secret $field is missing"; exit 1; fi
+          done
+          if [[ -n "$KEY_ALIAS" && "$KEY_ALIAS" != "traydaq-v2-upload" ]]; then
+            echo "::warning::Alias secret differs from the verified JKS alias; using the original alias."
+          fi
+          KEY_ALIAS=traydaq-v2-upload
+          umask 077
+          export TRAYDAQ_UPLOAD_KEYSTORE="$RUNNER_TEMP/traydaq-existing-upload.jks"
+          printf '%s' "$KEY_B64" | base64 --decode > "$TRAYDAQ_UPLOAD_KEYSTORE"
+          keytool -list -keystore "$TRAYDAQ_UPLOAD_KEYSTORE" -storepass:env STORE_PASS -alias "$KEY_ALIAS" >/dev/null
+          keytool -list -v -keystore "$TRAYDAQ_UPLOAD_KEYSTORE" -storepass:env STORE_PASS -alias "$KEY_ALIAS" > "$RUNNER_TEMP/original-cert.txt"
+          ACTUAL_SHA256=$(sed -n 's/^[[:space:]]*SHA256: //p' "$RUNNER_TEMP/original-cert.txt" | head -1 | tr -d ':' | tr '[:upper:]' '[:lower:]')
+          [[ "$ACTUAL_SHA256" == "$TRAYDAQ_EXPECTED_SIGNING_SHA256" ]] || {
+            echo "::error::Keystore differs from installed User APK certificate; refusing incompatible release."
+            exit 1
+          }
+          keytool -certreq -keystore "$TRAYDAQ_UPLOAD_KEYSTORE" -storepass:env STORE_PASS \
+            -keypass:env KEY_PASS -alias "$KEY_ALIAS" -file "$RUNNER_TEMP/key-check.csr" >/dev/null 2>&1
+          rm -f "$RUNNER_TEMP/key-check.csr"
+          echo "TRAYDAQ_UPLOAD_KEYSTORE=$TRAYDAQ_UPLOAD_KEYSTORE" >> "$GITHUB_ENV"
+          echo "TRAYDAQ_UPLOAD_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
+          echo "Permanent release key verified; no replacement key generated."
+
+      - name: Verify Google OAuth client recognizes the existing certificate
+        env:
+          STORE_PASS: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -f google-services.json || { echo "::error::Missing existing mobile/google-services.json"; exit 1; }
+          node - <<'NODE'
+          const c=require('node:child_process');
+          const j=require('./google-services.json');
+          const pkg='com.traydaq.app';
+          if(j.project_info?.project_id!=='traydaq')throw Error('Wrong Firebase project');
+          const app=(j.client||[]).find(x=>x.client_info?.android_client_info?.package_name===pkg);
+          if(!app)throw Error('Android Firebase registration missing');
+          const output=c.execFileSync('keytool',['-list','-v','-keystore',process.env.TRAYDAQ_UPLOAD_KEYSTORE,
+            '-storepass:env','STORE_PASS','-alias',process.env.TRAYDAQ_UPLOAD_ALIAS],{encoding:'utf8'});
+          const cert=output.match(/^\s*SHA1:\s*([0-9A-F:]+)/im)?.[1]?.replace(/:/g,'').toLowerCase();
+          const registered=(app.oauth_client||[]).filter(x=>x.client_type===1&&x.android_info?.package_name===pkg)
+            .some(x=>String(x.android_info.certificate_hash||'').replace(/:/g,'').toLowerCase()===cert);
+          if(!cert||!registered)throw Error('Signing certificate does not match registered Google sign-in client');
+          console.log('Verified existing upload certificate against Firebase Android OAuth client.');
+          NODE
+
+      - name: Install locked Expo SDK 58 dependencies and validate Android
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npx expo install --check
+          node -e 'for(const p of ["expo","react-native","react"]) console.log(p,require(p+"/package.json").version)'
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/native-tests.log" 2>&1 || { grep -E '^(not ok|# (tests|pass|fail))' "$RUNNER_TEMP/native-tests.log" | cut -c1-180 | head -60 || true; exit 1; }
+          grep -E '^# (tests|pass|fail)' "$RUNNER_TEMP/native-tests.log"
+          npm run typecheck
+
+      - name: Configure newer user release and remove development overlay permission
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const p='app.json';const c=JSON.parse(fs.readFileSync(p,'utf8'));
+          c.expo.version=process.env.TRAYDAQ_RELEASE_VERSION;
+          c.expo.android.versionCode=Number(process.env.TRAYDAQ_RELEASE_CODE);
+          c.expo.android.blockedPermissions=[...new Set([...(c.expo.android.blockedPermissions||[]),'android.permission.SYSTEM_ALERT_WINDOW'])];
+          if(c.expo.android.package!=='com.traydaq.app'||c.expo.android.versionCode<=4)throw Error('Invalid user release identity');
+          fs.writeFileSync(p,JSON.stringify(c,null,2)+'\n');
+          console.log('Play candidate version set to',c.expo.version,'code',c.expo.android.versionCode);
+          NODE
+
+      - name: Generate native Android release project
+        run: |
+          set -euo pipefail
+          npx expo export --platform android
+          npx expo prebuild --platform android --non-interactive
+
+      - name: Use preinstalled current Android command-line tools
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMANAGER"
+          "$SDKMANAGER" --version
+          echo "$(dirname "$SDKMANAGER")" >> "$GITHUB_PATH"
+      - name: Inspect generated toolchain requirements
+        run: |
+          for f in android/gradle/wrapper/gradle-wrapper.properties node_modules/react-native/gradle/libs.versions.toml node_modules/@react-native/gradle-plugin/gradle/libs.versions.toml; do
+            if test -f "$f"; then
+              grep -E '^(distributionUrl|agp|androidGradlePlugin|compileSdk|targetSdk|buildTools|kotlin|ndk|ndkVersion)[[:space:]]*=' "$f" | head -15 || true
+            fi
+          done
+          # SDK 58's generated version catalog requires compileSdk 37 and build tools 37.
+          sdkmanager --list --channel=3 > "$RUNNER_TEMP/sdk-list.log" 2>&1
+          grep -E '^[[:space:]]*(platforms;android-|build-tools;37)' "$RUNNER_TEMP/sdk-list.log" | cut -c1-180 | tail -45 || true
+          if ! test -s "$ANDROID_HOME/platforms/android-37.0/android.jar"; then
+            if ! grep -Eq '^[[:space:]]*platforms;android-37\.0[[:space:]]*\|' "$RUNNER_TEMP/sdk-list.log"; then
+              echo "::error::Required Android API 37.0 platform is not installed or listed by the current SDK manager."
+              exit 1
+            fi
+            sdkmanager --channel=3 "platforms;android-37.0" > "$RUNNER_TEMP/sdk-platform.log" 2>&1 || {
+              tr '\r' '\n' < "$RUNNER_TEMP/sdk-platform.log" | grep -Ei 'failed|error|not found|warning:|license' | cut -c1-180 | tail -20 || true
+              exit 1
+            }
+          fi
+          test -s "$ANDROID_HOME/platforms/android-37.0/android.jar"
+          sdkmanager --channel=3 "platforms;android-36" "build-tools;36.0.0" "build-tools;37.0.0" > "$RUNNER_TEMP/sdk.log" 2>&1 || {
+            tr '\r' '\n' < "$RUNNER_TEMP/sdk.log" | grep -Ei 'failed|error|not found|warning:|license' | cut -c1-180 | tail -20 || true
+            exit 1
+          }
+      - name: Install exact React Native native source toolchain
+        run: |
+          # React Native 0.88.1 requires this CMake and NDK for its source build.
+          cmake_version=3.30.5
+          ndk_version="$(sed -nE 's/^ndkVersion[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' node_modules/react-native/gradle/libs.versions.toml)"
+          test "$ndk_version" = "27.1.12297006"
+          sdkmanager --channel=3 "cmake;$cmake_version" "ndk;$ndk_version" > "$RUNNER_TEMP/native-sdk.log" 2>&1 || {
+            tr '\r' '\n' < "$RUNNER_TEMP/native-sdk.log" | grep -Ei 'failed|error|not found|warning:|license' | cut -c1-180 | tail -30 || true
+            exit 1
+          }
+          test -x "$ANDROID_HOME/cmake/$cmake_version/bin/cmake"
+          test -x "$ANDROID_HOME/cmake/$cmake_version/bin/ninja"
+          test -s "$ANDROID_HOME/ndk/$ndk_version/source.properties"
+          "$ANDROID_HOME/cmake/$cmake_version/bin/cmake" --version | head -1
+          grep '^Pkg.Revision' "$ANDROID_HOME/ndk/$ndk_version/source.properties"
+          echo "CMAKE_VERSION=$cmake_version" >> "$GITHUB_ENV"
+      - name: Verify resolved Android Gradle Plugin version
+        working-directory: private-src/mobile/android
+        run: |
+          chmod +x gradlew
+          ./gradlew --version | grep -E "^(Gradle |Kotlin:|Launcher JVM:|Daemon JVM:)" || true
+          cat > "$RUNNER_TEMP/verify-agp.gradle" <<'GRADLE'
+          gradle.projectsEvaluated {
+            // Init scripts also run in React Native/Expo included builds, which have no :app.
+            if (gradle.parent != null) return
+            def app = gradle.rootProject.findProject(':app')
+            if (app == null) throw new GradleException('Main Android app project missing')
+            def plugin = app.plugins.findPlugin('com.android.application')
+            if (plugin == null) throw new GradleException('Android application plugin missing')
+            def version = plugin.class.classLoader.loadClass('com.android.Version').getField('ANDROID_GRADLE_PLUGIN_VERSION').get(null)
+            println("TRAYDAQ_AGP_VERSION=" + version)
+          }
+          GRADLE
+          if ! ./gradlew --no-daemon --console=plain -I "$RUNNER_TEMP/verify-agp.gradle" :app:help > "$RUNNER_TEMP/agp.log" 2>&1; then
+            grep -Ei '^> Task .*FAILED|^Execution failed for task|^BUILD FAILED|^FAILURE:|^\* What went wrong:|^Could not |^A problem occurred|^Plugin .* was not found|^Minimum supported|^Android Gradle plugin|^Gradle requires|^Error:' "$RUNNER_TEMP/agp.log" | cut -c1-200 | head -40 || true
+            awk '/^[*] What went wrong:/{p=1;next} /^[*] (Try|Exception is):/{p=0} p && NF{print}' "$RUNNER_TEMP/agp.log" | sed -E 's@/home/runner/work/[^ ]+@<workspace-path>@g; s@https?://[^ ]+@<url>@g' | cut -c1-240 | head -30 || true
+            echo "AGP configuration command failed"
+            exit 1
+          fi
+          grep -E '^TRAYDAQ_AGP_VERSION=' "$RUNNER_TEMP/agp.log" || true
+          if ! grep -Eq '^TRAYDAQ_AGP_VERSION=9\.' "$RUNNER_TEMP/agp.log"; then
+            echo "Resolved Android Gradle Plugin is not version 9.x or was not identified."
+            exit 1
+          fi
+      - name: Use original signing keystore for Gradle release bundle
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const p='android/app/build.gradle';
+          let s=fs.readFileSync(p,'utf8');
+          if(!/signingConfigs\s*\{/.test(s))throw Error('Missing Gradle signingConfigs');
+          const signing=[
+            '    traydaqExistingUpload {',
+            '        storeFile file(System.getenv("TRAYDAQ_UPLOAD_KEYSTORE"))',
+            '        storePassword System.getenv("TRAYDAQ_UPLOAD_STOREPASS")',
+            '        keyAlias System.getenv("TRAYDAQ_UPLOAD_ALIAS")',
+            '        keyPassword System.getenv("TRAYDAQ_UPLOAD_KEYPASS")',
+            '    }'
+          ].join('\n');
+          s=s.replace(/signingConfigs\s*\{/,match=>match+'\n'+signing+'\n');
+          const match='signingConfig signingConfigs.debug';
+          const idx=s.lastIndexOf(match);
+          if(idx<0||idx<s.indexOf('buildTypes {')||idx<s.lastIndexOf('release {'))
+            throw Error('Could not locate safe release signingConfig substitution.');
+          s=s.slice(0,idx)+s.slice(idx).replace(match,'signingConfig signingConfigs.traydaqExistingUpload');
+          fs.writeFileSync(p,s);
+          console.log('Test APK configured to use original permanent keystore.');
+          NODE
+
+      - name: Build signed test APK (resilient Maven Central downloads)
+        env:
+          TRAYDAQ_UPLOAD_STOREPASS: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEYSTORE_PASSWORD }}
+          TRAYDAQ_UPLOAD_KEYPASS: ${{ secrets.TRAYDAQ_V2_UPLOAD_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          cd android
+          chmod +x gradlew
+          for key in android.enableMinifyInReleaseBuilds android.enableShrinkResourcesInReleaseBuilds android.r8.optimizedResourceShrinking; do grep -Fx "$key=true" gradle.properties; done
+          grep -q "proguard-android-optimize.txt" app/build.gradle
+          # React Native 0.86.3 AAR downloads timed out on the first run.
+          # Allow longer official Maven Central HTTP reads and reduce concurrent requests.
+          # The same generated Android project and permanent signing key are reused.
+          for attempt in 1 2; do
+            LOG="$RUNNER_TEMP/traydaq-aab-gradle-attempt-${attempt}.log"
+            echo "Building signed test APK (attempt ${attempt}/2, Maven timeouts increased)."
+            if ./gradlew --no-daemon --max-workers=2 \
+              -Dorg.gradle.internal.http.connectionTimeout=120000 \
+              -Dorg.gradle.internal.http.socketTimeout=300000 \
+              -Dorg.gradle.internal.repository.max.tentatives=5 \
+              -Dorg.gradle.internal.repository.initial.backoff=1000 \
+              :app:assembleRelease > "$LOG" 2>&1; then
+              echo "PASS: signed test APK compilation completed on attempt $attempt."
+              exit 0
+            fi
+            if ! grep -Eqi 'Read timed out|Connection reset|Connect timed out|Connection timed out|Could not download|Could not GET|Network is unreachable' "$LOG"; then
+              echo "::error::Gradle failed for a non-network reason. Inspect the private runner log."
+              sed -n '/^FAILURE:/,$p' "$LOG" | head -n 100 | sed -E 's/((PASSWORD|TOKEN|SECRET|KEY)=[^[:space:]]+)/[REDACTED]/Ig' || true
+              exit 1
+            fi
+            echo "::warning::Official dependency download failed on attempt $attempt."
+            if [ "$attempt" -eq 2 ]; then
+              echo "::error::Maven download failed again; release was not produced."
+              exit 1
+            fi
+            echo "Retrying the same release build with retained Gradle cache."
+            sleep 20
+          done
+
+      - name: Verify signed test APK and all five native audio resources
+        run: |
+          set -euo pipefail
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          test -s "$APK"
+          unzip -t "$APK" >/dev/null
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$APK"
+          CERT=$("$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -1)
+          [[ "${CERT,,}" == "$TRAYDAQ_EXPECTED_SIGNING_SHA256" ]]
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$APK" > "$RUNNER_TEMP/apk-badging.txt"
+          grep -F "package: name='com.traydaq.app' versionCode='74' versionName='1.0.72'" "$RUNNER_TEMP/apk-badging.txt"
+          grep -Fx "sdkVersion:'24'" "$RUNNER_TEMP/apk-badging.txt"
+          grep -Fx "targetSdkVersion:'36'" "$RUNNER_TEMP/apk-badging.txt"
+          python3 - <<'PY'
+          import pathlib,zipfile,hashlib
+          source=pathlib.Path('assets/notification-sounds')
+          with zipfile.ZipFile('android/app/build/outputs/apk/release/app-release.apk') as z:
+              for name in ('tray_signature','neo_drop','velvet_signal','quantum_tap','aura'):
+                  original=(source/(name+'.ogg')).read_bytes()
+                  matches=[p for p in z.namelist() if p.startswith('res/') and p.endswith('.ogg') and z.read(p)==original]
+                  assert matches, 'Missing exact packaged notification audio: '+name
+                  print(name,hashlib.sha256(original).hexdigest())
+          print('PASS: five original Android-optimized audio resources survived release resource shrinking.')
+          PY
+          mkdir -p device-test
+          cp "$APK" device-test/TRAYDAQ-1.0.72-74-NOTIFICATION-TEST.apk
+          sha256sum device-test/*.apk > device-test/SHA256SUMS.txt
+          printf '%s\n' 'Test APK only — no Play upload or release' 'Source: 79e6654b6fe4b300c74f7e0f8d2426e7e5e9bb1e' 'Test Settings notification previews, opt-in, channel mute and actual incoming alerts on Android.' > device-test/TESTING-NOTES.txt
+
+      - name: Save installable test APK only
+        uses: actions/upload-artifact@v4
+        with:
+          name: TRAYDAQ-V2-Notification-Sounds-Device-Test-APK
+          path: private-src/mobile/device-test/
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Remove temporary signing files
+        if: always()
+        working-directory: .
+        run: rm -f "$RUNNER_TEMP/traydaq-existing-upload.jks" "$RUNNER_TEMP/original-cert.txt" "$RUNNER_TEMP/expected-cert.txt" "$RUNNER_TEMP/aab-cert.txt" "$RUNNER_TEMP/key-check.csr"
+

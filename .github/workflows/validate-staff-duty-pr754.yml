@@ -1,0 +1,79 @@
+name: TRAYDAQ Staff duty source validation
+on:
+  pull_request:
+    branches: [main]
+    paths: [".github/workflows/validate-staff-duty-pr754.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [staff-native, staff-iphone, edge]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 7593f4666ad51fd8fdc135d2a27efc441185ca62
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Focused duty regressions
+        working-directory: private-src
+        run: |
+          node --test admin-native/tests/staff-actionable-comment-flag-counts.test.mjs admin-native/tests/staff-duty-notifications.test.mjs admin-native/tests/post-publish-comment-review.test.mjs tests/staff-strict-role-duty-isolation.test.mjs tests/staff-iphone-expanded-duties.test.mjs tests/traydrive-transport-service-20261121.test.mjs > "$RUNNER_TEMP/focused.log" 2>&1 || { grep -E '^(not ok|# (tests|pass|fail) [0-9]+)' "$RUNNER_TEMP/focused.log"; exit 1; }
+          grep -E '^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/focused.log"
+      - uses: denoland/setup-deno@v2
+        if: matrix.component == 'edge'
+        with:
+          deno-version: v2.x
+      - name: Edge function checks
+        if: matrix.component == 'edge'
+        working-directory: private-src
+        run: |
+          # Isolate Edge sources from the customer application's npm workspace.
+          cp -R supabase/functions "$RUNNER_TEMP/staff-edge-functions"
+          cd "$RUNNER_TEMP/staff-edge-functions"
+          set +e
+          failed=0
+          for component in firebase-admin-workspace firebase-staff-iphone; do
+            deno check --no-config --no-lock "$component/index.ts" > "$RUNNER_TEMP/edge-$component.log" 2>&1
+            code=$?
+            echo "$component type check exit: $code"
+            if [ "$code" -ne 0 ]; then
+              failed=1
+              # Only publish diagnostic identifiers, known error categories and line numbers.
+              LOG="$RUNNER_TEMP/edge-$component.log" node -e 'const fs=require("node:fs");const x=fs.readFileSync(process.env.LOG,"utf8");console.log("Diagnostic tokens:",[...new Set(x.match(/TS[0-9]+|unexpected argument|unknown flag|unrecognized option|failed to|Failed to|Could not|could not|not found|Not found|error sending request|error decoding|certificate|network|registry|lockfile|permission|npm:|SyntaxError|TypeError|Module not found|Unable to|No such file|invalid|Invalid|panic|timed out|connection refused|HTTP [0-9]+|404|403|429|500/gi)||[])].join(", "));console.log("Known source locations:",[...new Set(x.match(/(?:firebase-admin-workspace|firebase-staff-iphone)\/index\.ts:[0-9]+:[0-9]+/g)||[])].slice(0,40).join(", "));console.log("Output lines:",x.split("\n").length);console.log("Diagnostic summary:",x.replace(/\x1b\[[0-9;]*m/g,"").split("\n").filter(l=>/TS[0-9]+| at file:/.test(l)).map(l=>l.replace(/file:\/\/[^ ]*\/([\w.-]+\/index\.ts:[0-9]+:[0-9]+)/g,"$1").slice(0,180)).join("\n"))'
+            fi
+          done
+          exit "$failed"
+      - name: Staff regression and TypeScript checks
+        if: matrix.component != 'edge'
+        working-directory: private-src
+        env:
+          COMPONENT: ${{ matrix.component }}
+          CI: "1"
+          NODE_OPTIONS: "--max-old-space-size=6144"
+        run: |
+          if [ "$COMPONENT" = staff-native ]; then cd admin-native; fi
+          if [ "$COMPONENT" = staff-native ]; then
+            npm install --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+          else
+            npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1
+          fi
+          if [ "$COMPONENT" = staff-native ]; then
+            npm run typecheck > "$RUNNER_TEMP/ts.log" 2>&1 || { echo 'Staff TypeScript failed'; grep -Eo 'TS[0-9]+' "$RUNNER_TEMP/ts.log" | sort | uniq -c; exit 1; }
+            npm run test:security > "$RUNNER_TEMP/tests.log" 2>&1 || { grep -E '^(not ok|# (tests|pass|fail) [0-9]+)' "$RUNNER_TEMP/tests.log"; exit 1; }
+          else
+            npm run typecheck:staff > "$RUNNER_TEMP/ts.log" 2>&1 || { echo 'iPhone TypeScript failed'; grep -Eo 'TS[0-9]+' "$RUNNER_TEMP/ts.log" | sort | uniq -c; exit 1; }
+            node --test tests/staff-*.test.mjs > "$RUNNER_TEMP/tests.log" 2>&1 || { grep -E '^(not ok|# (tests|pass|fail) [0-9]+)' "$RUNNER_TEMP/tests.log"; exit 1; }
+            npm run build:staff > "$RUNNER_TEMP/build.log" 2>&1 || { echo 'Staff PWA build failed'; exit 1; }
+          fi
+          grep -E '^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/tests.log"

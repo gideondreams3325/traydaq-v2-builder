@@ -1,0 +1,62 @@
+name: TRAYDAQ automatic signature sound validation
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/validate-automatic-signature-sounds-20261127.yml"]
+permissions:
+  contents: read
+jobs:
+  validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [android]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 2e058ff5458f365b47378f4ccb33f7affb1be962
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check sound mapping and legacy fallback
+        working-directory: private-src
+        run: node --test mobile/tests/traydaq-signature-sounds.test.mjs mobile/tests/traydaq-notification-sound-assets.test.mjs
+      - uses: denoland/setup-deno@v2
+        if: matrix.component == 'edge'
+        with:
+          deno-version: v2.x
+      - name: Check all consumer notification edge functions
+        if: matrix.component == 'edge'
+        working-directory: private-src
+        run: |
+          deno check --no-config --node-modules-dir=auto supabase/functions/{firebase-member-activity,firebase-following-notifications,firebase-native-orders,firebase-native-commerce,firebase-staff-campaign-deliver,firebase-copyright,firebase-security-broadcast,firebase-security-hub,firebase-native-push-register,firebase-entrepreneur}/index.ts > "$RUNNER_TEMP/edge.log" 2>&1 || { grep -Ei 'TS[0-9]+|error|failed|not found|could not' "$RUNNER_TEMP/edge.log" | cut -c1-180 | head -60; exit 1; }
+      - name: Source regressions and typecheck (no release)
+        if: matrix.component != 'edge'
+        working-directory: private-src
+        env:
+          COMPONENT: ${{ matrix.component }}
+          CI: "1"
+          NODE_OPTIONS: "--max-old-space-size=6144"
+        run: |
+          if [ "$COMPONENT" = android ]; then cd mobile; fi
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { echo 'Dependency install failed'; exit 1; }
+          set +e
+          npm run typecheck > "$RUNNER_TEMP/ts.log" 2>&1
+          ts_rc=$?
+          grep -E 'error TS[0-9]+' "$RUNNER_TEMP/ts.log" | cut -c1-180 | head -60 || true
+          node --test tests/*.test.mjs > "$RUNNER_TEMP/tests.log" 2>&1
+          test_rc=$?
+          grep -E '^(not ok|# (tests|pass|fail) [0-9]+)' "$RUNNER_TEMP/tests.log" | cut -c1-180 | head -80
+          if [ "$COMPONENT" = web ]; then
+            npm run build > "$RUNNER_TEMP/build.log" 2>&1
+            build_rc=$?
+            if [ "$build_rc" -ne 0 ]; then echo 'Web build failed'; fi
+          else build_rc=0; fi
+          test "$ts_rc" -eq 0 && test "$test_rc" -eq 0 && test "$build_rc" -eq 0

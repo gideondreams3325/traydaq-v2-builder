@@ -1,0 +1,60 @@
+name: TRAYDAQ Staff duty source validation
+on:
+  pull_request:
+    branches: [main]
+    paths: [".github/workflows/validate-staff-duty-pr754.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [staff-native, staff-iphone, edge]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: gideondreams3325/traydaq-v2
+          ref: 63ac7289e73ad6b30a27c66f79f125f1115bd739
+          path: private-src
+          token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Focused duty regressions
+        working-directory: private-src
+        run: |
+          node --test admin-native/tests/staff-actionable-comment-flag-counts.test.mjs admin-native/tests/staff-duty-notifications.test.mjs admin-native/tests/post-publish-comment-review.test.mjs tests/staff-strict-role-duty-isolation.test.mjs tests/staff-iphone-expanded-duties.test.mjs tests/traydrive-transport-service-20261121.test.mjs > "$RUNNER_TEMP/focused.log" 2>&1 || { grep -E '^(not ok|# (tests|pass|fail) [0-9]+)' "$RUNNER_TEMP/focused.log"; exit 1; }
+          grep -E '^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/focused.log"
+      - uses: denoland/setup-deno@v2
+        if: matrix.component == 'edge'
+        with:
+          deno-version: v2.x
+      - name: Edge function checks
+        if: matrix.component == 'edge'
+        working-directory: private-src
+        run: |
+          deno check --no-config --node-modules-dir=auto supabase/functions/firebase-admin-workspace/index.ts supabase/functions/firebase-staff-iphone/index.ts > "$RUNNER_TEMP/edge.log" 2>&1 || { echo 'Edge type check failed'; grep -Eo 'TS[0-9]+' "$RUNNER_TEMP/edge.log" | sort | uniq -c; exit 1; }
+      - name: Staff regression and TypeScript checks
+        if: matrix.component != 'edge'
+        working-directory: private-src
+        env:
+          COMPONENT: ${{ matrix.component }}
+          CI: "1"
+          NODE_OPTIONS: "--max-old-space-size=6144"
+        run: |
+          if [ "$COMPONENT" = staff-native ]; then cd admin-native; fi
+          npm ci --no-audit --no-fund > "$RUNNER_TEMP/install.log" 2>&1 || { echo 'Dependency install failed'; exit 1; }
+          if [ "$COMPONENT" = staff-native ]; then
+            npm run typecheck > "$RUNNER_TEMP/ts.log" 2>&1 || { echo 'Staff TypeScript failed'; grep -Eo 'TS[0-9]+' "$RUNNER_TEMP/ts.log" | sort | uniq -c; exit 1; }
+            npm run test:security > "$RUNNER_TEMP/tests.log" 2>&1 || { grep -E '^(not ok|# (tests|pass|fail) [0-9]+)' "$RUNNER_TEMP/tests.log"; exit 1; }
+          else
+            npm run typecheck:staff > "$RUNNER_TEMP/ts.log" 2>&1 || { echo 'iPhone TypeScript failed'; grep -Eo 'TS[0-9]+' "$RUNNER_TEMP/ts.log" | sort | uniq -c; exit 1; }
+            node --test tests/staff-*.test.mjs > "$RUNNER_TEMP/tests.log" 2>&1 || { grep -E '^(not ok|# (tests|pass|fail) [0-9]+)' "$RUNNER_TEMP/tests.log"; exit 1; }
+            npm run build:staff > "$RUNNER_TEMP/build.log" 2>&1 || { echo 'Staff PWA build failed'; exit 1; }
+          fi
+          grep -E '^# (tests|pass|fail) [0-9]+' "$RUNNER_TEMP/tests.log"

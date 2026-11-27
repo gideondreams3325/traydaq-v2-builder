@@ -1,6 +1,8 @@
 name: TRAYDAQ Traymusic discovery validation
 on:
   workflow_dispatch:
+  pull_request:
+    paths: [".github/workflows/validate-traymusic-discovery-20261127.yml"]
   push:
     branches: [main]
     paths: [".github/workflows/validate-traymusic-discovery-20261127.yml"]
@@ -18,7 +20,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: c3c588f739dfd2cbbe74acac90f11e114ef4839b
+          ref: 751386ede60db155f38dfec83ecbf2fd9bdec173
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false

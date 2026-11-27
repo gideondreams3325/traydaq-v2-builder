@@ -1,0 +1,22 @@
+name: TRAYDAQ notification migration filename
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/prepare-notification-migration-20261127.yml"]
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.81.3
+      - name: Generate migration filename (no deployment)
+        run: |
+          supabase --version
+          supabase migration new --help
+          supabase migration new traydaq_notification_sound_scheme
+          find supabase/migrations -name '*traydaq_notification_sound_scheme.sql' -printf '%f\n'

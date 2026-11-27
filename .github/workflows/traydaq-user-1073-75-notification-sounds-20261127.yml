@@ -27,7 +27,7 @@ jobs:
       NODE_OPTIONS: "--max-old-space-size=6144"
       TRAYDAQ_RELEASE_VERSION: "1.0.73"
       TRAYDAQ_RELEASE_CODE: "75"
-      TRAYDAQ_SOURCE_SHA: "8237028acd5c2604fe61f357814e75e708f7e98b"
+      TRAYDAQ_SOURCE_SHA: "7410893959db999dce6d3cd62078926d47d6efeb"
       # Public certificate from signed User APK run 40043905049 (v1.0.1/code 3).
       TRAYDAQ_EXPECTED_SIGNING_SHA256: "716a68f5734545bc9d9700f045d2bfb1b1087ffe732021f216b32a575f03f83d"
     defaults:
@@ -38,7 +38,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: gideondreams3325/traydaq-v2
-          ref: "8237028acd5c2604fe61f357814e75e708f7e98b"
+          ref: "7410893959db999dce6d3cd62078926d47d6efeb"
           path: private-src
           token: ${{ secrets.TRAYDAQ_V2_SOURCE_READ_TOKEN }}
           persist-credentials: false
@@ -157,7 +157,8 @@ jobs:
           const path=require('node:path');
           const {APPROVED}=require('./plugins/traydaqNotificationSoundAssets');
           const raw='android/app/src/main/res/raw';
-          const keep=fs.readFileSync(path.join(raw,'com.traydaq.app.notifications.keep.xml'),'utf8');
+          const keep=fs.readFileSync(path.join(raw,'traydaq_notification_keep.xml'),'utf8');
+          if(!/^[a-z][a-z0-9_]*\.xml$/.test('traydaq_notification_keep.xml'))throw Error('Invalid Android raw resource filename');
           for(const name of Object.keys(APPROVED)){
             if(!fs.readFileSync(path.join(raw,name)).equals(fs.readFileSync(path.join('assets/notification-sounds',name))))throw Error('Prebuild sound mismatch: '+name);
             if(!keep.includes('@raw/'+name.slice(0,-4)))throw Error('Missing shrinker keep rule: '+name);
@@ -495,7 +496,7 @@ jobs:
           cat > play-release/GOOGLE-PLAY-TESTING-NOTES.txt <<'NOTES'
           TRAYDAQ User Android 1.0.73 (75) — signed release candidate, not distributed
           Application ID: com.traydaq.app
-          Source: 8237028acd5c2604fe61f357814e75e708f7e98b
+          Source: 7410893959db999dce6d3cd62078926d47d6efeb
           Includes five TRAYDAQ signature notification sounds, per-category settings and previews, booking push alerts, Modern Twi strings, and all prior merged user features. Backend notification migration and sender updates deployed; physical-device notification playback still requires verification.
           Existing ordinary conversations and staff applications remain unchanged.
           Do not distribute or upload this candidate to Play until live backend compatibility,

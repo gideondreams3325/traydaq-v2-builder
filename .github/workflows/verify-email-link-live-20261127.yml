@@ -15,7 +15,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for attempt in $(seq 1 12); do
+          echo 'Live deployment revision:'
+          curl -fsS --max-time 12 https://traydaq.com/app-version.json | python -c 'import sys,json,re; v=str(json.load(sys.stdin).get("version","")); print(v if re.fullmatch(r"[a-zA-Z0-9._-]{1,64}",v) else "unrecognized")' || true
+          for attempt in $(seq 1 3); do
+            rm -f "$RUNNER_TEMP/headers" "$RUNNER_TEMP/page"
+            curl -sS --max-time 12 -D "$RUNNER_TEMP/headers" https://traydaq.com/auth/verify-email -o "$RUNNER_TEMP/page" || true
+            if [ -f "$RUNNER_TEMP/headers" ]; then
+              grep -Ei '^(HTTP/|content-type:|referrer-policy:|x-robots-tag:|cache-control:|cf-cache-status:)' "$RUNNER_TEMP/headers" || true
+            fi
+            if [ -f "$RUNNER_TEMP/page" ] && grep -q 'id="root"' "$RUNNER_TEMP/page"; then echo 'App root marker: present'; else echo 'App root marker: missing'; fi
             if curl -fsS --max-time 12 -D "$RUNNER_TEMP/headers" https://traydaq.com/auth/verify-email -o "$RUNNER_TEMP/page" &&
                grep -qi '^referrer-policy: no-referrer' "$RUNNER_TEMP/headers" &&
                grep -qi '^x-robots-tag: noindex, nofollow' "$RUNNER_TEMP/headers" &&
@@ -24,7 +32,7 @@ jobs:
               echo "Dedicated production verification route is available with private headers"
               break
             fi
-            if [ "$attempt" -eq 12 ]; then echo "Production route not verified"; exit 1; fi
+            if [ "$attempt" -eq 3 ]; then echo "Production route not verified"; exit 1; fi
             sleep 10
           done
           curl -fsS --max-time 15 https://traydaq.com/.well-known/assetlinks.json -o "$RUNNER_TEMP/assetlinks"
